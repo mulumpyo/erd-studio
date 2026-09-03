@@ -1,10 +1,14 @@
-name: Deploy
+# deploy 브랜치에 푸시하거나 직접 실행하면
+# 코드 검사 → 이미지 빌드 → 서버 배포 순서로 돌아가요.
+name: 배포
 
 on:
   push:
     branches: [deploy]
+  # Actions 탭에서 직접 눌러도 배포할 수 있어요.
   workflow_dispatch:
 
+# 같은 브랜치 배포가 겹치면, 앞 작업이 끝날 때까지 기다려요.
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
@@ -17,26 +21,41 @@ env:
 
 jobs:
   check:
+    name: 코드 검사
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - name: 저장소 코드 내려받기
+        uses: actions/checkout@v4
+
+      - name: pnpm 설치
+        uses: pnpm/action-setup@v4
         with:
           version: 11.5.2
-      - uses: actions/setup-node@v4
+
+      - name: Node.js 22 설치
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm test
+
+      # lockfile과 패키지가 다르면 여기서 멈춰요.
+      - name: 패키지 설치 (lockfile 일치 확인)
+        run: pnpm install --frozen-lockfile
+
+      - name: 문법·코드 스타일 검사 (ESLint)
+        run: pnpm lint
+
+      - name: 단위 테스트 실행
+        run: pnpm test
 
   build:
+    name: 이미지 빌드 (${{ matrix.name }})
     needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    # 웹, API, 협업 서버 이미지를 따로 만들어요. Oracle ARM에서 돌아가요.
     strategy:
       matrix:
         include:
@@ -47,15 +66,24 @@ jobs:
           - target: collab
             name: collab
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - name: 저장소 코드 내려받기
+        uses: actions/checkout@v4
+
+      - name: ARM 빌드를 위한 QEMU 설정
+        uses: docker/setup-qemu-action@v3
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: 이미지 저장소(GHCR) 로그인
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+
+      - name: ARM 이미지 빌드 후 GHCR에 올리기
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
@@ -72,12 +100,14 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
   deploy:
+    name: 서버에 배포
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: 저장소 코드 내려받기
+        uses: actions/checkout@v4
 
-      - name: Copy compose file to the server
+      - name: 실행 설정 서버로 복사
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -87,7 +117,8 @@ jobs:
           source: docker-compose.prod.yml
           target: ${{ env.DEPLOY_DIR }}
 
-      - name: Write .env and restart the stack
+      # GitHub Secrets로 .env를 만들고, 새 이미지로 컨테이너를 다시 띄워요.
+      - name: 환경 변수 작성 후 컨테이너 재시작
         uses: appleboy/ssh-action@v1.2.0
         env:
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
