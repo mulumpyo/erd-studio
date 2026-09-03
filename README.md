@@ -321,7 +321,8 @@ server {
         include proxy_params;
     }
 
-    # Hocuspocus는 루트 경로에서 듣기 때문에 /collaboration을 떼고 넘겨요.
+    # Hocuspocus는 루트에서 듣습니다. WebSocket은 301을 따라가지 않으니
+    # /collaboration 과 /collaboration/ 둘 다 프록시해야 해요.
     location /collaboration/ {
         proxy_pass http://127.0.0.1:3030/;
         proxy_http_version 1.1;
@@ -335,8 +336,15 @@ server {
     }
 
     location = /collaboration {
-        absolute_redirect off;
-        return 301 /collaboration/;
+        proxy_pass http://127.0.0.1:3030/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+        proxy_buffering off;
+        include proxy_params;
     }
 
     location / {

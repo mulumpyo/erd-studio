@@ -16,7 +16,7 @@ export const collabUrl = () => {
       : 'ws:'
   const host =
     typeof location !== 'undefined' ? location.host : 'localhost:5173'
-  return `${protocol}//${host}/collaboration`
+  return `${protocol}//${host}/collaboration/`
 }
 
 export const isSameOriginCollab = () => {
