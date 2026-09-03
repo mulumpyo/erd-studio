@@ -21,6 +21,7 @@ export type ChatLine = {
   id: string
   userId: string
   name: string
+  email: string
   body: string
   createdAt: number
 }
@@ -296,6 +297,7 @@ export const yToChat = (doc: Y.Doc): ChatLine[] => {
       id: String(raw.id),
       userId: String(raw.userId ?? ''),
       name: String(raw.name ?? ''),
+      email: String(raw.email ?? ''),
       body: String(raw.body ?? ''),
       createdAt: Number(raw.createdAt ?? Date.now()),
     })
@@ -312,6 +314,7 @@ export const pushChat = (
     id: line.id ?? createId('msg'),
     userId: line.userId,
     name: line.name,
+    email: line.email ?? '',
     body: line.body,
     createdAt: line.createdAt ?? Date.now(),
   })
