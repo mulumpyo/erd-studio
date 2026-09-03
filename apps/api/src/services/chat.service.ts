@@ -4,7 +4,7 @@ import { assertEdit, assertParticipant } from '../common/access'
 import { ProjectsService } from './projects.service'
 import { PrismaService } from './prisma.service'
 
-const chatUserSelect = { id: true, name: true } as const
+const chatUserSelect = { id: true, name: true, email: true } as const
 
 @Injectable()
 export class ChatService {

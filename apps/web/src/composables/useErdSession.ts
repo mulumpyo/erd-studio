@@ -422,6 +422,7 @@ export const useErdSession = (options: {
     pushChat(ydoc.value, {
       userId: options.userId || 'anon',
       name: options.userName || 'Guest',
+      email: options.userEmail || '',
       body: text,
     })
   }
