@@ -89,6 +89,14 @@ const submit = async () => {
           >회원가입</RouterLink
         >
       </p>
+      <Button
+        type="button"
+        variant="outline"
+        class="w-full"
+        @click="router.push('/')"
+      >
+        돌아가기
+      </Button>
     </form>
   </AuthShell>
 </template>

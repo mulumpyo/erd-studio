@@ -5,8 +5,8 @@ import { buttonVariants } from '@/components/ui/button'
 </script>
 
 <template>
-  <div class="min-h-full bg-background">
-    <header class="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+  <div class="flex min-h-full flex-col bg-background">
+    <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
       <div class="flex items-center gap-2.5">
         <div
           class="flex size-9 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-white"
@@ -27,7 +27,7 @@ import { buttonVariants } from '@/components/ui/button'
         >
       </div>
     </header>
-    <div class="mx-auto max-w-5xl px-6 pb-24 pt-10">
+    <div class="mx-auto w-full max-w-5xl flex-1 px-6 pb-16 pt-10">
       <p class="text-[15px] font-semibold text-primary">팀과 함께 그리는 ERD</p>
       <h1
         class="mt-3 max-w-2xl text-[44px] font-bold leading-[1.2] tracking-[-0.05em] sm:text-[56px]"
@@ -84,20 +84,11 @@ import { buttonVariants } from '@/components/ui/button'
           </p>
         </div>
       </div>
-      <div class="mt-10 rounded-[24px] bg-muted px-6 py-7">
-        <h3 class="text-[18px] font-bold">직접 설치해서 쓸 수도 있어요</h3>
-        <p class="mt-2 max-w-2xl text-[15px] leading-6 text-muted-foreground">
-          소스 코드는 공개되어 있어요. Docker로 Postgres와 Redis를 띄운 뒤
-          로컬이나 팀 서버에 올려 쓰면 되고, ERD JSON으로 다이어그램을
-          파일로 주고받을 수 있어요.
-        </p>
-      </div>
-      <p class="mt-12 text-[15px] text-muted-foreground">
-        이미 가입하셨나요?
-        <RouterLink class="font-semibold text-primary" to="/login"
-          >로그인</RouterLink
-        >
-      </p>
     </div>
+    <footer
+      class="border-t border-border/80 px-6 py-6 text-center text-[13px] text-muted-foreground"
+    >
+      Copyright &copy; 2026 mulumpyo. All Rights Reserved.
+    </footer>
   </div>
 </template>

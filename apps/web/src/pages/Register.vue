@@ -16,6 +16,7 @@ const route = useRoute()
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const error = ref('')
 const loading = ref(false)
 const emailLocked = ref(false)
@@ -42,6 +43,9 @@ const loginTo = computed(() => {
   }
   return '/login'
 })
+const mismatch = computed(
+  () => confirmPassword.value.length > 0 && confirmPassword.value !== password.value,
+)
 
 onMounted(async () => {
   if (!inviteToken.value) return
@@ -58,6 +62,10 @@ onMounted(async () => {
 
 const submit = async () => {
   error.value = ''
+  if (password.value !== confirmPassword.value) {
+    error.value = '비밀번호가 일치하지 않아요'
+    return
+  }
   loading.value = true
   try {
     const result = await auth.register(
@@ -117,16 +125,36 @@ const submit = async () => {
           placeholder="8자 이상"
         />
       </div>
+      <div class="space-y-2">
+        <Label>비밀번호 확인</Label>
+        <Input
+          v-model="confirmPassword"
+          type="password"
+          minlength="8"
+          required
+        />
+        <p v-if="mismatch" class="text-[13px] text-destructive">
+          비밀번호가 일치하지 않아요
+        </p>
+      </div>
       <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
-      <Button class="w-full" :disabled="loading">{{
+      <Button class="w-full" :disabled="loading || mismatch">{{
         loading ? '가입하는 중…' : '시작하기'
       }}</Button>
       <p class="text-[15px] text-muted-foreground">
-        이미 가입하셨나요?
+        이미 계정이 있으신가요?
         <RouterLink class="font-semibold text-primary" :to="loginTo"
           >로그인</RouterLink
         >
       </p>
+      <Button
+        type="button"
+        variant="outline"
+        class="w-full"
+        @click="router.push('/')"
+      >
+        돌아가기
+      </Button>
     </form>
   </AuthShell>
 </template>
