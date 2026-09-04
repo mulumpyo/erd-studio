@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsEmail, IsIn, IsOptional, IsString, MinLength } from 'class-validator'
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator'
 
 export class CreateTeamDto {
   @ApiProperty({
@@ -9,6 +16,20 @@ export class CreateTeamDto {
   })
   @IsString()
   @MinLength(1)
+  @MaxLength(80)
+  name: string
+}
+
+export class UpdateTeamDto {
+  @ApiProperty({
+    description: '바꿀 팀 이름이에요. 소유자만 바꿀 수 있어요.',
+    example: '백엔드 팀',
+    minLength: 1,
+    maxLength: 80,
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
   name: string
 }
 

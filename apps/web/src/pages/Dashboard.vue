@@ -368,7 +368,7 @@ onUnmounted(() => {
     </template>
 
     <main
-      class="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden p-3 md:p-4"
+      class="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 py-3 md:p-4"
     >
       <p v-if="error" class="shrink-0 text-sm text-destructive">{{ error }}</p>
 

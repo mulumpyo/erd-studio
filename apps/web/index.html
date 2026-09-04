@@ -8,33 +8,79 @@
     <title>ERD Studio — 팀과 함께 그리는 ERD</title>
     <meta
       name="description"
-      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요."
+      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요. 지금은 베타예요."
     />
     <meta name="robots" content="index,follow" />
+    <link rel="canonical" href="https://erd-studio.com/" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ERD Studio" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:url" content="https://erd-studio.com/" />
     <meta property="og:title" content="ERD Studio — 팀과 함께 그리는 ERD" />
     <meta
       property="og:description"
-      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요."
+      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요. 지금은 베타예요."
     />
-    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:image" content="https://erd-studio.com/og.svg" />
+    <meta property="og:image:alt" content="ERD Studio — 팀과 함께 그리는 ERD" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="ERD Studio — 팀과 함께 그리는 ERD" />
     <meta
       name="twitter:description"
-      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요."
+      content="브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요. 지금은 베타예요."
     />
+    <meta name="twitter:image" content="https://erd-studio.com/og.svg" />
+    <script type="application/ld+json">
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "ERD Studio",
+          "url": "https://erd-studio.com/",
+          "description": "브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요. 지금은 베타예요.",
+          "inLanguage": "ko-KR"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "name": "ERD Studio",
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Web",
+          "description": "브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요. 지금은 베타예요.",
+          "url": "https://erd-studio.com/",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" }
+        }
+      ]
+    </script>
     <script>
       (function () {
-        try {
-          var mode = localStorage.getItem('erd_theme') || 'system'
+        var KEY = 'erd_theme'
+        var apply = function (mode) {
           var dark =
             mode === 'dark' ||
             (mode === 'system' &&
               matchMedia('(prefers-color-scheme: dark)').matches)
-          if (dark) document.documentElement.classList.add('dark')
+          document.documentElement.classList.toggle('dark', dark)
           document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+        }
+        try {
+          apply(localStorage.getItem(KEY) || 'system')
         } catch (e) {}
+        document.addEventListener('click', function (event) {
+          var btn = event.target.closest && event.target.closest('[data-theme-toggle]')
+          if (!btn) return
+          event.preventDefault()
+          var current = 'system'
+          try {
+            current = localStorage.getItem(KEY) || 'system'
+          } catch (err) {}
+          var next =
+            current === 'light' ? 'dark' : current === 'dark' ? 'system' : 'light'
+          try {
+            localStorage.setItem(KEY, next)
+          } catch (err) {}
+          apply(next)
+        })
       })()
     </script>
   </head>

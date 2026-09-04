@@ -23,6 +23,7 @@ import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import {
   CreateTeamDto,
   InviteTeamMemberDto,
+  UpdateTeamDto,
   UpdateTeamMemberDto,
 } from '../dto/teams.dto'
 import { ListQueryDto } from '../dto/list-query.dto'
@@ -163,6 +164,23 @@ export class TeamsController {
   @Delete(':id/leave')
   leave(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.teams.leave(user, id)
+  }
+
+  @ApiOperation({
+    summary: '팀 이름 바꾸기',
+    description: '팀 이름을 바꿔요. 소유자만 할 수 있어요.',
+  })
+  @TeamId()
+  @ApiOkResponse({ description: '이름을 바꿨어요.' })
+  @ApiForbiddenResponse({ description: '소유자만 팀 이름을 바꿀 수 있어요.' })
+  @ApiNotFoundResponse({ description: NOT_FOUND })
+  @Patch(':id')
+  rename(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateTeamDto,
+  ) {
+    return this.teams.rename(user, id, dto.name)
   }
 
   @ApiOperation({

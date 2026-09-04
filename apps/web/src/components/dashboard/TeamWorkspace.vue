@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Pencil, Plus, Search } from 'lucide-vue-next'
 import { api } from '@/api'
 import { errorMessage, initialOf, roleLabel } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
@@ -22,6 +22,7 @@ import Avatar from '@/components/ui/avatar/Avatar.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import CreateProjectDialog from '@/components/dashboard/CreateProjectDialog.vue'
+import CreateTeamDialog from '@/components/dashboard/CreateTeamDialog.vue'
 import InviteMemberDialog from '@/components/dashboard/InviteMemberDialog.vue'
 import ManageMemberDialog from '@/components/dashboard/ManageMemberDialog.vue'
 import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
@@ -47,6 +48,7 @@ const query = ref('')
 const search = ref('')
 const memberQuery = ref('')
 const createOpen = ref(false)
+const renameOpen = ref(false)
 const inviteOpen = ref(false)
 const inviteError = ref('')
 const error = ref('')
@@ -351,6 +353,23 @@ const revokeInvite = async (invite: PendingInvitation) => {
 const create = (name: string, fromSample: boolean) => {
   emit('create', fromSample, name)
 }
+
+const renameTeam = async (name: string) => {
+  const next = name.trim()
+  if (!next || next === props.team.name) return
+  error.value = ''
+  try {
+    await api(
+      `/api/teams/${props.team.id}`,
+      { method: 'PATCH', body: JSON.stringify({ name: next }) },
+      auth.token,
+    )
+    toast('팀 이름을 바꿨어요')
+    emit('changed')
+  } catch (e) {
+    error.value = errorMessage(e, '이름을 바꾸지 못했어요')
+  }
+}
 </script>
 
 <template>
@@ -365,9 +384,20 @@ const create = (name: string, fromSample: boolean) => {
       </RouterLink>
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
-          <h1 class="truncate text-[20px] font-bold tracking-[-0.03em]">
-            {{ team.name }}
-          </h1>
+          <div class="flex min-w-0 items-center gap-1.5">
+            <h1 class="truncate text-[20px] font-bold tracking-[-0.03em]">
+              {{ team.name }}
+            </h1>
+            <button
+              v-if="isOwner"
+              type="button"
+              class="flex size-8 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="팀 이름 바꾸기"
+              @click="renameOpen = true"
+            >
+              <Pencil class="size-3.5" />
+            </button>
+          </div>
           <p class="mt-0.5 text-[13px] text-muted-foreground">
             {{ team.members.length }}명 · {{ projectCount }}개 프로젝트
           </p>
@@ -650,6 +680,14 @@ const create = (name: string, fromSample: boolean) => {
         <p v-if="error" class="shrink-0 text-sm text-destructive">{{ error }}</p>
       </section>
     </div>
+    <CreateTeamDialog
+      v-model:open="renameOpen"
+      title="팀 이름 바꾸기"
+      description="팀원에게 보이는 이름을 바꿔요"
+      confirm-label="저장"
+      :initial-name="team.name"
+      @create="renameTeam"
+    />
     <CreateProjectDialog
       v-model:open="createOpen"
       :team-name="team.name"

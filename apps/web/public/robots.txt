@@ -1,9 +1,17 @@
 User-agent: *
 Allow: /
+Allow: /terms
+Allow: /privacy
 Disallow: /app
+Disallow: /admin
+Disallow: /account
 Disallow: /login
 Disallow: /register
 Disallow: /invite
 Disallow: /verify
 Disallow: /check-email
+Disallow: /forgot-password
+Disallow: /reset
 Disallow: /s/
+
+Sitemap: https://erd-studio.com/sitemap.xml

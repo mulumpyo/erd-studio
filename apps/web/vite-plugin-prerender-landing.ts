@@ -1,9 +1,11 @@
 import { createServer, type Plugin, type ResolvedConfig } from 'vite'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-
-const SITE_DESCRIPTION =
-  '브라우저에서 까마귀발 ERD를 그리고, SQL로 주고받고, 팀과 실시간으로 같이 수정하세요.'
+import {
+  DEFAULT_SITE_URL,
+  landingJsonLd,
+  normalizeSiteUrl,
+} from './src/lib/seo'
 
 export const prerenderLanding = (): Plugin => {
   let config: ResolvedConfig
@@ -32,36 +34,47 @@ export const prerenderLanding = (): Plugin => {
           config.logger.warn('prerender-landing: #app placeholder missing, skipped')
           return
         }
-        const siteUrl = (
+        const siteUrl = normalizeSiteUrl(
           config.env.VITE_SITE_URL ||
-          process.env.VITE_SITE_URL ||
-          process.env.WEB_ORIGIN ||
-          ''
-        ).replace(/\/$/, '')
+            process.env.VITE_SITE_URL ||
+            DEFAULT_SITE_URL,
+        )
         html = html.replace(
           '<div id="app"></div>',
           `<div id="app">${appHtml}</div>`,
         )
-        if (siteUrl && !html.includes('rel="canonical"')) {
+        const stylesheet =
+          /<link rel="stylesheet"[^>]*href="(\/assets\/[^"]+\.css)"[^>]*>/
+        const cssLink = html.match(stylesheet)
+        if (cssLink) {
+          const cssPath = path.resolve(
+            config.root,
+            config.build.outDir,
+            cssLink[1].replace(/^\//, ''),
+          )
+          const css = await fs.readFile(cssPath, 'utf8')
+          html = html.replace(cssLink[0], `<style>${css}</style>`)
+        }
+        if (!html.includes('rel="canonical"')) {
           html = html.replace(
             '</head>',
             `    <link rel="canonical" href="${siteUrl}/" />\n    <meta property="og:url" content="${siteUrl}/" />\n  </head>`,
           )
         }
         if (!html.includes('application/ld+json')) {
-          const jsonLd = {
-            '@context': 'https://schema.org',
-            '@type': 'SoftwareApplication',
-            name: 'ERD Studio',
-            applicationCategory: 'DeveloperApplication',
-            operatingSystem: 'Web',
-            description: SITE_DESCRIPTION,
-            offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
-            ...(siteUrl ? { url: `${siteUrl}/` } : {}),
-          }
           html = html.replace(
             '</head>',
-            `    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n  </head>`,
+            `    <script type="application/ld+json">${JSON.stringify(landingJsonLd(siteUrl))}</script>\n  </head>`,
+          )
+        }
+        html = html.replace(/<link rel="modulepreload"[^>]*>/g, '')
+        const moduleScript =
+          /<script type="module" crossorigin src="([^"]+)"><\/script>/
+        const entry = html.match(moduleScript)
+        if (entry) {
+          html = html.replace(
+            entry[0],
+            `<script type="module">const s=${JSON.stringify(entry[1])};const m=p=>p==='/'||p==='/terms'||p==='/privacy';if(m(location.pathname)){const go=e=>{const a=e.target&&e.target.closest&&e.target.closest('a[href]');if(a){try{const u=new URL(a.href,location.href);if(u.origin===location.origin&&u.pathname!==location.pathname&&a.target!=='_blank')return}catch{}}if(!window.__erdBoot){window.__erdBoot=1;import(s)}};addEventListener('pointerdown',go,{once:true,capture:true});addEventListener('keydown',go,{once:true,capture:true})}else import(s)</script>`,
           )
         }
         await fs.writeFile(indexPath, html)

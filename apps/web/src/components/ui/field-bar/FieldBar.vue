@@ -9,7 +9,7 @@ defineProps<{ class?: HTMLAttributes['class'] }>()
   <div
     :class="
       cn(
-        'flex min-w-0 w-full items-center gap-2 rounded-2xl bg-card p-1.5 pl-4 ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]',
+        'flex min-w-0 w-full items-center gap-2 rounded-2xl bg-card p-1.5 pl-4 ring-1 ring-inset ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]',
         $props.class,
       )
     "
