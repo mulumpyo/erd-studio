@@ -23,6 +23,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
   <button
     v-if="rail"
     type="button"
+    data-theme-toggle
     :title="hint"
     :aria-label="hint"
     class="flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
@@ -40,13 +41,14 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     type="button"
     variant="ghost"
     size="icon"
-    class="size-11"
+    class="size-12"
+    data-theme-toggle
     :title="hint"
     :aria-label="hint"
     @click="cycle"
   >
-    <Sun v-if="mode === 'light'" />
-    <Moon v-else-if="mode === 'dark'" />
-    <Monitor v-else />
+    <Sun v-if="mode === 'light'" aria-hidden="true" />
+    <Moon v-else-if="mode === 'dark'" aria-hidden="true" />
+    <Monitor v-else aria-hidden="true" />
   </Button>
 </template>

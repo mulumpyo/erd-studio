@@ -118,6 +118,18 @@ export class TeamsService {
     }
   }
 
+  rename = async (user: AuthUser, teamId: string, name: string) => {
+    const team = await this.requireTeamMember(user, teamId)
+    this.assertOwner(user, team, '소유자만 팀 이름을 바꿀 수 있어요.')
+    const next = name.trim()
+    if (!next) throw new BadRequestException('팀 이름을 적어 주세요.')
+    await this.prisma.team.update({
+      where: { id: teamId },
+      data: { name: next },
+    })
+    return this.get(user, teamId)
+  }
+
   create = (user: AuthUser, name: string) =>
     this.prisma.team.create({
       data: {

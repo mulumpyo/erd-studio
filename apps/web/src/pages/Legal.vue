@@ -33,7 +33,10 @@ const goBack = () => {
     <header
       class="mx-auto flex w-full max-w-3xl items-center justify-between px-6 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))]"
     >
-      <RouterLink to="/" class="flex items-center gap-2.5">
+      <RouterLink
+        to="/"
+        class="flex min-h-12 items-center gap-2.5"
+      >
         <div
           class="flex size-9 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-white"
         >

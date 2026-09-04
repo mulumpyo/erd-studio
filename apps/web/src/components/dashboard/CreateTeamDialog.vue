@@ -7,9 +7,21 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 
-const props = defineProps<{
-  open: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title?: string
+    description?: string
+    confirmLabel?: string
+    initialName?: string
+  }>(),
+  {
+    title: '팀 만들기',
+    description: '같이 그릴 팀 이름을 정해 주세요',
+    confirmLabel: '만들기',
+    initialName: '',
+  },
+)
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -22,7 +34,7 @@ watch(
   () => props.open,
   async (open) => {
     if (!open) return
-    name.value = ''
+    name.value = props.initialName
     await nextTick()
     document.querySelector<HTMLInputElement>('[data-create-team-name]')?.focus()
   },
@@ -40,9 +52,9 @@ const submit = () => {
   <DialogRoot :open="open" @update:open="emit('update:open', $event)">
     <DialogContent>
       <template #header>
-        <DialogTitle>팀 만들기</DialogTitle>
+        <DialogTitle>{{ title }}</DialogTitle>
         <p class="mt-2 text-[15px] text-muted-foreground">
-          같이 그릴 팀 이름을 정해 주세요
+          {{ description }}
         </p>
       </template>
       <form class="space-y-5" @submit.prevent="submit">
@@ -52,12 +64,13 @@ const submit = () => {
             id="create-team-name"
             v-model="name"
             data-create-team-name
+            maxlength="80"
             placeholder="예: 결제 스쿼드"
             autocomplete="off"
           />
         </div>
         <Button type="submit" class="h-12 w-full" :disabled="!name.trim()">
-          만들기
+          {{ confirmLabel }}
         </Button>
       </form>
     </DialogContent>

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { safeInternalPath } from './lib/urls'
 import { applyClientSeo } from './lib/seo'
+import { isMarketingPath, loadAppFont } from './lib/load-app-font'
 import { useAuthStore } from './stores/auth'
 
 export const router = createRouter({
@@ -108,7 +109,13 @@ export const router = createRouter({
 router.beforeEach(async (to) => {
   if (typeof window === 'undefined') return true
   const auth = useAuthStore()
-  if (!auth.hydrated) await auth.fetchMe()
+  if (isMarketingPath(to.path)) {
+    if (!auth.hydrated) {
+      void auth.fetchMe().then(() => {
+        if (auth.user && to.meta.guest) void router.replace({ name: 'dashboard' })
+      })
+    }
+  } else if (!auth.hydrated) await auth.fetchMe()
   if (to.meta.auth && !auth.user)
     return { name: 'login', query: { redirect: to.fullPath } }
   if (to.meta.admin && !auth.user?.isAdmin) return { name: 'dashboard' }
@@ -124,6 +131,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   applyClientSeo(to.path)
+  if (!isMarketingPath(to.path)) loadAppFont()
 })
 
 
