@@ -45,6 +45,20 @@ export {
 } from './access'
 
 export { createId, ensureStableId, fingerprint } from './ids'
+export {
+  REDIS_USAGE_TTL_SECONDS,
+  computeUsagePoint,
+  computeUsageSeries,
+  eachUsageDay,
+  isUsageDay,
+  redisUsageDayKey,
+  redisUsageHitKey,
+  shiftUsageDay,
+  usageDayBounds,
+  usageDayKey,
+  type ActivityRow,
+  type UsagePoint,
+} from './usage-day'
 export { ensureDocumentIds } from './migrate-document'
 export {
   dialectDefaultSchemaName,

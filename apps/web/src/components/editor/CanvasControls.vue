@@ -5,6 +5,7 @@ import { Lock, Maximize2, Unlock, ZoomIn, ZoomOut } from 'lucide-vue-next'
 
 const props = defineProps<{
   readOnly?: boolean
+  nodesOnly?: boolean
 }>()
 
 const locked = defineModel<boolean>('locked', { default: false })
@@ -48,9 +49,12 @@ const onLock = () => {
   locked.value = !locked.value
 }
 
-const lockLabel = computed(() =>
-  locked.value ? '잠금 해제' : '화면 잠금',
-)
+const lockLabel = computed(() => {
+  if (props.nodesOnly) {
+    return locked.value ? '고정 해제' : '테이블 고정'
+  }
+  return locked.value ? '잠금 해제' : '화면 잠금'
+})
 </script>
 
 <template>

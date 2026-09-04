@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { api, bindRefresh } from '../api'
 import { isSameOriginCollab } from '../lib/urls'
 
-export type User = { id: string; email: string; name: string }
+export type User = { id: string; email: string; name: string; isAdmin?: boolean }
 
 export type RegisterResult = {
   needsVerification: true
@@ -147,6 +147,14 @@ export const useAuthStore = defineStore('auth', () => {
     clearSession()
   }
 
+  const deleteAccount = async (password: string) => {
+    await api<{ ok: true }>('/api/auth/delete-account', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    })
+    clearSession()
+  }
+
   const fetchMe = async () => {
     try {
       const res = await api<SessionPayload>('/api/auth/me')
@@ -176,6 +184,7 @@ export const useAuthStore = defineStore('auth', () => {
     forgotPassword,
     resetPassword,
     changePassword,
+    deleteAccount,
     logout,
     fetchMe,
     setSession,

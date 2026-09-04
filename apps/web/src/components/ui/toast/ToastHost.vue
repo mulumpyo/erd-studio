@@ -8,7 +8,7 @@ const { message, kind, visible } = useToast()
 <template>
   <Teleport to="body">
     <div
-      class="pointer-events-none fixed inset-x-0 bottom-8 z-[100] flex justify-center px-4"
+      class="pointer-events-none fixed inset-x-0 bottom-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))] z-[100] flex justify-center px-4"
     >
       <Transition name="toast">
         <div

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import { FolderKanban, Users } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-vue-next'
 import { api } from '@/api'
 import { errorMessage, initialOf, roleLabel } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from '@/composables/useToast'
 import { confirm } from '@/composables/useConfirm'
+import { useFitPageSize } from '@/composables/usePageSize'
 import {
   canDeleteProject,
   canLeaveProject,
@@ -14,28 +15,21 @@ import {
   type PendingInvitation,
   type Project,
   type Team,
+  type TeamMember,
 } from '@/types/workspace'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
 import Avatar from '@/components/ui/avatar/Avatar.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Card from '@/components/ui/card/Card.vue'
-import CardContent from '@/components/ui/card/CardContent.vue'
-import CardHeader from '@/components/ui/card/CardHeader.vue'
-import CardTitle from '@/components/ui/card/CardTitle.vue'
+import CreateProjectDialog from '@/components/dashboard/CreateProjectDialog.vue'
+import InviteMemberDialog from '@/components/dashboard/InviteMemberDialog.vue'
+import ManageMemberDialog from '@/components/dashboard/ManageMemberDialog.vue'
 import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
 import Input from '@/components/ui/input/Input.vue'
-import Select from '@/components/ui/select/Select.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
+import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 
 const props = defineProps<{
   team: Team
-  query?: string
   revision?: number
 }>()
 
@@ -49,34 +43,89 @@ const emit = defineEmits<{
 }>()
 
 const auth = useAuthStore()
-const inviteEmail = ref('')
-const inviteRole = ref('editor')
-const projectName = ref('')
+const query = ref('')
+const search = ref('')
+const memberQuery = ref('')
+const createOpen = ref(false)
+const inviteOpen = ref(false)
+const inviteError = ref('')
 const error = ref('')
 const inviting = ref(false)
+const memberOpen = ref(false)
+const activeMember = ref<TeamMember | null>(null)
+const memberBusy = ref(false)
+const memberError = ref('')
+const teamPane = ref<'projects' | 'members'>('projects')
+const setTeamPane = (value: string) => {
+  if (value === 'projects' || value === 'members') teamPane.value = value
+}
 const projects = ref<Project[]>([])
 const projectPage = ref(1)
 const projectPages = ref(1)
 const projectTotal = ref(0)
 const loadingProjects = ref(false)
+const projectViewport = ref<HTMLElement | null>(null)
+const memberViewport = ref<HTMLElement | null>(null)
+let searchTimer = 0
+let projectSizeTimer = 0
 const isOwner = computed(() => props.team.ownerId === auth.user?.id)
-const pendingInvites = computed(() => props.team.invitations ?? [])
-const projectQuery = computed(() => {
-  const q = props.query?.trim() ?? ''
-  if (!q) return ''
-  if (props.team.name.toLowerCase().includes(q.toLowerCase())) return ''
-  return q
+const memberNeedle = computed(() => memberQuery.value.trim().toLowerCase())
+const projectPageSize = useFitPageSize(
+  projectViewport,
+  () => 88,
+  [teamPane],
+)
+const memberPageSize = useFitPageSize(
+  memberViewport,
+  () => 80,
+  [teamPane],
+)
+
+const matchesPerson = (name: string, email: string) => {
+  const q = memberNeedle.value
+  if (!q) return true
+  return name.toLowerCase().includes(q) || email.toLowerCase().includes(q)
+}
+
+const memberPage = ref(1)
+
+const pendingInvites = computed(() => {
+  const invites = isOwner.value ? (props.team.invitations ?? []) : []
+  return invites.filter((invite) => matchesPerson('', invite.email))
 })
 
 const sortedMembers = computed(() =>
-  [...props.team.members].sort((a, b) => {
-    if (a.userId === props.team.ownerId) return -1
-    if (b.userId === props.team.ownerId) return 1
-    return a.user.name.localeCompare(b.user.name, 'ko')
-  }),
+  [...props.team.members]
+    .filter((m) => matchesPerson(m.user.name, m.user.email))
+    .sort((a, b) => {
+      if (a.userId === props.team.ownerId) return -1
+      if (b.userId === props.team.ownerId) return 1
+      return a.user.name.localeCompare(b.user.name, 'ko')
+    }),
 )
 
-const initial = computed(() => initialOf(props.team.name) || 'T')
+const memberRows = computed(() => [
+  ...sortedMembers.value.map((member) => ({ kind: 'member' as const, member })),
+  ...pendingInvites.value.map((invite) => ({ kind: 'invite' as const, invite })),
+])
+const memberTotal = computed(() => memberRows.value.length)
+const memberPages = computed(() =>
+  Math.max(1, Math.ceil(memberTotal.value / memberPageSize.value)),
+)
+const pagedMemberRows = computed(() => {
+  const start = (memberPage.value - 1) * memberPageSize.value
+  return memberRows.value.slice(start, start + memberPageSize.value)
+})
+const setMemberPage = (next: number) => {
+  memberPage.value = next
+}
+
+const projectCount = computed(
+  () => props.team._count?.projects ?? projectTotal.value,
+)
+
+const formatUpdated = (iso: string) =>
+  new Date(iso).toLocaleDateString('ko-KR', { dateStyle: 'medium' })
 
 const loadProjects = async () => {
   loadingProjects.value = true
@@ -84,17 +133,22 @@ const loadProjects = async () => {
     const params = new URLSearchParams({
       teamId: props.team.id,
       page: String(projectPage.value),
-      limit: '8',
+      limit: String(projectPageSize.value),
     })
-    if (projectQuery.value) params.set('q', projectQuery.value)
+    if (search.value.trim()) params.set('q', search.value.trim())
     const result = await api<PageResult<Project>>(
       `/api/projects?${params}`,
       {},
       auth.token,
     )
     projects.value = result.items
+    projectPage.value = result.page
     projectPages.value = result.pages
     projectTotal.value = result.total
+    if (result.total > 0 && result.page > result.pages) {
+      projectPage.value = result.pages
+      await loadProjects()
+    }
   } catch (e) {
     error.value = errorMessage(e, '프로젝트를 불러오지 못했어요')
   } finally {
@@ -103,23 +157,80 @@ const loadProjects = async () => {
 }
 
 watch(
-  () => [props.team.id, projectQuery.value, props.revision] as const,
-  () => {
+  () => [props.team.id, search.value, props.revision] as const,
+  ([id], previous) => {
+    if (previous && id !== previous[0]) teamPane.value = 'projects'
     projectPage.value = 1
     void loadProjects()
   },
   { immediate: true },
 )
 
+watch(query, (value) => {
+  window.clearTimeout(searchTimer)
+  searchTimer = window.setTimeout(() => {
+    search.value = value
+  }, 250)
+})
+
+watch(memberQuery, () => {
+  memberPage.value = 1
+})
+
+watch(memberPages, (count) => {
+  if (memberPage.value > count) memberPage.value = count
+})
+
+watch(
+  () => props.team.members,
+  (members) => {
+    if (!activeMember.value) return
+    const next = members.find((m) => m.userId === activeMember.value?.userId)
+    if (next) activeMember.value = next
+    else {
+      memberOpen.value = false
+      activeMember.value = null
+    }
+  },
+)
+
+watch(projectPageSize, () => {
+  window.clearTimeout(projectSizeTimer)
+  projectSizeTimer = window.setTimeout(() => {
+    void loadProjects()
+  }, 120)
+})
+
+onUnmounted(() => {
+  window.clearTimeout(searchTimer)
+  window.clearTimeout(projectSizeTimer)
+})
+
 const setProjectPage = (next: number) => {
   projectPage.value = next
   void loadProjects()
 }
 
-const invite = async () => {
-  const email = inviteEmail.value.trim()
-  if (!email) return
+const openInvite = () => {
+  inviteError.value = ''
+  inviteOpen.value = true
+}
+
+const canManageMember = (member: TeamMember) =>
+  isOwner.value && member.userId !== props.team.ownerId
+
+const openMember = (member: TeamMember) => {
+  if (!canManageMember(member)) return
+  memberError.value = ''
+  activeMember.value = member
+  memberOpen.value = true
+}
+
+const invite = async (email: string, role: string) => {
+  const next = email.trim()
+  if (!next) return
   error.value = ''
+  inviteError.value = ''
   inviting.value = true
   try {
     const result = await api<
@@ -129,11 +240,10 @@ const invite = async () => {
       `/api/teams/${props.team.id}/members`,
       {
         method: 'POST',
-        body: JSON.stringify({ email, role: inviteRole.value }),
+        body: JSON.stringify({ email: next, role }),
       },
       auth.token,
     )
-    inviteEmail.value = ''
     toast(
       result.status === 'joined'
         ? '팀원으로 추가했어요'
@@ -141,25 +251,32 @@ const invite = async () => {
           ? '초대 메일을 보냈어요'
           : '아직 가입하지 않은 분이에요. 링크를 복사해 초대해 주세요.',
     )
+    inviteOpen.value = false
     emit('changed')
   } catch (e) {
-    error.value = errorMessage(e, '초대하지 못했어요')
+    inviteError.value = errorMessage(e, '초대하지 못했어요')
   } finally {
     inviting.value = false
   }
 }
 
 const changeRole = async (userId: string, role: string) => {
-  error.value = ''
+  memberError.value = ''
+  memberBusy.value = true
   try {
     await api(
       `/api/teams/${props.team.id}/members/${userId}`,
       { method: 'PATCH', body: JSON.stringify({ role }) },
       auth.token,
     )
+    memberOpen.value = false
+    activeMember.value = null
     emit('changed')
+    toast('역할을 바꿨어요')
   } catch (e) {
-    error.value = errorMessage(e, '역할을 바꾸지 못했어요')
+    memberError.value = errorMessage(e, '역할을 바꾸지 못했어요')
+  } finally {
+    memberBusy.value = false
   }
 }
 
@@ -171,16 +288,22 @@ const removeMember = async (userId: string, name: string) => {
     destructive: true,
   })
   if (!ok) return
-  error.value = ''
+  memberError.value = ''
+  memberBusy.value = true
   try {
     await api(
       `/api/teams/${props.team.id}/members/${userId}`,
       { method: 'DELETE' },
       auth.token,
     )
+    memberOpen.value = false
+    activeMember.value = null
     emit('changed')
+    toast('팀에서 내보냈어요')
   } catch (e) {
-    error.value = errorMessage(e, '내보내지 못했어요')
+    memberError.value = errorMessage(e, '내보내지 못했어요')
+  } finally {
+    memberBusy.value = false
   }
 }
 
@@ -225,113 +348,158 @@ const revokeInvite = async (invite: PendingInvitation) => {
   }
 }
 
-const create = (fromSample: boolean) => {
-  emit(
-    'create',
-    fromSample,
-    projectName.value.trim() || `${props.team.name} ERD`,
-  )
-  projectName.value = ''
+const create = (name: string, fromSample: boolean) => {
+  emit('create', fromSample, name)
 }
 </script>
 
 <template>
-  <Card class="overflow-hidden">
-    <CardHeader
-      class="flex-row items-start justify-between space-y-0 bg-muted/60"
-    >
-      <div class="flex items-center gap-3">
-        <Avatar class="size-10 text-sm">{{ initial }}</Avatar>
-        <div class="space-y-1">
-          <CardTitle>{{ team.name }}</CardTitle>
-          <p class="text-sm text-muted-foreground">
-            {{ team.members.length }}명 · {{ team._count?.projects ?? projectTotal }}개 프로젝트
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+    <div class="shrink-0 space-y-2">
+      <RouterLink
+        :to="{ name: 'teams' }"
+        class="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ChevronLeft class="size-3.5" />
+        팀
+      </RouterLink>
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h1 class="truncate text-[20px] font-bold tracking-[-0.03em]">
+            {{ team.name }}
+          </h1>
+          <p class="mt-0.5 text-[13px] text-muted-foreground">
+            {{ team.members.length }}명 · {{ projectCount }}개 프로젝트
           </p>
         </div>
+        <Button
+          v-if="isOwner"
+          variant="softDestructive"
+          size="sm"
+          class="shrink-0"
+          @click="emit('remove-team')"
+        >
+          팀 삭제
+        </Button>
+        <Button
+          v-else
+          variant="secondary"
+          size="sm"
+          class="shrink-0"
+          @click="emit('leave-team')"
+        >
+          팀 나가기
+        </Button>
       </div>
-      <Button
-        v-if="isOwner"
-        variant="softDestructive"
-        size="sm"
-        @click="emit('remove-team')"
+    </div>
+
+    <SegmentedControl
+      class="h-11 w-full shrink-0 xl:hidden"
+      :model-value="teamPane"
+      :options="[
+        { value: 'projects', label: '프로젝트' },
+        { value: 'members', label: '팀원' },
+      ]"
+      @update:model-value="setTeamPane"
+    />
+
+    <div
+      class="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_20rem]"
+    >
+      <section
+        class="flex min-h-0 flex-col gap-2 overflow-hidden"
+        :class="teamPane !== 'projects' ? 'max-xl:hidden' : ''"
       >
-        삭제
-      </Button>
-      <Button v-else variant="ghost" size="sm" @click="emit('leave-team')">
-        나가기
-      </Button>
-    </CardHeader>
-    <CardContent class="p-0">
-      <div class="grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,22rem)]">
-        <section class="space-y-4 p-4 sm:p-6">
-          <div class="flex items-center gap-2">
-            <FolderKanban class="size-4 text-muted-foreground" />
-            <h3 class="text-sm font-semibold">프로젝트</h3>
-          </div>
-          <div v-if="loadingProjects" class="rounded-[20px] bg-muted px-3 py-8 text-center text-[15px] text-muted-foreground">
+        <div class="flex shrink-0 items-center justify-between gap-3">
+          <h2 class="text-[15px] font-semibold">프로젝트</h2>
+          <Button size="sm" class="min-h-11 gap-1.5 px-3" @click="createOpen = true">
+            <Plus class="size-4" />
+            만들기
+          </Button>
+        </div>
+        <FieldBar class="shrink-0">
+          <Search class="ml-1 size-4 shrink-0 text-muted-foreground" />
+          <Input
+            v-model="query"
+            class="h-10 min-w-0 flex-1 bg-transparent px-0 focus-visible:bg-transparent focus-visible:ring-0"
+            placeholder="프로젝트 검색"
+            aria-label="프로젝트 검색"
+            type="search"
+          />
+        </FieldBar>
+
+        <div ref="projectViewport" class="min-h-0 flex-1 overflow-y-auto">
+          <p
+            v-if="loadingProjects && !projects.length"
+            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+          >
             프로젝트를 불러오는 중이에요.
+          </p>
+          <p
+            v-else-if="!projects.length"
+            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+          >
+            {{
+              search.trim()
+                ? '이 팀에서 검색과 맞는 프로젝트가 없어요.'
+                : '아직 프로젝트가 없어요.'
+            }}
+          </p>
+          <div
+            v-else
+            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+          >
+            <div
+              v-for="p in projects"
+              :key="p.id"
+              data-fit-row
+              class="relative flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+            >
+              <RouterLink
+                class="absolute inset-0"
+                :to="`/app/${p.id}`"
+                :aria-label="p.name"
+              />
+              <div class="relative z-[1] min-w-0 flex-1 pointer-events-none">
+                <p class="truncate text-[15px] font-semibold">{{ p.name }}</p>
+                <p class="mt-0.5 truncate text-[13px] text-muted-foreground">
+                  {{ formatUpdated(p.updatedAt) }} 수정
+                  <template v-if="p._count?.members != null">
+                    · {{ p._count.members }}명
+                  </template>
+                  <template v-if="p.description"> · {{ p.description }}</template>
+                  <template v-if="p.tags?.length">
+                    ·
+                    <span v-for="tag in p.tags" :key="tag" class="mr-1"
+                      >#{{ tag }}</span
+                    >
+                  </template>
+                </p>
+              </div>
+              <div class="relative z-[1] flex shrink-0 items-center gap-2">
+                <Button
+                  v-if="canDeleteProject(p, auth.user?.id, team.ownerId)"
+                  variant="softDestructive"
+                  size="sm"
+                  class="min-h-11 min-w-16"
+                  @click.stop="emit('remove-project', p.id)"
+                >
+                  삭제
+                </Button>
+                <Button
+                  v-else-if="canLeaveProject(p, auth.user?.id)"
+                  variant="secondary"
+                  size="sm"
+                  class="min-h-11 min-w-16"
+                  @click.stop="emit('leave-project', p.id)"
+                >
+                  나가기
+                </Button>
+              </div>
+            </div>
           </div>
-          <template v-else-if="projects.length">
-          <div class="overflow-hidden rounded-2xl bg-muted/70">
-            <Table>
-              <TableHeader>
-                <TableRow class="hover:bg-transparent">
-                  <TableHead>이름</TableHead>
-                  <TableHead class="hidden md:table-cell">설명</TableHead>
-                  <TableHead class="hidden sm:table-cell">수정</TableHead>
-                  <TableHead class="w-16">멤버</TableHead>
-                  <TableHead class="w-20 text-right">작업</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow v-for="p in projects" :key="p.id">
-                  <TableCell>
-                    <RouterLink
-                      class="font-medium hover:underline"
-                      :to="`/app/${p.id}`"
-                    >
-                      {{ p.name }}
-                    </RouterLink>
-                    <div v-if="p.tags?.length" class="mt-1 flex flex-wrap gap-1">
-                      <Badge
-                        v-for="tag in p.tags"
-                        :key="tag"
-                        class="bg-[#e8f3ff] text-[#1b64da]"
-                        >#{{ tag }}</Badge
-                      >
-                    </div>
-                  </TableCell>
-                  <TableCell class="hidden max-w-[16rem] text-muted-foreground md:table-cell">
-                    <span class="line-clamp-2">{{ p.description || '—' }}</span>
-                  </TableCell>
-                  <TableCell class="hidden text-muted-foreground sm:table-cell">
-                    {{ new Date(p.updatedAt).toLocaleString() }}
-                  </TableCell>
-                  <TableCell>
-                    <Badge>{{ team.members.length }}</Badge>
-                  </TableCell>
-                  <TableCell class="text-right">
-                    <Button
-                      v-if="canDeleteProject(p, auth.user?.id, team.ownerId)"
-                      variant="softDestructive"
-                      size="sm"
-                      @click="emit('remove-project', p.id)"
-                    >
-                      삭제
-                    </Button>
-                    <Button
-                      v-else-if="canLeaveProject(p, auth.user?.id)"
-                      variant="ghost"
-                      size="sm"
-                      @click="emit('leave-project', p.id)"
-                    >
-                      나가기
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+        </div>
+        <div class="flex min-h-9 shrink-0 items-center">
           <PaginationBar
             :page="projectPage"
             :pages="projectPages"
@@ -339,155 +507,168 @@ const create = (fromSample: boolean) => {
             noun="개 프로젝트"
             @update:page="setProjectPage"
           />
-          </template>
+        </div>
+      </section>
+
+      <section
+        class="flex min-h-0 flex-col gap-2 overflow-hidden"
+        :class="teamPane !== 'members' ? 'max-xl:hidden' : ''"
+      >
+        <div class="flex shrink-0 items-center justify-between gap-3">
+          <h2 class="text-[15px] font-semibold">팀원</h2>
+          <Button
+            v-if="isOwner"
+            size="sm"
+            class="min-h-11 gap-1.5 px-3"
+            @click="openInvite"
+          >
+            <Plus class="size-4" />
+            초대
+          </Button>
+        </div>
+        <FieldBar class="shrink-0">
+          <Search class="ml-1 size-4 shrink-0 text-muted-foreground" />
+          <Input
+            v-model="memberQuery"
+            class="h-10 min-w-0 flex-1 bg-transparent px-0 focus-visible:bg-transparent focus-visible:ring-0"
+            placeholder="이름 또는 이메일"
+            aria-label="팀원 검색"
+            type="search"
+          />
+        </FieldBar>
+        <div ref="memberViewport" class="min-h-0 flex-1 overflow-y-auto">
           <p
-            v-else
-            class="rounded-[20px] bg-muted px-3 py-8 text-center text-[15px] text-muted-foreground"
+            v-if="!memberTotal"
+            class="rounded-2xl bg-card px-5 py-10 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
           >
             {{
-              projectQuery
-                ? '이 팀에서 검색과 맞는 프로젝트가 없어요.'
-                : '아직 프로젝트가 없어요.'
+              memberQuery.trim()
+                ? '검색과 맞는 팀원이 없어요.'
+                : '아직 팀원이 없어요.'
             }}
           </p>
-          <form class="w-full" @submit.prevent="create(false)">
-            <FieldBar>
-              <Input
-                v-model="projectName"
-                class="h-10 min-w-0 flex-1 bg-transparent px-0 focus-visible:bg-transparent focus-visible:ring-0"
-                placeholder="새 프로젝트 이름"
-                aria-label="새 프로젝트 이름"
-              />
-              <Button type="submit" class="h-10 shrink-0 px-4">새로 만들기</Button>
-              <Button
+          <div
+            v-else
+            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+          >
+            <template
+              v-for="row in pagedMemberRows"
+              :key="row.kind === 'member' ? row.member.userId : row.invite.id"
+            >
+              <button
+                v-if="row.kind === 'member'"
                 type="button"
-                variant="secondary"
-                class="h-10 shrink-0 px-4"
-                @click="create(true)"
-                >샘플로 시작</Button
+                data-fit-row
+                class="flex w-full items-center gap-3 px-4 py-3 text-left"
+                :class="
+                  canManageMember(row.member)
+                    ? 'transition-colors hover:bg-muted/50'
+                    : 'cursor-default'
+                "
+                @click="openMember(row.member)"
               >
-            </FieldBar>
-          </form>
-        </section>
-        <section
-          class="space-y-4 bg-muted/50 p-4 sm:p-6 lg:border-l-0"
-        >
-          <div class="flex items-center gap-2">
-            <Users class="size-4 text-muted-foreground" />
-            <h3 class="text-sm font-semibold">팀원</h3>
-          </div>
-          <ul class="space-y-2">
-            <li
-              v-for="m in sortedMembers"
-              :key="m.userId"
-              class="rounded-2xl bg-card px-3 py-2.5"
-            >
-              <div class="flex items-center gap-2">
-                <Avatar class="size-8">{{ initialOf(m.user.name) }}</Avatar>
+                <Avatar class="size-9 text-[13px]">
+                  {{ initialOf(row.member.user.name) }}
+                </Avatar>
                 <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium">
-                    {{ m.user.name }}
-                  </div>
-                  <div class="truncate text-xs text-muted-foreground">
-                    {{ m.user.email }}
-                  </div>
+                  <p class="truncate text-[15px] font-semibold">
+                    {{ row.member.user.name }}
+                  </p>
+                  <p class="truncate text-[13px] text-muted-foreground">
+                    {{ row.member.user.email }}
+                  </p>
                 </div>
-                <Badge v-if="m.userId === team.ownerId">소유자</Badge>
-                <Badge v-else-if="!isOwner">{{ roleLabel(m.role) }}</Badge>
-              </div>
-              <div
-                v-if="isOwner && m.userId !== team.ownerId"
-                class="mt-2 flex items-center justify-end gap-1"
-              >
-                <Select
-                  :model-value="m.role"
-                  class="h-8 w-auto text-xs"
-                  @update:model-value="changeRole(m.userId, String($event))"
-                >
-                  <option value="editor">편집</option>
-                  <option value="viewer">보기</option>
-                </Select>
-                <Button
-                  variant="ghostDestructive"
-                  size="sm"
-                  @click="removeMember(m.userId, m.user.name)"
-                >
-                  내보내기
-                </Button>
-              </div>
-            </li>
-          </ul>
-          <ul v-if="isOwner && pendingInvites.length" class="space-y-2">
-            <li
-              v-for="pending in pendingInvites"
-              :key="pending.id"
-              class="rounded-2xl bg-card px-3 py-2.5"
-            >
-              <div class="flex items-center gap-2">
-                <Avatar class="size-8">{{ pending.email.slice(0, 1).toUpperCase() }}</Avatar>
-                <div class="min-w-0 flex-1">
-                  <div class="truncate text-sm font-medium">{{ pending.email }}</div>
-                  <div class="text-xs text-muted-foreground">초대 대기</div>
+                <Badge class="shrink-0">
+                  {{
+                    row.member.userId === team.ownerId
+                      ? '소유자'
+                      : roleLabel(row.member.role)
+                  }}
+                </Badge>
+                <ChevronRight
+                  v-if="canManageMember(row.member)"
+                  class="size-4 shrink-0 text-muted-foreground"
+                />
+              </button>
+              <div v-else data-fit-row class="px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <Avatar class="size-9 text-[13px]">
+                    {{ row.invite.email.slice(0, 1).toUpperCase() }}
+                  </Avatar>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-[15px] font-semibold">
+                      {{ row.invite.email }}
+                    </p>
+                    <p class="text-[13px] text-muted-foreground">초대 대기</p>
+                  </div>
+                  <Badge
+                    class="shrink-0 bg-[#fff6d8] text-[#c78500] dark:bg-[#3d3420] dark:text-[#f5c84c]"
+                  >
+                    {{ roleLabel(row.invite.role) }}
+                  </Badge>
                 </div>
-                <Badge>{{ roleLabel(pending.role) }}</Badge>
+                <div
+                  v-if="isOwner"
+                  class="mt-2 flex items-center justify-end gap-1"
+                >
+                  <Button
+                    v-if="row.invite.inviteUrl"
+                    variant="ghost"
+                    size="sm"
+                    @click="row.invite.inviteUrl && copyInvite(row.invite.inviteUrl)"
+                  >
+                    링크
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    @click="resendInvite(row.invite)"
+                  >
+                    재발송
+                  </Button>
+                  <Button
+                    variant="ghostDestructive"
+                    size="sm"
+                    @click="revokeInvite(row.invite)"
+                  >
+                    취소
+                  </Button>
+                </div>
               </div>
-              <div class="mt-2 flex items-center justify-end gap-1">
-                <Button
-                  v-if="pending.inviteUrl"
-                  variant="ghost"
-                  size="sm"
-                  @click="pending.inviteUrl && copyInvite(pending.inviteUrl)"
-                >
-                  링크
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  @click="resendInvite(pending)"
-                >
-                  재발송
-                </Button>
-                <Button
-                  variant="ghostDestructive"
-                  size="sm"
-                  @click="revokeInvite(pending)"
-                >
-                  취소
-                </Button>
-              </div>
-            </li>
-          </ul>
-          <div v-if="isOwner" class="space-y-2">
-            <FieldBar>
-              <Input
-                v-model="inviteEmail"
-                class="h-10 min-w-0 flex-1 bg-transparent px-0 focus-visible:bg-transparent focus-visible:ring-0"
-                placeholder="이메일 주소"
-                aria-label="팀원 이메일"
-                @keydown.enter.prevent="invite"
-              />
-              <Select
-                v-model="inviteRole"
-                class="h-10 w-auto shrink-0 bg-transparent px-2 focus-visible:bg-transparent focus-visible:ring-0"
-              >
-                <option value="editor">편집</option>
-                <option value="viewer">보기</option>
-              </Select>
-              <Button
-                class="h-10 shrink-0 px-4"
-                :disabled="inviting"
-                @click="invite"
-              >
-                초대
-              </Button>
-            </FieldBar>
-            <p class="text-xs text-muted-foreground">
-              아직 회원이 아니면 초대 메일을 보내요.
-            </p>
+            </template>
           </div>
-          <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
-        </section>
-      </div>
-    </CardContent>
-  </Card>
+        </div>
+        <div class="flex min-h-9 shrink-0 items-center">
+          <PaginationBar
+            :page="memberPage"
+            :pages="memberPages"
+            :total="memberTotal"
+            noun="명"
+            @update:page="setMemberPage"
+          />
+        </div>
+        <p v-if="error" class="shrink-0 text-sm text-destructive">{{ error }}</p>
+      </section>
+    </div>
+    <CreateProjectDialog
+      v-model:open="createOpen"
+      :team-name="team.name"
+      @create="create"
+    />
+    <InviteMemberDialog
+      v-model:open="inviteOpen"
+      :busy="inviting"
+      :error="inviteError"
+      :team-name="team.name"
+      @invite="invite"
+    />
+    <ManageMemberDialog
+      v-model:open="memberOpen"
+      :member="activeMember"
+      :busy="memberBusy"
+      :error="memberError"
+      @change-role="changeRole"
+      @remove="removeMember"
+    />
+  </div>
 </template>

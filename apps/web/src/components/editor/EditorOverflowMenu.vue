@@ -77,7 +77,7 @@ const run = (name: 'members' | 'copy-share' | 'login' | 'remove' | 'leave') => {
       type="button"
       variant="secondary"
       size="icon"
-      class="size-9"
+      class="size-11"
       title="더보기"
       aria-label="더보기"
       :aria-expanded="open"

@@ -46,6 +46,11 @@ const emit = defineEmits<{
 const dragIndex = ref<number | null>(null)
 const overIndex = ref<number | null>(null)
 const columnListRef = ref<HTMLElement | null>(null)
+const typeOptions = COLUMN_TYPES.map((type) => ({ value: type, label: type }))
+const domainOptions = computed(() => [
+  { value: '', label: '선택 안 함' },
+  ...props.domains.map((domain) => ({ value: domain.id, label: domain.name })),
+])
 
 const revealColumn = (id: string) => {
   const root = columnListRef.value
@@ -371,13 +376,9 @@ const onPickColor = (event: Event) => {
         <Label>도메인</Label>
         <Select
           :model-value="col.domainId ?? ''"
+          :options="domainOptions"
           @update:model-value="assignDomain(i, String($event))"
-        >
-          <option value="">선택 안 함</option>
-          <option v-for="domain in domains" :key="domain.id" :value="domain.id">
-            {{ domain.name }}
-          </option>
-        </Select>
+        />
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div class="space-y-1">
@@ -385,12 +386,9 @@ const onPickColor = (event: Event) => {
           <Select
             :model-value="col.type"
             :disabled="Boolean(col.domainId)"
+            :options="typeOptions"
             @update:model-value="patchColumn(i, { type: String($event) })"
-          >
-            <option v-for="t in COLUMN_TYPES" :key="t" :value="t">
-              {{ t }}
-            </option>
-          </Select>
+          />
         </div>
         <div class="space-y-1">
           <Label>길이</Label>

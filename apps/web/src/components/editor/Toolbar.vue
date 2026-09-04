@@ -74,7 +74,7 @@ const tools: Array<{
 
 <template>
   <aside
-    class="z-20 flex h-full flex-col items-center gap-1 overflow-visible border-r border-border/80 bg-card py-3"
+    class="z-20 flex h-full flex-col items-center gap-1 overflow-x-hidden overflow-y-auto overscroll-contain border-r border-border/80 bg-card py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
   >
     <button
       v-if="showEntitiesToggle"
@@ -82,7 +82,7 @@ const tools: Array<{
       aria-label="엔티티 목록"
       :class="
         cn(
-          'has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
           entitiesOpen && 'bg-primary text-white hover:bg-primary',
         )
       "
@@ -101,7 +101,7 @@ const tools: Array<{
       :disabled="readOnly || !canUndo"
       :class="
         cn(
-          'has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
           (readOnly || !canUndo) && 'pointer-events-none opacity-30',
         )
       "
@@ -119,7 +119,7 @@ const tools: Array<{
       :disabled="readOnly || !canRedo"
       :class="
         cn(
-          'has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
           (readOnly || !canRedo) && 'pointer-events-none opacity-30',
         )
       "
@@ -140,7 +140,7 @@ const tools: Array<{
       :disabled="readOnly && t.id !== 'select'"
       :class="
         cn(
-          'has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
           current === t.id && 'bg-primary text-white hover:bg-primary',
           readOnly && t.id !== 'select' && 'pointer-events-none opacity-30',
         )
@@ -159,7 +159,7 @@ const tools: Array<{
       aria-label="관계 흐름 — 부모에서 자식으로 방향이 보여요"
       :class="
         cn(
-          'has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
           flowOn && 'bg-primary text-white hover:bg-primary',
         )
       "
@@ -177,7 +177,7 @@ const tools: Array<{
       <button
         type="button"
         aria-label="프로젝트 설정"
-        class="has-tip relative flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
+        class="has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
         @click="emit('settings')"
       >
         <Settings2 class="size-4" />

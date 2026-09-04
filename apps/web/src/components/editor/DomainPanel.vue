@@ -32,6 +32,8 @@ const patch = (domain: ErdDomain, partial: Partial<ErdDomain>) => {
   if (props.readOnly) return
   emit('update', { ...domain, ...partial })
 }
+
+const typeOptions = COLUMN_TYPES.map((type) => ({ value: type, label: type }))
 </script>
 
 <template>
@@ -70,10 +72,9 @@ const patch = (domain: ErdDomain, partial: Partial<ErdDomain>) => {
         <Select
           :model-value="domain.type"
           :disabled="readOnly"
+          :options="typeOptions"
           @update:model-value="patch(domain, { type: String($event) })"
-        >
-          <option v-for="t in COLUMN_TYPES" :key="t" :value="t">{{ t }}</option>
-        </Select>
+        />
         <Input
           :model-value="domain.length"
           :disabled="readOnly"

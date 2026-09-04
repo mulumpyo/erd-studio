@@ -62,7 +62,7 @@ const submit = () => {
             id="confirm-match"
             v-model="typed"
             data-confirm-match
-            placeholder="이름을 그대로 입력"
+            placeholder="위에 있는 문구를 그대로 입력"
             autocomplete="off"
             spellcheck="false"
             :class="
@@ -72,7 +72,7 @@ const submit = () => {
             "
           />
           <p v-if="typedMismatch" class="text-[13px] font-semibold text-destructive">
-            이름이 같지 않아요
+            문구가 같지 않아요
           </p>
         </div>
         <div

@@ -15,13 +15,13 @@ const emit = defineEmits<{
 
 <template>
   <div
-    v-if="pages > 1"
-    class="flex flex-wrap items-center justify-between gap-2 pt-1"
+    v-if="pages > 1 || (total != null && total > 0)"
+    class="flex h-9 items-center justify-between gap-2"
   >
-    <p class="text-[13px] text-muted-foreground">
+    <p class="min-w-0 truncate text-[13px] text-muted-foreground">
       <template v-if="total != null">{{ total }}{{ noun || '개' }}</template>
     </p>
-    <div class="flex items-center gap-2">
+    <div v-if="pages > 1" class="flex shrink-0 items-center gap-1.5">
       <Button
         variant="secondary"
         size="sm"

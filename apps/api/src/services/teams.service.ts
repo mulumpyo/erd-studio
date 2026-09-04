@@ -12,14 +12,6 @@ import type { AuthUser } from '../common/auth/current-user'
 import { userSelect } from '../common/access'
 import { contains, pageResult, parsePage } from '../common/paging'
 
-const projectSearch = (q: string) => ({
-  OR: [
-    { name: contains(q) },
-    { description: contains(q) },
-    { tags: { has: q } },
-  ],
-})
-
 const memberUserInclude = {
   members: { include: { user: { select: userSelect } } },
 } as const
@@ -75,17 +67,7 @@ export class TeamsService {
     const { skip, take, page, limit } = parsePage(query.page, query.limit, 5)
     const memberFilter = { members: { some: { userId: user.id } } }
     const where = q
-      ? {
-          AND: [
-            memberFilter,
-            {
-              OR: [
-                { name: contains(q) },
-                { projects: { some: projectSearch(q) } },
-              ],
-            },
-          ],
-        }
+      ? { AND: [memberFilter, { name: contains(q) }] }
       : memberFilter
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.team.findMany({
@@ -113,6 +95,27 @@ export class TeamsService {
       page,
       limit,
     )
+  }
+
+  get = async (user: AuthUser, teamId: string) => {
+    await this.requireTeamMember(user, teamId)
+    const row = await this.prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        ...memberUserInclude,
+        _count: { select: { projects: true } },
+        invitations: {
+          where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    })
+    if (!row) throw new NotFoundException('팀을 찾을 수 없습니다.')
+    const { invitations, ...team } = row
+    return {
+      ...team,
+      invitations: invitations.map((item) => this.invitations.toClient(item)),
+    }
   }
 
   create = (user: AuthUser, name: string) =>

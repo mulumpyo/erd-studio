@@ -17,7 +17,7 @@
     "build": "tsup --clean",
     "dev": "tsup --watch",
     "lint": "echo ok",
-    "test": "tsx --test src/ids.test.ts src/models.test.ts src/version-snapshot.test.ts src/access.test.ts"
+    "test": "tsx --test src/ids.test.ts src/models.test.ts src/version-snapshot.test.ts src/access.test.ts src/usage-day.test.ts"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

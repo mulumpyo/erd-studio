@@ -79,6 +79,18 @@ export class TeamsController {
   }
 
   @ApiOperation({
+    summary: '팀 보기',
+    description: '내가 속한 팀의 멤버와 프로젝트 개수를 보여줘요.',
+  })
+  @TeamId()
+  @ApiOkResponse({ description: '팀 정보예요.' })
+  @ApiNotFoundResponse({ description: NOT_FOUND })
+  @Get(':id')
+  get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.teams.get(user, id)
+  }
+
+  @ApiOperation({
     summary: '팀원 초대하기',
     description:
       '이메일로 팀에 초대해요. 아직 가입하지 않은 사람도 초대해 두면, 가입할 때 자동으로 들어와요.\n\n' +

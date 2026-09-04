@@ -14,6 +14,9 @@ model User {
   name               String
   emailVerifiedAt    DateTime?
   tokenRevokedAt     DateTime?
+  suspendedAt        DateTime?
+  deletedAt          DateTime?
+  isAdmin            Boolean              @default(false)
   createdAt          DateTime             @default(now())
   ownedProjects      Project[]            @relation("Owner")
   memberships        TeamMember[]
@@ -24,6 +27,7 @@ model User {
   invitations        Invitation[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+  activityDays       UserActivityDay[]
 }
 
 model EmailVerification {
@@ -110,7 +114,7 @@ model ProjectVersion {
   snapshot    Json
   label       String?
   createdById String?
-  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 }
 
@@ -143,4 +147,22 @@ model Invitation {
   @@index([email])
   @@index([teamId])
   @@index([projectId])
+}
+
+model UserActivityDay {
+  day    String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([day, userId])
+  @@index([day])
+}
+
+model UsageDaily {
+  day        String   @id
+  dau        Int
+  wau        Int
+  mau        Int
+  withdrawn  Int      @default(0)
+  updatedAt  DateTime @updatedAt
 }

@@ -49,6 +49,10 @@ const members = ref<ProjectMember[]>([])
 const invitations = ref<PendingInvitation[]>([])
 const email = ref('')
 const role = ref('editor')
+const roleOptions = [
+  { value: 'editor', label: '편집' },
+  { value: 'viewer', label: '보기' },
+]
 const error = ref('')
 const loading = ref(false)
 const query = ref('')
@@ -269,11 +273,9 @@ const goTeam = () => {
         />
         <Select
           v-model="role"
-          class="h-10 w-auto shrink-0 bg-transparent px-2 focus-visible:bg-transparent focus-visible:ring-0"
-        >
-          <option value="editor">편집</option>
-          <option value="viewer">보기</option>
-        </Select>
+          class="h-10 w-[7.5rem] px-3 text-[13px]"
+          :options="roleOptions"
+        />
         <Button class="h-10 shrink-0 px-4" :disabled="loading" @click="invite"
           >초대</Button
         >
@@ -346,12 +348,10 @@ const goTeam = () => {
           >
             <Select
               :model-value="m.role"
-              class="h-8 w-auto text-xs"
+              class="min-h-11 min-w-[6.5rem] w-auto px-3 text-[13px]"
+              :options="roleOptions"
               @update:model-value="changeRole(m.userId, String($event))"
-            >
-              <option value="editor">편집</option>
-              <option value="viewer">보기</option>
-            </Select>
+            />
             <Button
               variant="ghostDestructive"
               size="sm"

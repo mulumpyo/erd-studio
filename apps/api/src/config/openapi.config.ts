@@ -18,6 +18,8 @@ const description = `팀과 함께 ERD를 그리고, SQL로 주고받는 ERD Stu
 
 팀에 속한 프로젝트라면 멤버 관리는 팀에서 해요. 프로젝트 멤버 API는 개인 프로젝트에서만 써요.
 
+플랫폼 관리자(\`isAdmin\`)는 팀 역할과 따로예요. 첫 관리자는 \`INITIAL_ADMIN_EMAIL\`로 올리고, 이후에는 관리자 화면에서 추가해요.
+
 ### 실시간 편집
 다이어그램 편집은 이 API가 아니라 별도 협업 서버(WebSocket)가 담당해요. 같은 도메인이면 쿠키로
 바로 붙고, 도메인이 다르면 \`GET /auth/ws-token\`으로 2분짜리 토큰을 받아서 붙여요.
@@ -52,6 +54,11 @@ export const openApiTags = [
   { name: 'sql', description: '다이어그램을 SQL로 내보내거나, SQL을 읽어 들여요.' },
   { name: 'chat', description: '프로젝트 안에서 팀원과 메시지를 주고받아요.' },
   { name: 'invites', description: '받은 초대를 확인하고 수락해요.' },
+  {
+    name: 'admin',
+    description:
+      '서비스 운영 화면이에요. 사용량과 사용자·관리자를 다루고, 플랫폼 관리자만 쓸 수 있어요.',
+  },
   { name: 'health', description: '서버와 Redis가 살아 있는지 확인해요.' },
 ] as const
 

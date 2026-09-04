@@ -42,7 +42,11 @@ const submit = async () => {
     await auth.login(email.value, password.value)
     router.push(redirect.value || '/app')
   } catch (e) {
-    if (e instanceof ApiError && e.status === 403) {
+    if (
+      e instanceof ApiError &&
+      e.status === 403 &&
+      e.message.includes('이메일 인증')
+    ) {
       router.replace({
         name: 'check-email',
         query: { email: email.value },

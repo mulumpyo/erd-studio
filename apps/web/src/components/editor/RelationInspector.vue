@@ -28,7 +28,16 @@ const target = () =>
   props.tables.find((table) => table.id === props.relation.targetTableId)
 
 const columnName = (table: ErdTable | undefined, id: string) =>
-  table?.columns.find((col) => col.id === id)?.physicalName || id
+  table?.columns.find((column) => column.id === id)?.name ?? id
+
+const kindOptions = [
+  { value: 'identifying', label: '식별' },
+  { value: 'non-identifying', label: '비식별' },
+]
+const actionOptions = [
+  { value: '', label: '기본값' },
+  ...REFERENTIAL_ACTIONS.map((action) => ({ value: action, label: action })),
+]
 
 const patch = (partial: Partial<ErdRelation>) => {
   if (props.readOnly) return
@@ -72,36 +81,26 @@ const setAction = (
         <Label>관계 종류</Label>
         <Select
           :model-value="relation.kind"
+          :options="kindOptions"
           @update:model-value="patch({ kind: String($event) as RelationKind })"
-        >
-          <option value="identifying">식별</option>
-          <option value="non-identifying">비식별</option>
-        </Select>
+        />
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div class="space-y-1">
           <Label>삭제 시</Label>
           <Select
             :model-value="relation.onDelete ?? ''"
+            :options="actionOptions"
             @update:model-value="setAction('onDelete', String($event))"
-          >
-            <option value="">기본값</option>
-            <option v-for="action in REFERENTIAL_ACTIONS" :key="action" :value="action">
-              {{ action }}
-            </option>
-          </Select>
+          />
         </div>
         <div class="space-y-1">
           <Label>수정 시</Label>
           <Select
             :model-value="relation.onUpdate ?? ''"
+            :options="actionOptions"
             @update:model-value="setAction('onUpdate', String($event))"
-          >
-            <option value="">기본값</option>
-            <option v-for="action in REFERENTIAL_ACTIONS" :key="action" :value="action">
-              {{ action }}
-            </option>
-          </Select>
+          />
         </div>
       </div>
       <p class="text-[12px] leading-5 text-muted-foreground">

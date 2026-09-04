@@ -1,34 +1,88 @@
-import { onUnmounted, readonly, ref } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  readonly,
+  ref,
+  watch,
+  type Ref,
+} from 'vue'
 
-/** Tailwind의 lg / sm 기준 폭입니다. 넓은 화면부터 확인합니다. */
-const STEPS = [
-  { query: '(min-width: 1024px)', size: 3 },
-  { query: '(min-width: 640px)', size: 2 },
-] as const
-
-const NARROW = 1
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value))
 
 /**
- * 화면 폭에 따라 목록의 페이지 크기를 정합니다.
- * 넓은 화면은 3개, 중간은 2개, 좁은 화면은 1개를 한 페이지에 담습니다.
+ * 목록이 들어갈 영역의 높이를 재서, 한 페이지에 스크롤 없이 담길 개수를 정합니다.
+ * 실제 행 높이를 우선하고, 짧은 화면에서는 1개부터 맞춰요.
  */
-export const usePageSize = () => {
-  const size = ref(STEPS[0].size)
-  if (typeof window === 'undefined') return readonly(size)
+export const useFitPageSize = (
+  viewport: Ref<HTMLElement | null>,
+  row: () => number,
+  sources: Ref<unknown>[] = [],
+  options?: { min?: number; max?: number },
+) => {
+  const min = options?.min ?? 1
+  const max = options?.max ?? 50
+  const size = ref(min)
 
-  const lists = STEPS.map((step) => ({
-    list: window.matchMedia(step.query),
-    size: step.size,
-  }))
-
-  const sync = () => {
-    size.value = lists.find((item) => item.list.matches)?.size ?? NARROW
+  const rowHeight = (el: HTMLElement) => {
+    const sample = el.querySelector<HTMLElement>('[data-fit-row]')
+    const actual = sample?.getBoundingClientRect().height ?? 0
+    return Math.max(1, actual > 20 ? Math.ceil(actual) : row())
   }
 
-  sync()
-  for (const { list } of lists) list.addEventListener('change', sync)
+  const measure = () => {
+    const el = viewport.value
+    if (!el || el.clientHeight < 32) return
+    const next = clamp(
+      Math.max(min, Math.floor(el.clientHeight / rowHeight(el))),
+      min,
+      max,
+    )
+    if (next !== size.value) size.value = next
+  }
+
+  let resize: ResizeObserver | undefined
+  let mutations: MutationObserver | undefined
+
+  const observe = (el: HTMLElement) => {
+    resize?.observe(el)
+    mutations?.observe(el, { childList: true, subtree: true })
+    void nextTick(measure)
+  }
+
+  onMounted(() => {
+    size.value = clamp(
+      Math.floor((window.innerHeight - 280) / Math.max(1, row())) || min,
+      min,
+      max,
+    )
+    resize = new ResizeObserver(measure)
+    mutations = new MutationObserver(() => {
+      void nextTick(measure)
+    })
+    watch(
+      viewport,
+      (el, _prev, onCleanup) => {
+        if (!el) return
+        observe(el)
+        onCleanup(() => {
+          resize?.unobserve(el)
+          mutations?.disconnect()
+        })
+      },
+      { immediate: true },
+    )
+    if (sources.length) {
+      watch(sources, () => {
+        void nextTick(measure)
+      })
+    }
+  })
+
   onUnmounted(() => {
-    for (const { list } of lists) list.removeEventListener('change', sync)
+    resize?.disconnect()
+    mutations?.disconnect()
   })
 
   return readonly(size)
