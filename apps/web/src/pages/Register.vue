@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, toRefs } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { api } from '@/api'
@@ -7,16 +7,18 @@ import { errorMessage } from '@/lib/format'
 import { safeInternalPath } from '@/lib/urls'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
+import {
+  clearRegisterDraft,
+  registerDraft,
+} from '@/composables/useRegisterDraft'
 
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
+const { name, email, password, confirmPassword, agreed } = toRefs(registerDraft)
 const error = ref('')
 const loading = ref(false)
 const emailLocked = ref(false)
@@ -62,6 +64,10 @@ onMounted(async () => {
 
 const submit = async () => {
   error.value = ''
+  if (!agreed.value) {
+    error.value = '이용약관과 개인정보처리방침에 동의해 주세요'
+    return
+  }
   if (password.value !== confirmPassword.value) {
     error.value = '비밀번호가 일치하지 않아요'
     return
@@ -74,6 +80,7 @@ const submit = async () => {
       password.value,
       nextPath.value,
     )
+    clearRegisterDraft()
     const link = result.verifyUrl
       ? new URL(result.verifyUrl, window.location.origin).pathname
       : undefined
@@ -98,7 +105,7 @@ const submit = async () => {
     :subtitle="
       fromShare
         ? '이 다이어그램을 보려면 가입해 주세요'
-        : '이메일 인증 후 시작할 수 있어요'
+        : '지금은 베타예요. 이메일 인증 후 시작할 수 있어요'
     "
   >
     <form class="space-y-5" @submit.prevent="submit">
@@ -137,8 +144,22 @@ const submit = async () => {
           비밀번호가 일치하지 않아요
         </p>
       </div>
+      <div
+        class="flex cursor-pointer items-start gap-3 text-[14px] leading-6 text-muted-foreground"
+        @click="agreed = !agreed"
+      >
+        <Checkbox :checked="agreed" class="pointer-events-none mt-0.5" />
+        <span>
+          <RouterLink class="font-semibold text-primary" to="/terms" @click.stop
+            >이용약관</RouterLink
+          >과
+          <RouterLink class="font-semibold text-primary" to="/privacy" @click.stop
+            >개인정보처리방침</RouterLink
+          >에 동의해요. 지금은 베타예요.
+        </span>
+      </div>
       <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
-      <Button class="w-full" :disabled="loading || mismatch">{{
+      <Button class="w-full" :disabled="loading || mismatch || !agreed">{{
         loading ? '가입하는 중…' : '시작하기'
       }}</Button>
       <p class="text-[15px] text-muted-foreground">

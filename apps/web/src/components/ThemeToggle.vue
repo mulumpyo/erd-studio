@@ -25,7 +25,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     type="button"
     :title="hint"
     :aria-label="hint"
-    class="flex h-[52px] w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
+    class="flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
     @click="cycle"
   >
     <Sun v-if="mode === 'light'" class="size-4" />
@@ -40,7 +40,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     type="button"
     variant="ghost"
     size="icon"
-    class="size-9"
+    class="size-11"
     :title="hint"
     :aria-label="hint"
     @click="cycle"

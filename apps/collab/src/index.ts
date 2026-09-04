@@ -17,6 +17,7 @@ import { isDocEmpty, seedIfEmpty, yToErd } from '@erd-studio/yjs-erd'
 import { requireJwtSecret } from './secrets'
 import { isAllowedCollabOrigin } from './origin'
 import { accessTokenFromCookie } from './cookies'
+import { touchUsage } from './usage'
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -97,6 +98,7 @@ const authorize = async (
   const payload = await verifyAccessJwt(token)
   const user = await prisma.user.findUnique({ where: { id: payload.sub } })
   if (!hasVerifiedEmail(user)) throw new Error('unauthorized')
+  if (user.suspendedAt || user.deletedAt) throw new Error('unauthorized')
   const revokedSec = user.tokenRevokedAt
     ? Math.floor(user.tokenRevokedAt.getTime() / 1000)
     : 0
@@ -151,6 +153,7 @@ const server = Server.configure({
     try {
       const { user } = await authorize(presented, documentName, true)
       if (!user) throw new Error('readonly')
+      void touchUsage(redis, prisma, user.id)
       return {
         user: { id: user.id, name: user.name, email: user.email },
         token: presented,
@@ -169,6 +172,7 @@ const server = Server.configure({
             token: presented || '',
           }
         }
+        void touchUsage(redis, prisma, user.id)
         return {
           user: { id: user.id, name: user.name, email: user.email },
           token: presented,

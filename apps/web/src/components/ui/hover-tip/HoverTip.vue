@@ -16,6 +16,13 @@ const below = ref(false)
 
 let host: HTMLElement | null = null
 let showTimer = 0
+let pressTimer = 0
+let hideTimer = 0
+let shownByPress = false
+
+const fineHover = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
 const place = () => {
   if (!host) return
@@ -42,20 +49,60 @@ const show = () => {
 
 const hide = () => {
   window.clearTimeout(showTimer)
+  window.clearTimeout(pressTimer)
+  window.clearTimeout(hideTimer)
+  shownByPress = false
   open.value = false
+}
+
+const hideSoon = () => {
+  window.clearTimeout(showTimer)
+  window.clearTimeout(pressTimer)
+  window.clearTimeout(hideTimer)
+  hideTimer = window.setTimeout(() => {
+    shownByPress = false
+    open.value = false
+  }, 1600)
 }
 
 const follow = () => {
   if (open.value) place()
 }
 
+const onPressStart = (event: PointerEvent) => {
+  if (event.pointerType === 'mouse') return
+  window.clearTimeout(pressTimer)
+  window.clearTimeout(hideTimer)
+  pressTimer = window.setTimeout(() => {
+    shownByPress = true
+    place()
+    open.value = true
+  }, 420)
+}
+
+const onPressEnd = () => {
+  window.clearTimeout(pressTimer)
+  if (shownByPress) {
+    hideSoon()
+    return
+  }
+  hide()
+}
+
 onMounted(() => {
   host = anchor.value?.parentElement ?? null
   if (!host) return
-  host.addEventListener('mouseenter', show)
-  host.addEventListener('mouseleave', hide)
-  host.addEventListener('focusin', show)
-  host.addEventListener('focusout', hide)
+  if (fineHover()) {
+    host.addEventListener('mouseenter', show)
+    host.addEventListener('mouseleave', hide)
+    host.addEventListener('focusin', show)
+    host.addEventListener('focusout', hide)
+  } else {
+    host.addEventListener('pointerdown', onPressStart)
+    host.addEventListener('pointerup', onPressEnd)
+    host.addEventListener('pointercancel', hide)
+    host.addEventListener('pointerleave', hide)
+  }
   window.addEventListener('scroll', follow, true)
   window.addEventListener('resize', follow)
   window.addEventListener('wheel', follow, { capture: true, passive: true })
@@ -63,10 +110,16 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.clearTimeout(showTimer)
+  window.clearTimeout(pressTimer)
+  window.clearTimeout(hideTimer)
   host?.removeEventListener('mouseenter', show)
   host?.removeEventListener('mouseleave', hide)
   host?.removeEventListener('focusin', show)
   host?.removeEventListener('focusout', hide)
+  host?.removeEventListener('pointerdown', onPressStart)
+  host?.removeEventListener('pointerup', onPressEnd)
+  host?.removeEventListener('pointercancel', hide)
+  host?.removeEventListener('pointerleave', hide)
   window.removeEventListener('scroll', follow, true)
   window.removeEventListener('resize', follow)
   window.removeEventListener('wheel', follow, true)

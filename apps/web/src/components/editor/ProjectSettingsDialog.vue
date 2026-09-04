@@ -147,7 +147,7 @@ const toggleShow = (key: ErdShowKey, on: boolean) => {
             <input
               v-if="!readOnly"
               v-model="tagDraft"
-              class="min-w-[8rem] flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
+              class="min-w-[8rem] flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
               placeholder="태그 입력 후 Enter"
               @keydown="onTagKey"
               @blur="addTag(tagDraft)"

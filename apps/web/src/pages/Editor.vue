@@ -76,9 +76,13 @@ const membersOpen = ref(false)
 const settingsOpen = ref(false)
 const entitiesOpen = ref(false)
 const inspectorExpanded = ref(false)
+const chromeHidden = ref(false)
+const nodeDragging = ref(false)
+const panePanning = ref(false)
 const compactLayout = useMediaQuery('(max-width: 1279px)')
 const { open: confirmOpen } = useConfirm()
 let deleteBusy = false
+let chromeShowTimer = 0
 const projectDescription = ref('')
 const projectTags = ref<string[]>([])
 const localView = ref<ErdViewPatch | null>(null)
@@ -478,6 +482,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.clearTimeout(chromeShowTimer)
   window.removeEventListener('keydown', onKey)
   document.title = 'ERD Studio'
 })
@@ -545,9 +550,43 @@ const onConnect = (params: Connection) => {
   toast('관계를 연결했어요')
 }
 
-const onDrag = (event: NodeDragEvent) => {
+const hideChrome = () => {
+  window.clearTimeout(chromeShowTimer)
+  chromeHidden.value = true
+}
+
+const showChromeSoon = () => {
+  window.clearTimeout(chromeShowTimer)
+  chromeShowTimer = window.setTimeout(() => {
+    if (!nodeDragging.value && !panePanning.value) chromeHidden.value = false
+  }, 140)
+}
+
+const persistNodeMove = (event: NodeDragEvent) => {
   if (readOnly.value) return
   moveNode({ id: event.node.id, position: event.node.position })
+}
+
+const onDrag = (event: NodeDragEvent) => {
+  nodeDragging.value = true
+  hideChrome()
+  persistNodeMove(event)
+}
+
+const onDragStop = (event: NodeDragEvent) => {
+  persistNodeMove(event)
+  nodeDragging.value = false
+  showChromeSoon()
+}
+
+const onPanStart = () => {
+  panePanning.value = true
+  hideChrome()
+}
+
+const onPanEnd = () => {
+  panePanning.value = false
+  showChromeSoon()
 }
 
 const onNodeClick = (event: NodeMouseEvent) => {
@@ -715,6 +754,14 @@ watch(compactLayout, (compact) => {
     entitiesOpen.value = false
     inspectorExpanded.value = false
   }
+})
+
+watch(loaded, (value) => {
+  if (!value) return
+  window.clearTimeout(chromeShowTimer)
+  nodeDragging.value = false
+  panePanning.value = false
+  chromeHidden.value = false
 })
 
 const toggleEntities = () => {
@@ -891,20 +938,45 @@ const removeProject = async () => {
       >
     </div>
   </div>
-  <div v-else class="grid h-full grid-rows-[64px_1fr] bg-background">
+  <div
+    v-else
+    class="relative h-svh overflow-hidden bg-background"
+    :class="{ 'erd-immersive': chromeHidden }"
+  >
+    <div class="absolute inset-0">
+      <ErdCanvas
+        v-if="loaded"
+        ref="canvasRef"
+        :nodes="canvasNodes"
+        :edges="canvasEdges"
+        :read-only="readOnly"
+        :linking="isRelationTool(tool)"
+        :compact="compactLayout"
+        @pane-click="onPaneClick"
+        @connect="onConnect"
+        @pan-start="onPanStart"
+        @pan-end="onPanEnd"
+        @node-drag="onDrag"
+        @node-drag-stop="onDragStop"
+        @node-click="onNodeClick"
+        @edge-click="onEdgeClick"
+      />
+    </div>
+    <div class="pointer-events-none absolute inset-0 z-20 flex flex-col">
     <header
-      class="relative z-20 flex items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 sm:px-4"
+      class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-16 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:px-4"
     >
       <div class="flex min-w-0 items-center gap-2 sm:gap-3">
         <Button
           variant="secondary"
           size="sm"
+          class="min-h-11 px-3 xl:min-h-8"
           @click="router.push(auth.user ? '/app' : '/')"
           >목록</Button
         >
         <Input
           v-model="projectName"
-          class="h-10 w-28 min-w-0 bg-muted sm:w-40 xl:w-56"
+          class="h-10 min-w-0 flex-1 bg-muted text-base sm:w-40 sm:flex-none xl:w-56"
           :disabled="readOnly"
           @change="rename"
         />
@@ -1011,12 +1083,20 @@ const removeProject = async () => {
         />
       </div>
     </header>
-    <div class="relative min-h-0">
-    <div
-      class="grid h-full min-h-0 grid-cols-[64px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] xl:grid-cols-[64px_240px_minmax(0,1fr)_340px] xl:grid-rows-[minmax(0,1fr)]"
-    >
+    <div class="relative min-h-0 flex-1">
+      <div
+        v-if="canvasHint"
+        class="erd-chrome-float pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-4"
+      >
+        <div
+          class="rounded-full bg-card/95 px-4 py-2 text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
+        >
+          {{ canvasHint }}
+        </div>
+      </div>
+      <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(25_31_40_/_0.06)]">
       <Toolbar
-        class="col-start-1 row-start-1 row-span-2 xl:row-span-1"
+        class="w-16"
         :current="tool"
         :flow-on="showFlow"
         :read-only="readOnly"
@@ -1033,42 +1113,23 @@ const removeProject = async () => {
       />
       <EntityList
         v-if="!compactLayout"
-        class="xl:col-start-2 xl:row-start-1"
+        class="w-60"
         :tables="erd.tables"
         :selected-id="selectedId"
         :name-mode="viewSettings.nameMode"
         @select="onSelectTable"
         @update:name-mode="patchView({ nameMode: $event })"
       />
-      <div
-        class="relative col-start-2 row-start-1 min-h-0 min-w-0 xl:col-start-3"
-      >
-        <ErdCanvas
-          v-if="loaded"
-          ref="canvasRef"
-          :nodes="canvasNodes"
-          :edges="canvasEdges"
-          :read-only="readOnly"
-          :linking="isRelationTool(tool)"
-          @pane-click="onPaneClick"
-          @connect="onConnect"
-          @node-drag="onDrag"
-          @node-click="onNodeClick"
-          @edge-click="onEdgeClick"
-        />
-        <div
-          v-if="canvasHint"
-          class="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-4"
-        >
-          <div
-            class="rounded-full bg-card/95 px-4 py-2 text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
-          >
-            {{ canvasHint }}
-          </div>
-        </div>
       </div>
+      <div
+        :class="
+          compactLayout
+            ? 'erd-chrome erd-chrome-bottom pointer-events-auto absolute bottom-0 left-16 right-0 z-20'
+            : 'erd-chrome erd-chrome-right pointer-events-auto absolute inset-y-0 right-0 z-20 w-[340px] border-l border-border/80 shadow-[-8px_0_24px_rgb(25_31_40_/_0.06)]'
+        "
+      >
       <EditorSidePanel
-        class="col-start-2 row-start-2 xl:col-start-4 xl:row-start-1"
+        class="h-full"
         :tab="tab"
         :tabs="panelTabs"
         :compact="compactLayout"
@@ -1078,6 +1139,7 @@ const removeProject = async () => {
       >
           <Inspector
             v-if="tab === 'props'"
+            key="props"
             :table="selectedTable"
             :relation="selectedRelation"
             :tables="erd.tables"
@@ -1095,28 +1157,31 @@ const removeProject = async () => {
           />
           <SqlPanel
             v-else-if="tab === 'sql'"
+            key="sql"
             :document="erd"
             :read-only="readOnly"
             @import="replaceDocument"
           />
           <ChatPanel
             v-else-if="tab === 'chat'"
+            key="chat"
             :messages="messages"
             :read-only="readOnly"
             @send="sendChat"
           />
           <HistoryPanel
             v-else
+            key="history"
             :project-id="projectId"
             :document="erd"
             :read-only="readOnly"
             @restored="reload"
           />
       </EditorSidePanel>
-    </div>
+      </div>
       <div
         v-if="compactLayout && entitiesOpen"
-        class="absolute inset-y-0 left-16 right-0 z-30 xl:hidden"
+        class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-16 right-0 z-30 xl:hidden"
       >
         <button
           type="button"
@@ -1135,6 +1200,7 @@ const removeProject = async () => {
           @update:name-mode="patchView({ nameMode: $event })"
         />
       </div>
+    </div>
     </div>
     <ProjectSettingsDialog
       v-model:open="settingsOpen"

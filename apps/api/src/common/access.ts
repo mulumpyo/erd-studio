@@ -60,6 +60,10 @@ export const assertDeleteProject = (user: AuthUser, project: ProjectAccess) => {
     throw new ForbiddenException('프로젝트를 삭제할 권한이 없습니다.')
 }
 
+export const assertAdmin = (user: AuthUser) => {
+  if (!user.isAdmin) throw new NotFoundException('찾을 수 없어요.')
+}
+
 export const assertDirectProjectMembers = (project: ProjectAccess) => {
   if (isTeamOwned(project)) {
     throw new ForbiddenException('팀 프로젝트의 멤버는 팀에서 관리합니다.')

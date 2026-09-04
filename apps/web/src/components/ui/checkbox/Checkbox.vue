@@ -26,7 +26,8 @@ const toggle = () => {
     :disabled="disabled"
     :class="
       cn(
-        'inline-flex size-[18px] shrink-0 items-center justify-center rounded-[6px] border transition-colors',
+        'relative inline-flex size-[18px] shrink-0 items-center justify-center rounded-[6px] border transition-colors',
+        'before:absolute before:-inset-3 before:block before:content-[\'\']',
         checked
           ? 'border-primary bg-primary text-white'
           : 'border-border bg-card',

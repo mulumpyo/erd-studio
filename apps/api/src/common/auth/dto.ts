@@ -128,6 +128,19 @@ export class ResetPasswordDto {
   password: string
 }
 
+export class DeleteAccountDto {
+  @ApiProperty({
+    description: '지금 쓰고 있는 비밀번호예요. 탈퇴할 때 한 번 더 확인해요.',
+    example: 'erd-studio-1234',
+    minLength: 1,
+    maxLength: 72,
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(72)
+  password: string
+}
+
 export class ChangePasswordDto {
   @ApiProperty({
     description: '지금 쓰고 있는 비밀번호예요.',
@@ -150,4 +163,50 @@ export class ChangePasswordDto {
   @MinLength(8)
   @MaxLength(72)
   newPassword: string
+}
+
+export class AuthUserDto {
+  @ApiProperty({
+    description: '사용자 ID예요.',
+    example: 'clz9k2p4x0005s601ghijklmn',
+  })
+  id: string
+
+  @ApiProperty({
+    description: '로그인에 쓰는 이메일이에요.',
+    example: 'hong@example.com',
+    format: 'email',
+  })
+  email: string
+
+  @ApiProperty({
+    description: '팀원에게 보일 이름이에요.',
+    example: '홍길동',
+  })
+  name: string
+
+  @ApiProperty({
+    description:
+      '플랫폼 관리자면 true예요. 팀·프로젝트 역할과 따로예요. `/admin`은 이 값이 true일 때만 열 수 있어요.',
+    example: false,
+  })
+  isAdmin: boolean
+}
+
+export class SessionResponseDto {
+  @ApiProperty({ type: AuthUserDto })
+  user: AuthUserDto
+
+  @ApiProperty({
+    description: '액세스 토큰이 만료되는 시각이에요. 밀리초예요.',
+    example: 1710000000000,
+  })
+  expiresAt: number
+
+  @ApiPropertyOptional({
+    description:
+      '이메일 인증 뒤에 돌아갈 경로예요. 초대 링크로 들어왔을 때만 있어요.',
+    example: '/invite/abc123',
+  })
+  nextPath?: string
 }

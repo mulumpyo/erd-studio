@@ -13,6 +13,12 @@ const emit = defineEmits<{ (e: 'import', doc: ErdDocument): void }>()
 const dialect = ref<SqlDialect>('mysql')
 const sql = ref('')
 const error = ref('')
+const dialects: { value: SqlDialect; label: string }[] = [
+  { value: 'mysql', label: 'MySQL' },
+  { value: 'postgres', label: 'PostgreSQL' },
+  { value: 'mssql', label: 'MS-SQL' },
+  { value: 'oracle', label: 'Oracle' },
+]
 
 const exportSql = () => {
   sql.value = generateSql(props.document, dialect.value)
@@ -52,12 +58,7 @@ const download = () => {
 
 <template>
   <div class="space-y-3">
-    <Select v-model="dialect" class="h-12">
-      <option value="mysql">MySQL</option>
-      <option value="postgres">PostgreSQL</option>
-      <option value="mssql">MS-SQL</option>
-      <option value="oracle">Oracle</option>
-    </Select>
+    <Select v-model="dialect" :options="dialects" class="h-12" />
     <Button class="h-12 w-full" @click="exportSql">내보내기</Button>
     <Textarea v-model="sql" class="min-h-64 font-mono text-xs" />
     <div class="grid grid-cols-2 gap-2">

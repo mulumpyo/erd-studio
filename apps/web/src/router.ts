@@ -13,6 +13,16 @@ export const router = createRouter({
       meta: { guest: true },
     },
     {
+      path: '/terms',
+      name: 'terms',
+      component: () => import('./pages/Legal.vue'),
+    },
+    {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('./pages/Legal.vue'),
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('./pages/Login.vue'),
@@ -54,8 +64,26 @@ export const router = createRouter({
       meta: { auth: true },
     },
     {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('./pages/Admin.vue'),
+      meta: { auth: true, admin: true },
+    },
+    {
       path: '/app',
       name: 'dashboard',
+      component: () => import('./pages/Dashboard.vue'),
+      meta: { auth: true },
+    },
+    {
+      path: '/app/teams',
+      name: 'teams',
+      component: () => import('./pages/Dashboard.vue'),
+      meta: { auth: true },
+    },
+    {
+      path: '/app/teams/:teamId',
+      name: 'team',
       component: () => import('./pages/Dashboard.vue'),
       meta: { auth: true },
     },
@@ -83,6 +111,7 @@ router.beforeEach(async (to) => {
   if (!auth.hydrated) await auth.fetchMe()
   if (to.meta.auth && !auth.user)
     return { name: 'login', query: { redirect: to.fullPath } }
+  if (to.meta.admin && !auth.user?.isAdmin) return { name: 'dashboard' }
   if (to.meta.guest && auth.user) {
     if (to.name === 'login' || to.name === 'register') {
       const redirect = safeInternalPath(to.query.redirect)

@@ -1,34 +1,49 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import SiteFooter from '@/components/SiteFooter.vue'
 import { buttonVariants } from '@/components/ui/button'
+import { CONTACT_INSTAGRAM_URL } from '@/lib/site'
 </script>
 
 <template>
   <div class="flex min-h-full flex-col bg-background">
-    <header class="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
-      <div class="flex items-center gap-2.5">
+    <header class="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
+      <div class="flex min-w-0 items-center gap-2 sm:gap-2.5">
         <div
-          class="flex size-9 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-white"
+          class="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-primary text-[15px] font-bold text-white"
         >
           E
         </div>
-        <span class="text-[17px] font-bold tracking-[-0.03em]">ERD Studio</span>
+        <span class="truncate text-[17px] font-bold tracking-[-0.03em]">ERD Studio</span>
         <ThemeToggle />
       </div>
-      <div class="flex items-center gap-2">
-        <RouterLink
+      <nav class="flex shrink-0 items-center gap-1 sm:gap-2">
+        <a
+          :href="CONTACT_INSTAGRAM_URL"
+          target="_blank"
+          rel="noopener noreferrer"
           :class="buttonVariants({ variant: 'ghost', size: 'sm' })"
-          to="/login"
-          >로그인</RouterLink
+          >문의</a
         >
-        <RouterLink :class="buttonVariants({ size: 'sm' })" to="/register"
-          >시작하기</RouterLink
-        >
-      </div>
+        <div class="hidden sm:flex sm:items-center sm:gap-2">
+          <RouterLink
+            :class="buttonVariants({ variant: 'ghost', size: 'sm' })"
+            to="/login"
+            >로그인</RouterLink
+          >
+          <RouterLink :class="buttonVariants({ size: 'sm' })" to="/register"
+            >시작하기</RouterLink
+          >
+        </div>
+      </nav>
     </header>
     <div class="mx-auto w-full max-w-5xl flex-1 px-6 pb-16 pt-10">
-      <p class="text-[15px] font-semibold text-primary">팀과 함께 그리는 ERD</p>
+      <span
+        class="inline-flex rounded-full bg-accent px-2.5 py-0.5 text-[12px] font-semibold text-accent-foreground"
+        >베타</span
+      >
+      <p class="mt-3 text-[15px] font-semibold text-primary">팀과 함께 그리는 ERD</p>
       <h1
         class="mt-3 max-w-2xl text-[44px] font-bold leading-[1.2] tracking-[-0.05em] sm:text-[56px]"
       >
@@ -38,6 +53,7 @@ import { buttonVariants } from '@/components/ui/button'
         class="mt-5 max-w-lg text-[17px] leading-7 text-muted-foreground"
       >
         브라우저에서 테이블을 그리고, SQL로 주고받고, 팀원과 바로 같이 수정해요.
+        지금은 베타라 기능과 데이터가 바뀔 수 있어요.
       </p>
       <div class="mt-10 flex flex-wrap gap-3">
         <RouterLink :class="buttonVariants({ size: 'lg' })" to="/register"
@@ -85,10 +101,6 @@ import { buttonVariants } from '@/components/ui/button'
         </div>
       </div>
     </div>
-    <footer
-      class="border-t border-border/80 px-6 py-6 text-center text-[13px] text-muted-foreground"
-    >
-      Copyright &copy; 2026 mulumpyo. All Rights Reserved.
-    </footer>
+    <SiteFooter />
   </div>
 </template>

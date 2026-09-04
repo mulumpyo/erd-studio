@@ -24,7 +24,7 @@ const modelValue = useVModel(props, 'modelValue', emits, {
     :disabled="disabled"
     :class="
       cn(
-        'flex h-12 w-full rounded-xl border-0 bg-muted px-4 text-[15px] tracking-[-0.01em] shadow-none transition-colors placeholder:text-muted-foreground focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-12 w-full rounded-xl border-0 bg-muted px-4 text-base tracking-[-0.01em] shadow-none transition-colors placeholder:text-muted-foreground focus-visible:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50',
         props.class,
       )
     "

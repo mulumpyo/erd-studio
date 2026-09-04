@@ -26,7 +26,7 @@ const count = computed(() => Math.max(props.options.length, 1))
 <template>
   <div
     :class="
-      cn('relative isolate inline-flex h-9 rounded-2xl bg-muted p-1', $props.class)
+      cn('relative isolate inline-flex h-11 rounded-2xl bg-muted p-1', $props.class)
     "
   >
     <div

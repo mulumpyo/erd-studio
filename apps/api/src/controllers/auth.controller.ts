@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common'
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -13,14 +13,17 @@ import {
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 import { AuthService, type SessionResult } from '../services/auth.service'
+import { UsageService } from '../services/usage.service'
 import {
   ChangePasswordDto,
+  DeleteAccountDto,
   ForgotPasswordDto,
   LoginDto,
   RegisterDto,
   RefreshTokenDto,
   ResendVerificationDto,
   ResetPasswordDto,
+  SessionResponseDto,
   VerifyEmailDto,
 } from '../common/auth/dto'
 import { Auth } from '../common/auth/decorators'
@@ -44,7 +47,10 @@ const SESSION_DESCRIPTION =
 @Controller('auth')
 @Throttle({ default: { limit: 20, ttl: 60_000 } })
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private auth: AuthService,
+    private usage: UsageService,
+  ) {}
 
   @ApiOperation({
     summary: '회원가입하기',
@@ -70,7 +76,10 @@ export class AuthController {
     description:
       '이메일과 비밀번호로 로그인해요. 받아 둔 초대가 있으면 이때 자동으로 수락해요.',
   })
-  @ApiCreatedResponse({ description: SESSION_DESCRIPTION })
+  @ApiCreatedResponse({
+    description: SESSION_DESCRIPTION,
+    type: SessionResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: '이메일이나 비밀번호가 맞지 않아요.' })
   @ApiForbiddenResponse({
     description: '이메일 인증을 아직 안 했어요. 인증 메일을 다시 받아 주세요.',
@@ -81,7 +90,9 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.attachSession(res, await this.auth.login(dto))
+    const session = await this.auth.login(dto)
+    void this.usage.touch(session.user.id)
+    return this.attachSession(res, session)
   }
 
   @ApiOperation({
@@ -90,7 +101,10 @@ export class AuthController {
       '메일로 받은 토큰으로 이메일을 인증해요. 인증이 끝나면 바로 로그인까지 해 줘요.\n\n' +
       '가입할 때 `nextPath`를 넣었다면 응답으로 되돌려주니, 그 경로로 보내 주면 돼요.',
   })
-  @ApiCreatedResponse({ description: SESSION_DESCRIPTION })
+  @ApiCreatedResponse({
+    description: SESSION_DESCRIPTION,
+    type: SessionResponseDto,
+  })
   @ApiNotFoundResponse({ description: '인증 링크가 만료됐거나 올바르지 않아요.' })
   @Post('verify-email')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -98,7 +112,9 @@ export class AuthController {
     @Body() dto: VerifyEmailDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.attachSession(res, await this.auth.verifyEmail(dto.token))
+    const session = await this.auth.verifyEmail(dto.token)
+    void this.usage.touch(session.user.id)
+    return this.attachSession(res, session)
   }
 
   @ApiOperation({
@@ -121,7 +137,10 @@ export class AuthController {
       '액세스 쿠키가 만료됐을 때 리프레시 토큰으로 새 세션을 받아요. 리프레시 토큰은 쓸 때마다 새로 바뀌어요.\n\n' +
       '보통은 `erd_refresh` 쿠키가 알아서 실려 가니 본문은 비워도 돼요.',
   })
-  @ApiCreatedResponse({ description: SESSION_DESCRIPTION })
+  @ApiCreatedResponse({
+    description: SESSION_DESCRIPTION,
+    type: SessionResponseDto,
+  })
   @ApiUnauthorizedResponse({
     description: '리프레시 토큰이 없거나 만료됐어요. 다시 로그인해 주세요.',
   })
@@ -201,6 +220,30 @@ export class AuthController {
   }
 
   @ApiOperation({
+    summary: '계정 탈퇴하기',
+    description:
+      '로그인한 계정을 탈퇴해요. 비밀번호로 한 번 더 확인해요.\n\n' +
+      '내가 만든 팀과 그 안의 프로젝트는 함께 사라지고, 다른 팀에서 남긴 대화도 지워요. 같은 이메일로 다시 가입할 수 있어요.\n\n' +
+      '마지막 플랫폼 관리자는 탈퇴할 수 없어요.',
+  })
+  @ApiOkResponse({ description: '탈퇴했어요. 인증 쿠키를 지워요.' })
+  @ApiUnauthorizedResponse({ description: '현재 비밀번호가 맞지 않아요.' })
+  @ApiBadRequestResponse({ description: '마지막 관리자는 탈퇴할 수 없어요.' })
+  @Post('delete-account')
+  @Auth()
+  @HttpCode(200)
+  @Throttle({ default: { limit: 8, ttl: 60_000 } })
+  async deleteAccount(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.deleteAccount(user, dto)
+    clearAuthCookies(res)
+    return result
+  }
+
+  @ApiOperation({
     summary: '실시간 편집용 토큰 받기',
     description:
       '협업 서버(WebSocket)에 붙을 때 쓰는 2분짜리 토큰이에요.\n\n' +
@@ -216,9 +259,13 @@ export class AuthController {
   @ApiOperation({
     summary: '내 정보 보기',
     description:
-      '로그인한 사용자 정보와 액세스 토큰이 언제 만료되는지 알려줘요. 새로고침했을 때 로그인 상태를 확인하는 데 써요.',
+      '로그인한 사용자 정보와 액세스 토큰이 언제 만료되는지 알려줘요. 새로고침했을 때 로그인 상태를 확인하는 데 써요.\n\n' +
+      '`user.isAdmin`이 true면 플랫폼 관리자라 `/admin`을 열 수 있어요.',
   })
-  @ApiOkResponse({ description: '내 정보와 만료 시각(밀리초)이에요.' })
+  @ApiOkResponse({
+    description: '내 정보와 만료 시각(밀리초)이에요.',
+    type: SessionResponseDto,
+  })
   @Get('me')
   @Auth()
   me(@CurrentUser() user: AuthUser) {

@@ -143,6 +143,7 @@ VITE_COLLAB_URL=ws://localhost:3030
 | `COLLAB_PORT`         | 협업 서버 포트               | `3030`                    |
 | `WEB_ORIGIN`          | CORS 허용 오리진            | `http://localhost:5173`   |
 | `VITE_COLLAB_URL`     | Web → 협업 서버 주소         | `ws://localhost:3030`     |
+| `INITIAL_ADMIN_EMAIL` | 첫 플랫폼 관리자 이메일. 계정이 있으면 관리자로 올려요 | — |
 
 `JWT_SECRET`은 배포 전에 16자 이상의 랜덤 값으로 바꿔주세요. 프로덕션에서 값이 짧거나 예시 그대로면 API가 기동되지 않아요.
 
@@ -237,6 +238,26 @@ Yjs CRDT로 편집 내용을 합치고, Hocuspocus가 WebSocket 연결과 문서
 
 Web과 협업 서버가 같은 오리진이면 HttpOnly 쿠키를 그대로 읽어서 인증해요. 도메인이 다른 경우에는 `GET /auth/ws-token`으로 2분짜리 토큰을 받아 연결해주세요.
 
+## 📊 사용량 (DAU / WAU / MAU)
+
+한국 날짜(`Asia/Seoul`)로 자른 **로그인한 사용자**만 세요. 관리자는 `/admin`에서 볼 수 있어요.
+
+| 지표 | 기준 |
+| --- | --- |
+| DAU | 그날 워크스페이스·에디터를 쓴 고유 사용자 |
+| WAU | 그날 포함 최근 7일 동안 한 번이라도 쓴 고유 사용자 |
+| MAU | 그날 포함 최근 30일 동안 한 번이라도 쓴 고유 사용자 |
+
+세는 것: 로그인, 이메일 인증 후 세션, 로그인한 API 호출, 에디터 WebSocket 연결.
+
+안 세는 것: 랜딩만 본 사람, 공유 링크 익명 방문, 헬스 체크, 토큰 자동 갱신만 일어난 탭, **플랫폼 관리자**(`isAdmin`). 관리자 활동도 `UserActivityDay`에는 남겨 두고, 숫자를 만들 때만 빼요.
+
+같은 사람은 하루에 한 번만 Redis에 찍고, PostgreSQL `UserActivityDay` / `UsageDaily`에 남겨요.
+
+탈퇴하면 이름·이메일을 지우고, 내가 만든 팀과 그 안의 프로젝트는 함께 사라져요. 관리자 화면의 **총 가입자**는 탈퇴하지 않은 계정만 세고, 오늘·누적 탈퇴 숫자를 따로 보여요. 지난 DAU는 그대로 둬요.
+
+첫 관리자는 `INITIAL_ADMIN_EMAIL`로 올려요. 이후 관리자 추가·사용자 목록은 `/admin`에서 해요. 사용자 관리 목록에는 관리자 계정이 안 나와요. 정지된 계정은 로그인과 편집을 할 수 없어요. 마지막 관리자는 탈퇴할 수 없어요.
+
 ## 🚀 배포
 
 `deploy` 브랜치에 푸시하거나 PR을 머지하면 배포가 시작돼요.
@@ -244,7 +265,7 @@ Web과 협업 서버가 같은 오리진이면 HttpOnly 쿠키를 그대로 읽�
 `.github/workflows/deploy.yml`이 `linux/arm64` 이미지를 GHCR에 올리고, SSH로 서버에서 다시 띄워요. `main`은 배포와 분리해서 개발용으로 사용해요.
 
 * `Dockerfile` — `web` / `api` / `collab` 멀티 스테이지 빌드. web 스테이지의 nginx 설정도 이 안에 있어요.
-* `docker-compose.prod.yml` — 세 앱 + PostgreSQL + Redis. 워크플로가 이 파일만 서버로 복사해요.
+* `docker-compose.prod.yml` — 세 앱 + PostgreSQL + Redis + 일일 Postgres 백업. 워크플로가 이 파일만 서버로 복사해요.
 
 서버의 `.env`는 워크플로가 GitHub Secrets에서 매번 새로 작성해요. 따로 예시 파일을 두지 않아요.
 
@@ -278,6 +299,7 @@ API 컨테이너는 시작할 때 `prisma db push`로 스키마를 맞춘 뒤 Ne
 | --------------------------------------------- | --------------------- |
 | `SSH_PORT`                                    | 22가 아닐 때만             |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASS` `SMTP_SECURE` `MAIL_FROM` | 메일을 사용할 때 |
+| `INITIAL_ADMIN_EMAIL` | 첫 플랫폼 관리자 이메일 |
 
 `GITHUB_TOKEN`은 GitHub이 자동으로 주입해요. 직접 등록하지 않아요.
 
@@ -375,6 +397,20 @@ sudo systemctl reload nginx
 cd /home/ubuntu/erd-studio
 docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs api --tail 50
+```
+
+Postgres는 한국 날짜 기준으로 하루에 한 번 `backup` 컨테이너가 덤프해요. 최근 14일만 남겨 둬요.
+
+```bash
+docker compose -f docker-compose.prod.yml exec backup ls -l /backups
+```
+
+복구할 때는 `backup` 컨테이너에서 바로 넣으면 돼요. 덮어쓰니 먼저 확인하세요.
+
+```bash
+docker compose -f docker-compose.prod.yml exec backup \
+  pg_restore --clean --if-exists -h postgres -U erd -d erdstudio \
+  /backups/erdstudio-YYYY-MM-DD.dump
 ```
 
 ## 💻 IDE 설정

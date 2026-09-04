@@ -136,12 +136,13 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          INITIAL_ADMIN_EMAIL: ${{ secrets.INITIAL_ADMIN_EMAIL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          envs: IMAGE_PREFIX,IMAGE_TAG,DEPLOY_DIR,SITE_URL,GHCR_USER,GHCR_TOKEN,JWT_SECRET,POSTGRES_PASSWORD,DATABASE_URL,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_SECURE,MAIL_FROM
+          envs: IMAGE_PREFIX,IMAGE_TAG,DEPLOY_DIR,SITE_URL,GHCR_USER,GHCR_TOKEN,JWT_SECRET,POSTGRES_PASSWORD,DATABASE_URL,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASS,SMTP_SECURE,MAIL_FROM,INITIAL_ADMIN_EMAIL
           script: |
             set -eu
             cd "$DEPLOY_DIR"
@@ -171,6 +172,7 @@ jobs:
             SMTP_PASS=$SMTP_PASS
             SMTP_SECURE=$SMTP_SECURE
             MAIL_FROM=$MAIL_FROM
+            INITIAL_ADMIN_EMAIL=$INITIAL_ADMIN_EMAIL
             EOF
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -f docker-compose.prod.yml pull
