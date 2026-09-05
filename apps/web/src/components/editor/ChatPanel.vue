@@ -56,7 +56,7 @@ watch(() => props.messages.length, scrollToEnd)
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3">
+  <div class="flex min-h-0 flex-1 flex-col gap-3">
     <div ref="scroller" class="min-h-0 flex-1 space-y-2 overflow-auto">
       <div v-if="!messages.length" class="text-sm text-muted-foreground">
         아직 메시지가 없어요. 입력하면 바로 공유돼요.
@@ -93,7 +93,7 @@ watch(() => props.messages.length, scrollToEnd)
         </div>
       </template>
     </div>
-    <form class="flex items-stretch gap-2" @submit.prevent="send">
+    <form class="flex shrink-0 items-stretch gap-2" @submit.prevent="send">
       <Input v-model="body" :disabled="readOnly" placeholder="메시지 보내기" />
       <Button type="submit" class="h-12 shrink-0 px-5" :disabled="readOnly"
         >전송</Button

@@ -93,6 +93,10 @@ const publishPeek = () => {
   document.documentElement.style.setProperty('--erd-sheet-peek', `${peek}px`)
 }
 
+const visibleHeight = computed(() =>
+  Math.max(MIN_PEEK, sheetHeight.value - dragOffset.value),
+)
+
 const applySnap = (next: SheetSnap, notify = true) => {
   snap.value = next
   dragOffset.value = offsetFor(next)
@@ -211,9 +215,8 @@ onUnmounted(() => {
     :style="
       compact
         ? {
-            height: `${sheetHeight}px`,
-            transform: `translateY(${dragOffset}px)`,
-            transition: dragging ? 'none' : 'transform 0.22s ease',
+            height: `${visibleHeight}px`,
+            transition: dragging ? 'none' : 'height 0.22s ease',
           }
         : undefined
     "
@@ -253,7 +256,12 @@ onUnmounted(() => {
     </div>
     <div
       data-inspector-scroll
-      class="min-h-0 flex-1 overflow-auto px-4 pb-4"
+      class="min-h-0 flex-1 px-4 pb-4"
+      :class="
+        tab === 'chat' || tab === 'sql'
+          ? 'flex flex-col overflow-hidden'
+          : 'overflow-auto'
+      "
     >
       <slot />
     </div>

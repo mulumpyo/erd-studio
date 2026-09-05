@@ -12,11 +12,13 @@ defineProps<{
   canLeave?: boolean
   isPublic?: boolean
   signedIn?: boolean
+  showTeamManage?: boolean
   shareOptions: Array<{ value: string; label: string }>
 }>()
 
 const emit = defineEmits<{
   members: []
+  'manage-team': []
   'update:public': [value: boolean]
   'copy-share': []
   login: []
@@ -65,7 +67,9 @@ const onFile = (event: Event) => {
   if (file) emit('import-json', file)
 }
 
-const run = (name: 'members' | 'copy-share' | 'login' | 'remove' | 'leave') => {
+const run = (
+  name: 'members' | 'manage-team' | 'copy-share' | 'login' | 'remove' | 'leave',
+) => {
   close()
   emit(name)
 }
@@ -100,7 +104,15 @@ const run = (name: 'members' | 'copy-share' | 'login' | 'remove' | 'leave') => {
         class="max-h-[min(28rem,calc(100vh-5.5rem))] overflow-y-auto"
       >
         <button
-          v-if="isParticipant"
+          v-if="showTeamManage"
+          type="button"
+          :class="itemClass"
+          @click="run('manage-team')"
+        >
+          팀에서 관리
+        </button>
+        <button
+          v-else-if="isParticipant"
           type="button"
           :class="itemClass"
           @click="run('members')"

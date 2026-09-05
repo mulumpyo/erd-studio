@@ -11,6 +11,7 @@ import { useFitPageSize } from '@/composables/usePageSize'
 import {
   canDeleteProject,
   canLeaveProject,
+  isProjectOwner,
   type PageResult,
   type PendingInvitation,
   type Project,
@@ -18,6 +19,7 @@ import {
   type TeamMember,
 } from '@/types/workspace'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import Avatar from '@/components/ui/avatar/Avatar.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -459,12 +461,11 @@ const renameTeam = async (name: string) => {
         </FieldBar>
 
         <div ref="projectViewport" class="min-h-0 flex-1 overflow-y-auto">
-          <p
+          <Spinner
             v-if="loadingProjects && !projects.length"
-            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
-          >
-            프로젝트를 불러오는 중이에요.
-          </p>
+            class="rounded-2xl bg-card px-4 py-16 ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            label="프로젝트를 불러오고 있어요"
+          />
           <p
             v-else-if="!projects.length"
             class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
@@ -515,6 +516,15 @@ const renameTeam = async (name: string) => {
                   @click.stop="emit('remove-project', p.id)"
                 >
                   삭제
+                </Button>
+                <Button
+                  v-else-if="!isProjectOwner(p, auth.user?.id)"
+                  variant="secondary"
+                  size="sm"
+                  class="min-h-11 min-w-16"
+                  @click.stop="setTeamPane('members')"
+                >
+                  팀에서 관리
                 </Button>
                 <Button
                   v-else-if="canLeaveProject(p, auth.user?.id)"

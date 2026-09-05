@@ -5,7 +5,7 @@ defineProps<{ title: string; subtitle?: string }>()
 </script>
 
 <template>
-  <div class="relative grid min-h-full place-items-center bg-background px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))]">
+  <div class="relative grid min-h-full place-items-center bg-background px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,calc(2.5rem+var(--vv-chrome-gap)))]">
     <div class="absolute right-4 top-4">
       <ThemeToggle />
     </div>

@@ -57,6 +57,11 @@ export const canLeaveProject = (
     project.members?.some((m) => m.userId === userId),
   )
 
+export const isOthersTeamProject = (
+  project: { ownerId: string; team?: { id: string } | null },
+  userId?: string,
+) => Boolean(userId && project.team?.id && project.ownerId !== userId)
+
 export const canDeleteProject = (
   project: { ownerId: string },
   userId?: string,

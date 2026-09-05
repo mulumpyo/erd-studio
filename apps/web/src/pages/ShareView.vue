@@ -6,6 +6,7 @@ import { errorMessage } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -32,9 +33,11 @@ onMounted(async () => {
     :subtitle="error ? undefined : '다이어그램으로 들어가는 중이에요'"
   >
     <div class="space-y-5">
-      <p v-if="!error" class="text-[15px] text-muted-foreground">
-        잠시만 기다려 주세요…
-      </p>
+      <Spinner
+        v-if="!error"
+        class="py-6"
+        label="다이어그램으로 들어가고 있어요"
+      />
       <template v-else>
         <p class="text-sm text-destructive">{{ error }}</p>
         <Button class="w-full" @click="router.replace(auth.user ? '/app' : '/')">홈으로</Button>

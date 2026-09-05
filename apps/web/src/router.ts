@@ -111,9 +111,14 @@ router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (isMarketingPath(to.path)) {
     if (!auth.hydrated) {
-      void auth.fetchMe().then(() => {
-        if (auth.user && to.meta.guest) void router.replace({ name: 'dashboard' })
-      })
+      if (to.path === '/') await auth.fetchMe()
+      else {
+        void auth.fetchMe().then(() => {
+          if (auth.user && to.name === 'landing') {
+            void router.replace({ name: 'dashboard' })
+          }
+        })
+      }
     }
   } else if (!auth.hydrated) await auth.fetchMe()
   if (to.meta.auth && !auth.user)

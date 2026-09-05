@@ -40,7 +40,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="flex h-dvh w-full overflow-hidden bg-background">
+  <div class="flex h-[calc(100dvh-var(--vv-chrome-gap))] w-full overflow-hidden bg-background">
     <button
       v-if="navOpen"
       type="button"
@@ -52,7 +52,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       :class="
         cn(
           'flex h-full min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card px-2 pb-2',
-          'fixed inset-y-0 left-0 z-50 pt-[env(safe-area-inset-top)] transition-transform duration-200',
+          'fixed bottom-[var(--vv-chrome-gap)] left-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-transform duration-200',
           navOpen ? 'translate-x-0' : '-translate-x-full',
           desktopOpen
             ? 'md:relative md:z-auto md:translate-x-0 md:transition-none'

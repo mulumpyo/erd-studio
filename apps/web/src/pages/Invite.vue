@@ -6,6 +6,7 @@ import { errorMessage, roleLabel } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 
 type InvitePreview = {
   email: string
@@ -104,9 +105,11 @@ onMounted(async () => {
     "
   >
     <div class="space-y-5">
-      <p v-if="loading" class="text-[15px] text-muted-foreground">
-        초대를 확인하고 있어요…
-      </p>
+      <Spinner
+        v-if="loading"
+        class="py-6"
+        label="초대를 확인하고 있어요"
+      />
       <p v-else-if="error" class="text-sm text-destructive">{{ error }}</p>
       <template v-else-if="preview">
         <div class="space-y-1 text-[15px] text-muted-foreground">

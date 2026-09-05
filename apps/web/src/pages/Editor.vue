@@ -45,6 +45,7 @@ import ExportMenu from '@/components/editor/ExportMenu.vue'
 import EditorOverflowMenu from '@/components/editor/EditorOverflowMenu.vue'
 import EditorSidePanel from '@/components/editor/EditorSidePanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
@@ -58,9 +59,17 @@ const auth = useAuthStore()
 const projectId = computed(() => String(route.params.id))
 const projectName = ref('잠시만요')
 const ownerId = ref('')
+const teamId = ref<string | null>(null)
 const isOwner = computed(() =>
   isProjectOwner({ ownerId: ownerId.value }, auth.user?.id),
 )
+const showTeamManage = computed(
+  () => Boolean(auth.user && teamId.value && !isOwner.value),
+)
+const goTeam = () => {
+  if (!teamId.value) return
+  void router.push({ name: 'team', params: { teamId: teamId.value } })
+}
 const canLeave = ref(false)
 const canDelete = ref(false)
 const isParticipant = ref(false)
@@ -462,6 +471,7 @@ onMounted(async () => {
     projectTags.value = project.tags ?? []
     isPublic.value = project.isPublic
     ownerId.value = project.ownerId
+    teamId.value = project.team?.id ?? null
     const userId = auth.user?.id
     canLeave.value = canLeaveProject(project, userId)
     canDelete.value = canDeleteProject(project, userId, project.team?.ownerId)
@@ -512,7 +522,7 @@ onUnmounted(() => {
   document.title = 'ERD Studio'
 })
 
-const onPaneClick = () => {
+const onPaneClick = (position: { x: number; y: number }) => {
   if (ignorePaneClick) {
     ignorePaneClick = false
     return
@@ -528,12 +538,8 @@ const onPaneClick = () => {
   }
   selectedId.value = null
   if (readOnly.value) return
-  const offset = {
-    x: 120 + erd.value.tables.length * 36,
-    y: 100 + erd.value.notes.length * 24,
-  }
-  if (tool.value === 'table') addTable(offset)
-  if (tool.value === 'note') addNote(offset)
+  if (tool.value === 'table') addTable(position)
+  if (tool.value === 'note') addNote(position)
 }
 
 const applyRelation = (sourceId: string, targetId: string) => {
@@ -973,10 +979,16 @@ const removeProject = async () => {
   </div>
   <div
     v-else
-    class="relative h-svh overflow-hidden bg-background"
+    class="relative h-[calc(100svh-var(--vv-chrome-gap))] overflow-hidden bg-background"
     :class="{ 'erd-immersive': chromeHidden }"
   >
     <div class="absolute inset-0">
+      <Spinner
+        v-if="!loaded"
+        class="absolute inset-0 z-[5] bg-background"
+        size="lg"
+        label="다이어그램을 불러오고 있어요"
+      />
       <ErdCanvas
         v-if="loaded"
         ref="canvasRef"
@@ -997,7 +1009,7 @@ const removeProject = async () => {
     </div>
     <div
       id="erd-canvas-controls"
-      class="pointer-events-auto absolute z-30"
+      class="pointer-events-auto absolute z-10"
       :class="
         compactLayout
           ? 'bottom-[calc(var(--erd-sheet-peek,7.5rem)+0.75rem)] left-20'
@@ -1061,7 +1073,14 @@ const removeProject = async () => {
             @import-json="importJsonFile"
           />
           <Button
-            v-if="isParticipant"
+            v-if="showTeamManage"
+            variant="secondary"
+            size="sm"
+            @click="goTeam"
+            >팀에서 관리</Button
+          >
+          <Button
+            v-else-if="isParticipant"
             variant="secondary"
             size="sm"
             @click="membersOpen = true"
@@ -1106,8 +1125,10 @@ const removeProject = async () => {
           :can-leave="canLeave"
           :is-public="isPublic"
           :signed-in="Boolean(auth.user)"
+          :show-team-manage="showTeamManage"
           :share-options="shareOptions"
           @members="membersOpen = true"
+          @manage-team="goTeam"
           @update:public="setPublic"
           @copy-share="copyShare"
           @login="
@@ -1167,7 +1188,7 @@ const removeProject = async () => {
         data-erd-sheet-host
         :class="
           compactLayout
-            ? 'erd-chrome erd-chrome-bottom pointer-events-none absolute inset-y-0 left-16 right-0 z-20'
+            ? 'erd-chrome erd-chrome-bottom pointer-events-none absolute inset-y-0 left-16 right-0 z-20 flex flex-col justify-end'
             : 'erd-chrome erd-chrome-right pointer-events-auto absolute inset-y-0 right-0 z-20 w-[340px] border-l border-border/80 shadow-[-8px_0_24px_rgb(25_31_40_/_0.06)]'
         "
       >

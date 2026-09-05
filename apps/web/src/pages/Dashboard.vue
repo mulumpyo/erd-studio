@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import {
   canDeleteProject,
   canLeaveProject,
+  isOthersTeamProject,
   type PageResult,
   type Project,
   type Team,
@@ -25,6 +26,7 @@ import Button from '@/components/ui/button/Button.vue'
 import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import ChatInbox from '@/components/dashboard/ChatInbox.vue'
 import { confirm, notice } from '@/composables/useConfirm'
 import { useChatInbox } from '@/composables/useChatInbox'
@@ -437,12 +439,11 @@ onUnmounted(() => {
               팀 만들고 시작하기
             </button>
           </p>
-          <p
+          <Spinner
             v-else-if="loading && !projects.length"
-            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
-          >
-            프로젝트를 불러오는 중이에요.
-          </p>
+            class="rounded-2xl bg-card px-4 py-16"
+            label="프로젝트를 불러오고 있어요"
+          />
           <p
             v-else-if="!projects.length"
             class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
@@ -521,6 +522,20 @@ onUnmounted(() => {
                   삭제
                 </Button>
                 <Button
+                  v-else-if="isOthersTeamProject(project, auth.user?.id)"
+                  variant="secondary"
+                  size="sm"
+                  class="min-h-11 min-w-16"
+                  @click.stop="
+                    router.push({
+                      name: 'team',
+                      params: { teamId: project.team!.id },
+                    })
+                  "
+                >
+                  팀에서 관리
+                </Button>
+                <Button
                   v-else-if="canLeaveProject(project, auth.user?.id)"
                   variant="secondary"
                   size="sm"
@@ -573,12 +588,11 @@ onUnmounted(() => {
           />
         </FieldBar>
         <div ref="listViewport" class="min-h-0 flex-1 overflow-y-auto">
-          <p
+          <Spinner
             v-if="loading && !teams.length"
-            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
-          >
-            팀을 불러오는 중이에요.
-          </p>
+            class="rounded-2xl bg-card px-4 py-16"
+            label="팀을 불러오고 있어요"
+          />
           <p
             v-else-if="!teams.length"
             class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
@@ -628,12 +642,11 @@ onUnmounted(() => {
         </div>
       </section>
 
-      <p
+      <Spinner
         v-else-if="loading && !selectedTeam"
-        class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
-      >
-        팀을 불러오는 중이에요.
-      </p>
+        class="rounded-2xl bg-card px-4 py-16"
+        label="팀을 불러오고 있어요"
+      />
       <TeamWorkspace
         v-else-if="selectedTeam"
         :key="selectedTeam.id"

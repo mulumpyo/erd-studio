@@ -34,7 +34,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  paneClick: []
+  paneClick: [position: { x: number; y: number }]
   connect: [params: Connection]
   nodeDragStart: [event: NodeDragEvent]
   nodeDrag: [event: NodeDragEvent]
@@ -60,6 +60,7 @@ const {
   setViewport,
   setMinZoom,
   minZoom,
+  screenToFlowCoordinate,
 } = useVueFlow(props.flowId)
 const nodeTypes = { table: markRaw(TableNode), note: markRaw(NoteNode) } as never
 const edgeTypes = { crow: markRaw(CrowEdge) } as never
@@ -99,6 +100,15 @@ const onMoveEnd = () => {
   if (!panePanning) return
   panePanning = false
   emit('panEnd')
+}
+
+const onPaneClick = (payload: MouseEvent | { event?: MouseEvent }) => {
+  const event = payload instanceof MouseEvent ? payload : payload.event
+  if (!event) return
+  emit(
+    'paneClick',
+    screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
+  )
 }
 
 const focusNode = (id: string) => {
@@ -281,7 +291,7 @@ defineExpose({ focusNode, capture, viewportEl })
       :min-zoom="0.05"
       :delete-key-code="null"
       fit-view-on-init
-      @pane-click="emit('paneClick')"
+      @pane-click="onPaneClick"
       @connect="emit('connect', $event)"
       @move="onMove"
       @move-end="onMoveEnd"
