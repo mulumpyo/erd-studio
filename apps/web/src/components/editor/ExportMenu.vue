@@ -93,7 +93,7 @@ const onFile = (event: Event) => {
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('html')"
       >
-        HTML 명세서로
+        HTML 명세서로 저장
       </button>
       <button
         type="button"

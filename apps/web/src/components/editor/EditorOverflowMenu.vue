@@ -103,22 +103,6 @@ const run = (
       <div
         class="max-h-[min(28rem,calc(100vh-5.5rem))] overflow-y-auto"
       >
-        <button
-          v-if="showTeamManage"
-          type="button"
-          :class="itemClass"
-          @click="run('manage-team')"
-        >
-          팀에서 관리
-        </button>
-        <button
-          v-else-if="isParticipant"
-          type="button"
-          :class="itemClass"
-          @click="run('members')"
-        >
-          멤버
-        </button>
         <div v-if="isOwner" class="px-3 py-2">
           <SegmentedControl
             class="w-full"
@@ -130,6 +114,25 @@ const run = (
         <button type="button" :class="itemClass" @click="run('copy-share')">
           링크 복사
         </button>
+        <template v-if="showTeamManage || isParticipant">
+          <div class="my-1 h-px bg-border" />
+          <button
+            v-if="showTeamManage"
+            type="button"
+            :class="itemClass"
+            @click="run('manage-team')"
+          >
+            나의 팀
+          </button>
+          <button
+            v-else
+            type="button"
+            :class="itemClass"
+            @click="run('members')"
+          >
+            팀원 관리
+          </button>
+        </template>
         <div class="my-1 h-px bg-border" />
         <button type="button" :class="itemClass" @click="pick('json')">
           ERD JSON으로 저장
@@ -144,7 +147,7 @@ const run = (
           SVG로 저장
         </button>
         <button type="button" :class="itemClass" @click="pick('html')">
-          HTML 명세서로
+          HTML 명세서로 저장
         </button>
         <button type="button" :class="itemClass" @click="pick('xls')">
           Excel로 저장

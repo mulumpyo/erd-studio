@@ -1077,7 +1077,7 @@ const removeProject = async () => {
             variant="secondary"
             size="sm"
             @click="goTeam"
-            >팀에서 관리</Button
+            >나의 팀</Button
           >
           <Button
             v-else-if="isParticipant"
