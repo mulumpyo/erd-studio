@@ -290,13 +290,12 @@ export class ProjectsController {
   @ApiOperation({
     summary: '팀원 초대하기',
     description:
-      '이메일로 프로젝트에 초대해요. 아직 가입하지 않은 사람도 초대해 두면, 가입할 때 자동으로 들어와요.\n\n' +
+      '이메일로 프로젝트에 초대해요. 받은 사람이 수락해야 들어와요. 아직 가입하지 않은 사람도 초대해 둘 수 있어요.\n\n' +
       '팀 프로젝트의 팀원은 팀에서 관리하니 이 API를 쓸 수 없어요.',
   })
   @ProjectId()
   @ApiCreatedResponse({
-    description:
-      '이미 가입한 사람이면 바로 팀원으로 넣고 `status: "joined"`를 줘요. 아니면 초대 메일을 보내요.',
+    description: '초대 메일을 보내고 `status: "invited"`를 줘요.',
   })
   @ApiBadRequestResponse({ description: '자기 자신은 초대할 수 없어요.' })
   @ApiForbiddenResponse({

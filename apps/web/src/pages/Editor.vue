@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { onKeyStroke, useMediaQuery } from '@vueuse/core'
 import type { Connection, EdgeMouseEvent, NodeDragEvent, NodeMouseEvent } from '@vue-flow/core'
@@ -31,6 +31,7 @@ import {
 } from '@/composables/erd-tools'
 import { ErdFlowKey } from '@/composables/useErdFlow'
 import { useErdSession } from '@/composables/useErdSession'
+import { clearCanvasInsets, syncCanvasInsets } from '@/composables/useCanvasInsets'
 import ErdCanvas from '@/components/editor/ErdCanvas.vue'
 import Toolbar from '@/components/editor/Toolbar.vue'
 import Inspector from '@/components/editor/Inspector.vue'
@@ -51,7 +52,8 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 import { toast } from '@/composables/useToast'
 import { confirm, useConfirm } from '@/composables/useConfirm'
-import { markProjectChatSeen } from '@/composables/useChatInbox'
+import { markProjectChatSeen, setOpenChatProject } from '@/composables/useChatInbox'
+import { onNotifyListsChange } from '@/composables/useNotifications'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +72,7 @@ const goTeam = () => {
   if (!teamId.value) return
   void router.push({ name: 'team', params: { teamId: teamId.value } })
 }
+let stopListNotify: (() => void) | null = null
 const canLeave = ref(false)
 const canDelete = ref(false)
 const isParticipant = ref(false)
@@ -87,6 +90,7 @@ const settingsOpen = ref(false)
 const entitiesOpen = ref(false)
 const inspectorExpanded = ref(false)
 const chromeHidden = ref(false)
+const focusMode = ref(false)
 const nodeDragging = ref(false)
 const panePanning = ref(false)
 const compactLayout = useMediaQuery('(max-width: 1279px)')
@@ -102,6 +106,15 @@ const canvasRef = ref<{
   focusNode: (id: string) => void
   capture: (format: 'png' | 'svg') => Promise<string | null>
 } | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
+
+const syncInsets = () => {
+  syncCanvasInsets({
+    focus: focusMode.value,
+    compact: compactLayout.value,
+    header: headerRef.value?.offsetHeight ?? 64,
+  })
+}
 
 const shareOptions = [
   { value: 'private', label: '비공개' },
@@ -501,6 +514,7 @@ onMounted(async () => {
     apiReadOnly.value = project.canEdit === false
     loaded.value = true
     window.addEventListener('keydown', onKey)
+    stopListNotify = onNotifyListsChange(onProjectNotify)
   } catch (e) {
     if (e instanceof ApiError && (e.status === 401 || (!auth.token && e.status === 404))) {
       router.replace({
@@ -516,9 +530,26 @@ onMounted(async () => {
   }
 })
 
+watch(
+  [chatIsOpen, projectId],
+  ([open, id]) => {
+    setOpenChatProject(open ? id : null)
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  window.addEventListener('resize', syncInsets)
+  syncInsets()
+})
+
 onUnmounted(() => {
   window.clearTimeout(chromeShowTimer)
   window.removeEventListener('keydown', onKey)
+  window.removeEventListener('resize', syncInsets)
+  stopListNotify?.()
+  setOpenChatProject(null)
+  clearCanvasInsets()
   document.title = 'ERD Studio'
 })
 
@@ -588,6 +619,10 @@ const onConnect = (params: Connection) => {
 const hideChrome = () => {
   window.clearTimeout(chromeShowTimer)
   chromeHidden.value = true
+}
+
+const exitFocusMode = () => {
+  focusMode.value = false
 }
 
 const showChromeSoon = () => {
@@ -668,6 +703,33 @@ const onEdgeClick = (event: EdgeMouseEvent) => {
 const onToolChange = (next: typeof tool.value) => {
   tool.value = next
   pendingLink.value = null
+}
+
+const refreshProjectName = async () => {
+  try {
+    const project = await api<{ name: string }>(
+      `/api/projects/${projectId.value}`,
+      {},
+      auth.token,
+    )
+    if (project.name && project.name !== projectName.value) {
+      projectName.value = project.name
+    }
+  } catch {
+    /* keep the name we already have */
+  }
+}
+
+const onProjectNotify = (event?: {
+  type?: string
+  teamId?: string
+  projectId?: string
+}) => {
+  if (event?.type === 'project') {
+    if (event.projectId && event.projectId !== projectId.value) return
+    void refreshProjectName()
+    return
+  }
 }
 
 const rename = async () => {
@@ -795,12 +857,24 @@ watch(compactLayout, (compact) => {
   }
 })
 
+watch(focusMode, (on) => {
+  syncInsets()
+  if (!on) return
+  entitiesOpen.value = false
+  inspectorExpanded.value = false
+  pendingLink.value = null
+  if (!readOnly.value) tool.value = 'select'
+})
+
+watch(compactLayout, syncInsets)
+
 watch(loaded, (value) => {
   if (!value) return
   window.clearTimeout(chromeShowTimer)
   nodeDragging.value = false
   panePanning.value = false
   chromeHidden.value = false
+  void nextTick(syncInsets)
 })
 
 const toggleEntities = () => {
@@ -810,6 +884,10 @@ const toggleEntities = () => {
 
 onKeyStroke('Escape', () => {
   if (confirmOpen.value) return
+  if (focusMode.value) {
+    exitFocusMode()
+    return
+  }
   if (entitiesOpen.value) {
     entitiesOpen.value = false
     return
@@ -980,7 +1058,10 @@ const removeProject = async () => {
   <div
     v-else
     class="relative h-[calc(100svh-var(--vv-chrome-gap))] overflow-hidden bg-background"
-    :class="{ 'erd-immersive': chromeHidden }"
+    :class="{
+      'erd-immersive': chromeHidden || focusMode,
+      'erd-focus': focusMode,
+    }"
   >
     <div class="absolute inset-0">
       <Spinner
@@ -992,11 +1073,13 @@ const removeProject = async () => {
       <ErdCanvas
         v-if="loaded"
         ref="canvasRef"
+        v-model:focus="focusMode"
         :nodes="canvasNodes"
         :edges="canvasEdges"
         :read-only="readOnly"
         :linking="isRelationTool(tool)"
         :compact="compactLayout"
+        :hint="focusMode ? '' : canvasHint"
         @pane-click="onPaneClick"
         @connect="onConnect"
         @pan-start="onPanStart"
@@ -1011,13 +1094,16 @@ const removeProject = async () => {
       id="erd-canvas-controls"
       class="pointer-events-auto absolute z-10"
       :class="
-        compactLayout
-          ? 'bottom-[calc(var(--erd-sheet-peek,7.5rem)+0.75rem)] left-20'
-          : 'bottom-4 left-[4.75rem] xl:left-[19.75rem]'
+        focusMode
+          ? 'bottom-4 left-4'
+          : compactLayout
+            ? 'bottom-[calc(var(--erd-sheet-peek,7.5rem)+0.75rem)] left-20'
+            : 'bottom-4 left-[4.75rem] xl:left-[19.75rem]'
       "
     />
     <div class="pointer-events-none absolute inset-0 z-20 flex flex-col">
     <header
+      ref="headerRef"
       class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-16 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:px-4"
     >
       <div class="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -1147,16 +1233,6 @@ const removeProject = async () => {
       </div>
     </header>
     <div class="relative min-h-0 flex-1">
-      <div
-        v-if="canvasHint"
-        class="erd-chrome-float pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center px-4"
-      >
-        <div
-          class="rounded-full bg-card/95 px-4 py-2 text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
-        >
-          {{ canvasHint }}
-        </div>
-      </div>
       <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(25_31_40_/_0.06)]">
       <Toolbar
         class="w-16"

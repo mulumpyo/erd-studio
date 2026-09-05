@@ -30,6 +30,9 @@ const readBody = (req: IncomingMessage) =>
     req.on('error', reject)
   })
 
+const isStream = (path: string) =>
+  path.startsWith('/notify/stream') || path.startsWith('/chat/inbox/stream')
+
 const forward = (
   dest: URL,
   path: string,
@@ -40,8 +43,10 @@ const forward = (
   new Promise<'sent' | 'retry'>((resolve, reject) => {
     const headers = { ...req.headers, host: dest.host }
     for (const name of HOP_BY_HOP) delete headers[name]
-    headers['content-length'] = String(body.length)
+    if (isStream(path)) delete headers['content-length']
+    else headers['content-length'] = String(body.length)
 
+    req.socket.setTimeout(0)
     const proxyReq = http.request(
       {
         protocol: dest.protocol,
@@ -54,11 +59,21 @@ const forward = (
       (proxyRes) => {
         const outHeaders = { ...proxyRes.headers }
         for (const name of HOP_BY_HOP) delete outHeaders[name]
+        if (isStream(path)) {
+          outHeaders['cache-control'] = 'no-cache, no-transform'
+          outHeaders['x-accel-buffering'] = 'no'
+          outHeaders.connection = 'keep-alive'
+        }
         req.socket.setTimeout(0)
         proxyRes.socket?.setTimeout(0)
         res.writeHead(proxyRes.statusCode ?? 502, outHeaders)
-        proxyRes.pipe(res)
-        proxyRes.on('end', () => resolve('sent'))
+        proxyRes.on('data', (chunk) => {
+          res.write(chunk)
+        })
+        proxyRes.on('end', () => {
+          if (!res.writableEnded) res.end()
+          resolve('sent')
+        })
         proxyRes.on('error', reject)
       },
     )
@@ -67,7 +82,8 @@ const forward = (
       if (retryable(err)) resolve('retry')
       else reject(err)
     })
-    proxyReq.end(body)
+    if (isStream(path)) proxyReq.end()
+    else proxyReq.end(body)
   })
 
 export const apiProxy = (target: string): Plugin => {
@@ -83,7 +99,7 @@ export const apiProxy = (target: string): Plugin => {
         void (async () => {
           try {
             const path = req.url!.replace(/^\/api/, '') || '/'
-            const body = await readBody(req)
+            const body = isStream(path) ? Buffer.alloc(0) : await readBody(req)
             const deadline = Date.now() + 20_000
             while (true) {
               const result = await forward(dest, path, req, res, body)

@@ -9,6 +9,7 @@ export type TeamMember = {
 export type PendingInvitation = {
   id: string
   email: string
+  name?: string | null
   role: string
   expiresAt: string
   createdAt: string

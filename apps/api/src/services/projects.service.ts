@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client'
 import { PrismaService } from './prisma.service'
 import { InvitationsService } from './invitations.service'
 import { CollabAclService } from './collab-acl.service'
+import { NotifyService } from './notify.service'
 import type { AuthUser } from '../common/auth/current-user'
 import {
   assertDeleteProject,
@@ -32,6 +33,7 @@ export class ProjectsService {
     private prisma: PrismaService,
     private invitations: InvitationsService,
     private collabAcl: CollabAclService,
+    private notify: NotifyService,
   ) {}
 
   attachAccessibleOrphans = async (user: AuthUser) => {
@@ -113,7 +115,7 @@ export class ProjectsService {
     const resolvedTeamId = teamId
       ? (await this.assertTeamMember(user.id, teamId), teamId)
       : (await this.findOrCreateOwnerTeam(user.id, user.name)).id
-    return this.prisma.project.create({
+    const project = await this.prisma.project.create({
       data: {
         name,
         ownerId: user.id,
@@ -123,6 +125,8 @@ export class ProjectsService {
       },
       include: { members: { include: { user: { select: userSelect } } } },
     })
+    await this.notify.publishProjectChange(resolvedTeamId, undefined, project.id)
+    return project
   }
 
   get = async (user: AuthUser | null | undefined, id: string) => {
@@ -172,7 +176,9 @@ export class ProjectsService {
       throw new ForbiddenException('공개 설정은 소유자만 바꿀 수 있어요.')
     }
     const unpublishing = data.isPublic === false && project.isPublic
-    return this.prisma.project.update({
+    const nextName = data.name?.trim()
+    const nameChanged = Boolean(nextName && nextName !== project.name)
+    const updated = await this.prisma.project.update({
       where: { id },
       data: {
         name: data.name,
@@ -185,6 +191,10 @@ export class ProjectsService {
         tags: data.tags ? this.cleanTags(data.tags) : undefined,
       },
     })
+    if (nameChanged && project.teamId) {
+      await this.notify.publishProjectChange(project.teamId, undefined, id, false)
+    }
+    return updated
   }
 
   saveSnapshot = async (user: AuthUser, id: string, snapshot: object) => {
@@ -198,6 +208,9 @@ export class ProjectsService {
     assertDeleteProject(user, project)
     await this.prisma.project.delete({ where: { id } })
     await this.collabAcl.kickFromProject(id)
+    if (project.teamId) {
+      await this.notify.publishProjectChange(project.teamId, undefined, id)
+    }
     return { ok: true }
   }
 
@@ -218,6 +231,9 @@ export class ProjectsService {
       where: { projectId_userId: { projectId: id, userId: user.id } },
     })
     await this.collabAcl.kickFromProject(id, user.id)
+    if (project.teamId) {
+      await this.notify.publishProjectChange(project.teamId, user.id, id)
+    }
     return { ok: true }
   }
 
@@ -343,27 +359,21 @@ export class ProjectsService {
     const invitee = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     })
-    if (!invitee) {
-      return this.invitations.invite({
-        actor: user,
-        email,
-        role,
-        target: { kind: 'project', name: project.name, projectId: id },
-      })
-    }
-    if (invitee.id === project.ownerId)
+    if (invitee?.id === project.ownerId) {
       throw new ForbiddenException('소유자는 이미 팀원입니다.')
-    await this.prisma.invitation.updateMany({
-      where: { email: invitee.email, projectId: id, acceptedAt: null },
-      data: { acceptedAt: new Date() },
+    }
+    if (invitee) {
+      const member = await this.prisma.projectMember.findUnique({
+        where: { projectId_userId: { projectId: id, userId: invitee.id } },
+      })
+      if (member) throw new ForbiddenException('이미 팀원이에요.')
+    }
+    return this.invitations.invite({
+      actor: user,
+      email,
+      role,
+      target: { kind: 'project', name: project.name, projectId: id },
     })
-    const member = await this.prisma.projectMember.upsert({
-      where: { projectId_userId: { projectId: id, userId: invitee.id } },
-      update: { role },
-      create: { projectId: id, userId: invitee.id, role },
-      include: { user: { select: userSelect } },
-    })
-    return { status: 'joined' as const, member }
   }
 
   resendInvite = async (user: AuthUser, id: string, inviteId: string) => {
@@ -408,6 +418,9 @@ export class ProjectsService {
       include: { user: { select: userSelect } },
     }).then(async (member) => {
       await this.collabAcl.kickFromProject(id, userId)
+      if (project.teamId) {
+        await this.notify.publishProjectChange(project.teamId, undefined, id, false)
+      }
       return member
     })
   }
@@ -422,6 +435,9 @@ export class ProjectsService {
       where: { projectId_userId: { projectId: id, userId } },
     })
     await this.collabAcl.kickFromProject(id, userId)
+    if (project.teamId) {
+      await this.notify.publishProjectChange(project.teamId, userId, id)
+    }
     return { ok: true }
   }
 

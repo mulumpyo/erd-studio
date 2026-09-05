@@ -56,6 +56,7 @@ const load = async () => {
     teams.value = result.items
     pages.value = result.pages
     total.value = result.total
+    if (!search.value.trim() && result.total === 0) mode.value = 'create'
   } catch (e) {
     error.value = errorMessage(e, '팀을 불러오지 못했어요')
   } finally {

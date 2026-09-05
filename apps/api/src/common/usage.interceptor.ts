@@ -12,7 +12,8 @@ const skipPath = (url: string) => {
   return (
     path.endsWith('/health') ||
     path.endsWith('/auth/refresh') ||
-    path.endsWith('/chat/inbox/stream')
+    path.endsWith('/chat/inbox/stream') ||
+    path.endsWith('/notify/stream')
   )
 }
 

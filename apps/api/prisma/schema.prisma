@@ -141,8 +141,10 @@ model Invitation {
   invitedById String
   invitedBy   User      @relation(fields: [invitedById], references: [id], onDelete: Cascade)
   expiresAt   DateTime
-  acceptedAt  DateTime?
-  createdAt   DateTime  @default(now())
+  acceptedAt     DateTime?
+  declinedAt     DateTime?
+  inviterReadAt  DateTime?
+  createdAt      DateTime  @default(now())
 
   @@index([email])
   @@index([teamId])

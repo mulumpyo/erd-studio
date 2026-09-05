@@ -40,7 +40,7 @@ const emit = defineEmits<{
   create: [fromSample: boolean, name: string]
   'remove-team': []
   'leave-team': []
-  'remove-project': [id: string]
+  'remove-project': [id: string, name: string]
   'leave-project': [id: string]
 }>()
 
@@ -94,7 +94,9 @@ const memberPage = ref(1)
 
 const pendingInvites = computed(() => {
   const invites = isOwner.value ? (props.team.invitations ?? []) : []
-  return invites.filter((invite) => matchesPerson('', invite.email))
+  return invites.filter((invite) =>
+    matchesPerson(invite.name || '', invite.email),
+  )
 })
 
 const sortedMembers = computed(() =>
@@ -162,8 +164,12 @@ const loadProjects = async () => {
 watch(
   () => [props.team.id, search.value, props.revision] as const,
   ([id], previous) => {
-    if (previous && id !== previous[0]) teamPane.value = 'projects'
-    projectPage.value = 1
+    if (previous && id !== previous[0]) {
+      teamPane.value = 'projects'
+      projectPage.value = 1
+    } else if (previous && previous[1] !== search.value) {
+      projectPage.value = 1
+    }
     void loadProjects()
   },
   { immediate: true },
@@ -236,10 +242,7 @@ const invite = async (email: string, role: string) => {
   inviteError.value = ''
   inviting.value = true
   try {
-    const result = await api<
-      | { status: 'joined' }
-      | { status: 'invited'; mailed: boolean }
-    >(
+    const result = await api<{ status: 'invited'; mailed: boolean }>(
       `/api/teams/${props.team.id}/members`,
       {
         method: 'POST',
@@ -248,11 +251,9 @@ const invite = async (email: string, role: string) => {
       auth.token,
     )
     toast(
-      result.status === 'joined'
-        ? '팀원으로 추가했어요'
-        : result.mailed
-          ? '초대 메일을 보냈어요'
-          : '아직 가입하지 않은 분이에요. 링크를 복사해 초대해 주세요.',
+      result.mailed
+        ? '초대 메일을 보냈어요. 상대가 수락하면 들어와요.'
+        : '메일을 보내지 못했어요. 링크를 복사해 초대해 주세요.',
     )
     inviteOpen.value = false
     emit('changed')
@@ -459,7 +460,7 @@ const renameTeam = async (name: string) => {
           />
         </FieldBar>
 
-        <div ref="projectViewport" class="min-h-0 flex-1 overflow-y-auto">
+        <div ref="projectViewport" class="min-h-0 flex-1 overflow-y-auto p-px">
           <Spinner
             v-if="loadingProjects && !projects.length"
             class="rounded-2xl bg-card px-4 py-16 ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
@@ -512,7 +513,7 @@ const renameTeam = async (name: string) => {
                   variant="softDestructive"
                   size="sm"
                   class="min-h-11 min-w-16"
-                  @click.stop="emit('remove-project', p.id)"
+                  @click.stop="emit('remove-project', p.id, p.name)"
                 >
                   삭제
                 </Button>
@@ -566,7 +567,7 @@ const renameTeam = async (name: string) => {
             type="search"
           />
         </FieldBar>
-        <div ref="memberViewport" class="min-h-0 flex-1 overflow-y-auto">
+        <div ref="memberViewport" class="min-h-0 flex-1 overflow-y-auto p-px">
           <p
             v-if="!memberTotal"
             class="rounded-2xl bg-card px-5 py-10 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
@@ -623,13 +624,23 @@ const renameTeam = async (name: string) => {
               <div v-else data-fit-row class="px-4 py-3">
                 <div class="flex items-center gap-3">
                   <Avatar class="size-9 text-[13px]">
-                    {{ row.invite.email.slice(0, 1).toUpperCase() }}
+                    {{
+                      (row.invite.name || row.invite.email)
+                        .slice(0, 1)
+                        .toUpperCase()
+                    }}
                   </Avatar>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-[15px] font-semibold">
-                      {{ row.invite.email }}
+                      {{ row.invite.name || row.invite.email }}
                     </p>
-                    <p class="text-[13px] text-muted-foreground">초대 대기</p>
+                    <p class="truncate text-[13px] text-muted-foreground">
+                      {{
+                        row.invite.name && row.invite.name !== row.invite.email
+                          ? `${row.invite.email} · 초대 대기`
+                          : '초대 대기'
+                      }}
+                    </p>
                   </div>
                   <Badge
                     class="shrink-0 bg-[#fff6d8] text-[#c78500] dark:bg-[#3d3420] dark:text-[#f5c84c]"

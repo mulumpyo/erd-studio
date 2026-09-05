@@ -1,35 +1,11 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import type { Request, Response } from 'express'
-import type Redis from 'ioredis'
+import { Injectable } from '@nestjs/common'
 import type { AuthUser } from '../common/auth/current-user'
 import { assertEdit, assertParticipant } from '../common/access'
+import { NotifyService } from './notify.service'
 import { ProjectsService } from './projects.service'
 import { PrismaService } from './prisma.service'
-import { RedisService } from './redis.service'
 
 const chatUserSelect = { id: true, name: true, email: true } as const
-const CHAT_INBOX_CHANNEL = 'erd:chat:inbox'
-const HEARTBEAT_MS = 25_000
-const ACCESS_REFRESH_MS = 60_000
-
-type InboxNotice = { projectId: string; userId: string }
-
-const parseInboxNotice = (raw: string): InboxNotice | null => {
-  try {
-    const parsed = JSON.parse(raw) as Partial<InboxNotice>
-    if (
-      typeof parsed.projectId === 'string' &&
-      parsed.projectId &&
-      typeof parsed.userId === 'string' &&
-      parsed.userId
-    ) {
-      return { projectId: parsed.projectId, userId: parsed.userId }
-    }
-  } catch {
-    /* ignore */
-  }
-  return null
-}
 
 const accessWhere = (userId: string) => ({
   OR: [
@@ -40,36 +16,12 @@ const accessWhere = (userId: string) => ({
 })
 
 @Injectable()
-export class ChatService implements OnModuleInit, OnModuleDestroy {
-  private sub: Redis | null = null
-  private readonly listeners = new Set<(event: InboxNotice) => void>()
-
+export class ChatService {
   constructor(
     private projects: ProjectsService,
     private prisma: PrismaService,
-    private redis: RedisService,
+    private notify: NotifyService,
   ) {}
-
-  onModuleInit = async () => {
-    this.sub = this.redis.client.duplicate()
-    this.sub.on('error', () => {
-      /* reconnect is handled by ioredis */
-    })
-    this.sub.on('message', (_channel, raw) => {
-      const event = parseInboxNotice(raw)
-      if (!event) return
-      for (const listen of this.listeners) listen(event)
-    })
-    await this.sub.subscribe(CHAT_INBOX_CHANNEL)
-  }
-
-  onModuleDestroy = async () => {
-    this.listeners.clear()
-    if (!this.sub) return
-    await this.sub.unsubscribe(CHAT_INBOX_CHANNEL)
-    await this.sub.quit()
-    this.sub = null
-  }
 
   list = async (user: AuthUser, projectId: string) => {
     const project = await this.projects.requireAccess(user, projectId)
@@ -104,74 +56,15 @@ export class ChatService implements OnModuleInit, OnModuleDestroy {
       data: { projectId, userId: user.id, body },
       include: { user: { select: chatUserSelect } },
     })
-    try {
-      await this.redis.client.publish(
-        CHAT_INBOX_CHANNEL,
-        JSON.stringify({ projectId, userId: user.id }),
-      )
-    } catch {
-      /* inbox stream will catch up on the next load */
-    }
+    await this.notify.publishChat(projectId, user.id, {
+      body: created.body,
+      userName: created.user.name,
+      projectName: project.name,
+      teamName:
+        (project.team as { name?: string } | null | undefined)?.name ?? null,
+      createdAt: created.createdAt.toISOString(),
+    })
     return created
-  }
-
-  watchInbox = async (user: AuthUser, req: Request, res: Response) => {
-    const allowed = new Set(await this.accessibleIds(user.id))
-    req.socket.setTimeout(0)
-    res.status(200)
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
-    res.setHeader('Cache-Control', 'no-cache, no-transform')
-    res.setHeader('Connection', 'keep-alive')
-    res.setHeader('X-Accel-Buffering', 'no')
-    res.flushHeaders()
-
-    const write = (chunk: string) => {
-      if (res.writableEnded) return
-      try {
-        res.write(chunk)
-      } catch {
-        /* closed */
-      }
-    }
-    write(': connected\n\n')
-
-    const onNotice = (event: InboxNotice) => {
-      if (event.userId === user.id) return
-      if (!allowed.has(event.projectId)) return
-      write(`event: inbox\ndata: ${JSON.stringify({ projectId: event.projectId })}\n\n`)
-    }
-    this.listeners.add(onNotice)
-
-    const heartbeat = setInterval(() => write(': ping\n\n'), HEARTBEAT_MS)
-    const refresh = setInterval(() => {
-      void this.accessibleIds(user.id)
-        .then((ids) => {
-          allowed.clear()
-          for (const id of ids) allowed.add(id)
-        })
-        .catch(() => {
-          /* keep last known access */
-        })
-    }, ACCESS_REFRESH_MS)
-
-    await new Promise<void>((resolve) => {
-      const done = () => {
-        clearInterval(heartbeat)
-        clearInterval(refresh)
-        this.listeners.delete(onNotice)
-        resolve()
-      }
-      req.on('close', done)
-      res.on('close', done)
-    })
-  }
-
-  private accessibleIds = async (userId: string) => {
-    const rows = await this.prisma.project.findMany({
-      where: accessWhere(userId),
-      select: { id: true },
-    })
-    return rows.map((row) => row.id)
   }
 
   inbox = async (user: AuthUser, lastRead: Record<string, number> = {}) => {
