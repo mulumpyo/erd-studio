@@ -8,6 +8,7 @@ import { safeInternalPath } from '@/lib/urls'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Label from '@/components/ui/label/Label.vue'
 
 const auth = useAuthStore()
@@ -76,7 +77,7 @@ const submit = async () => {
       </div>
       <div class="space-y-2">
         <Label>비밀번호</Label>
-        <Input v-model="password" type="password" required />
+        <PasswordInput v-model="password" required autocomplete="current-password" />
       </div>
       <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
       <Button class="w-full" :disabled="loading">{{

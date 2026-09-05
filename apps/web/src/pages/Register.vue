@@ -9,6 +9,7 @@ import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
 import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Label from '@/components/ui/label/Label.vue'
 import {
   clearRegisterDraft,
@@ -124,21 +125,21 @@ const submit = async () => {
       </div>
       <div class="space-y-2">
         <Label>비밀번호</Label>
-        <Input
+        <PasswordInput
           v-model="password"
-          type="password"
           minlength="8"
           required
+          autocomplete="new-password"
           placeholder="8자 이상"
         />
       </div>
       <div class="space-y-2">
         <Label>비밀번호 확인</Label>
-        <Input
+        <PasswordInput
           v-model="confirmPassword"
-          type="password"
           minlength="8"
           required
+          autocomplete="new-password"
         />
         <p v-if="mismatch" class="text-[13px] text-destructive">
           비밀번호가 일치하지 않아요

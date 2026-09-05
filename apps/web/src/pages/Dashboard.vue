@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { ChevronRight, Plus, Search } from 'lucide-vue-next'
+import { ChevronRight, MessageCircle, Plus, Search } from 'lucide-vue-next'
 import { api, ApiError } from '@/api'
 import { errorMessage, initialOf } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
@@ -25,7 +25,9 @@ import Button from '@/components/ui/button/Button.vue'
 import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
+import ChatInbox from '@/components/dashboard/ChatInbox.vue'
 import { confirm, notice } from '@/composables/useConfirm'
+import { useChatInbox } from '@/composables/useChatInbox'
 import { useFitPageSize } from '@/composables/usePageSize'
 
 const auth = useAuthStore()
@@ -48,6 +50,13 @@ const teamPickOpen = ref(false)
 const projectDialogOpen = ref(false)
 const teamDialogOpen = ref(false)
 const listViewport = ref<HTMLElement | null>(null)
+const {
+  items: chatInbox,
+  load: loadChatInbox,
+  markSeen: markChatInboxSeen,
+  unreadByProject,
+} = useChatInbox(() => auth.user?.id)
+const unreadChatIds = computed(() => new Set(unreadByProject.value.keys()))
 let searchTimer = 0
 let sizeTimer = 0
 
@@ -167,11 +176,18 @@ const loadTeam = async (id: string) => {
 const load = async () => {
   if (teamId.value) {
     await loadTeam(teamId.value)
+    void loadChatInbox(auth.token)
     return
   }
   selectedTeam.value = null
   if (tab.value === 'projects') await loadProjects()
   else await loadTeams()
+  void loadChatInbox(auth.token)
+}
+
+const openChat = (projectId: string) => {
+  markChatInboxSeen(projectId)
+  void router.push({ name: 'editor', params: { id: projectId }, query: { tab: 'chat' } })
 }
 
 const setPage = (next: number) => {
@@ -354,6 +370,13 @@ onUnmounted(() => {
     :title="heading"
     :kicker-to="crumbTo"
   >
+    <template #header-actions>
+      <ChatInbox
+        :items="chatInbox"
+        :unread-ids="unreadChatIds"
+        @open="openChat"
+      />
+    </template>
     <template #sidebar>
       <WorkspaceSidebar
         :tab="tab"
@@ -478,6 +501,16 @@ onUnmounted(() => {
               <div
                 class="relative z-[1] flex shrink-0 items-center gap-2"
               >
+                <button
+                  v-if="unreadByProject.has(project.id)"
+                  type="button"
+                  class="relative flex size-11 items-center justify-center rounded-xl text-primary hover:bg-muted"
+                  aria-label="새 채팅 보기"
+                  @click.stop="openChat(project.id)"
+                >
+                  <MessageCircle class="size-4" />
+                  <span class="absolute right-2 top-2 size-1.5 rounded-full bg-primary" />
+                </button>
                 <Button
                   v-if="canDeleteProject(project, auth.user?.id)"
                   variant="softDestructive"

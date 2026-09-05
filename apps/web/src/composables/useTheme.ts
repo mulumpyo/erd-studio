@@ -1,11 +1,8 @@
 import { computed, ref } from 'vue'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
+export type ThemeMode = 'light' | 'dark'
 
 const KEY = 'erd_theme'
-
-const isThemeMode = (value: string | null): value is ThemeMode =>
-  value === 'light' || value === 'dark' || value === 'system'
 
 const systemDark = () =>
   typeof window !== 'undefined' &&
@@ -14,38 +11,33 @@ const systemDark = () =>
 const readMode = (): ThemeMode => {
   try {
     const stored = localStorage.getItem(KEY)
-    return isThemeMode(stored) ? stored : 'system'
+    if (stored === 'light' || stored === 'dark') return stored
+    return systemDark() ? 'dark' : 'light'
   } catch {
-    return 'system'
+    return 'light'
   }
 }
 
-const mode = ref<ThemeMode>('system')
-const systemPrefDark = ref(false)
-
-const resolve = (next: ThemeMode) =>
-  next === 'dark' || (next === 'system' && systemPrefDark.value) ? 'dark' : 'light'
+const mode = ref<ThemeMode>('light')
 
 export const applyTheme = (next: ThemeMode) => {
-  const dark = resolve(next) === 'dark'
+  const dark = next === 'dark'
   document.documentElement.classList.toggle('dark', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
 }
 
 export const initTheme = () => {
-  systemPrefDark.value = systemDark()
   mode.value = readMode()
   applyTheme(mode.value)
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (event) => {
-      systemPrefDark.value = event.matches
-      if (mode.value === 'system') applyTheme('system')
-    })
+  try {
+    localStorage.setItem(KEY, mode.value)
+  } catch {
+    /* ignore */
+  }
 }
 
 export const useTheme = () => {
-  const resolved = computed(() => resolve(mode.value))
+  const resolved = computed(() => mode.value)
 
   const setMode = (next: ThemeMode) => {
     mode.value = next
@@ -58,13 +50,7 @@ export const useTheme = () => {
   }
 
   const cycle = () => {
-    setMode(
-      mode.value === 'light'
-        ? 'dark'
-        : mode.value === 'dark'
-          ? 'system'
-          : 'light',
-    )
+    setMode(mode.value === 'light' ? 'dark' : 'light')
   }
 
   return { mode, resolved, setMode, cycle }

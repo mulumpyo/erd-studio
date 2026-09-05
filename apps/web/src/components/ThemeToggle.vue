@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Moon, Sun, Monitor } from 'lucide-vue-next'
+import { Moon, Sun } from 'lucide-vue-next'
 import Button from '@/components/ui/button/Button.vue'
 import { useTheme } from '@/composables/useTheme'
 
@@ -10,11 +10,9 @@ defineProps<{
 
 const { mode, cycle } = useTheme()
 
-const label = computed(() => {
-  if (mode.value === 'dark') return '어두운 화면'
-  if (mode.value === 'system') return '시스템 설정'
-  return '밝은 화면'
-})
+const label = computed(() =>
+  mode.value === 'dark' ? '어두운 화면' : '밝은 화면',
+)
 
 const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
 </script>
@@ -30,8 +28,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     @click="cycle"
   >
     <Sun v-if="mode === 'light'" class="size-4" />
-    <Moon v-else-if="mode === 'dark'" class="size-4" />
-    <Monitor v-else class="size-4" />
+    <Moon v-else class="size-4" />
     <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
       >화면</span
     >
@@ -48,7 +45,6 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     @click="cycle"
   >
     <Sun v-if="mode === 'light'" aria-hidden="true" />
-    <Moon v-else-if="mode === 'dark'" aria-hidden="true" />
-    <Monitor v-else aria-hidden="true" />
+    <Moon v-else aria-hidden="true" />
   </Button>
 </template>

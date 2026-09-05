@@ -50,6 +50,7 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 import { toast } from '@/composables/useToast'
 import { confirm, useConfirm } from '@/composables/useConfirm'
+import { markProjectChatSeen } from '@/composables/useChatInbox'
 
 const route = useRoute()
 const router = useRouter()
@@ -83,6 +84,7 @@ const compactLayout = useMediaQuery('(max-width: 1279px)')
 const { open: confirmOpen } = useConfirm()
 let deleteBusy = false
 let chromeShowTimer = 0
+let ignorePaneClick = false
 const projectDescription = ref('')
 const projectTags = ref<string[]>([])
 const localView = ref<ErdViewPatch | null>(null)
@@ -149,6 +151,24 @@ const chatIsOpen = computed(() => {
 })
 const markChatSeen = () => {
   seenChatId.value = messages.value.at(-1)?.id ?? seenChatId.value
+  if (chatIsOpen.value && auth.user?.id) {
+    markProjectChatSeen(auth.user.id, projectId.value)
+  }
+}
+
+const persistChat = (body: string) => {
+  sendChat(body)
+  void api(
+    `/api/projects/${projectId.value}/chat`,
+    { method: 'POST', body: JSON.stringify({ body }) },
+    auth.token,
+  ).catch(() => undefined)
+}
+
+const openChatFromQuery = () => {
+  if (route.query.tab !== 'chat') return
+  tab.value = 'chat'
+  inspectorExpanded.value = true
 }
 const unreadChatCount = computed(() => {
   if (!chatPrimed.value || chatIsOpen.value) return 0
@@ -189,6 +209,11 @@ watch(messages, () => {
 watch(chatIsOpen, (open) => {
   if (open) markChatSeen()
 })
+watch(
+  () => route.query.tab,
+  () => openChatFromQuery(),
+  { immediate: true },
+)
 watch([unreadChatCount, projectName], () => {
   const name =
     projectName.value && projectName.value !== '잠시만요'
@@ -488,6 +513,10 @@ onUnmounted(() => {
 })
 
 const onPaneClick = () => {
+  if (ignorePaneClick) {
+    ignorePaneClick = false
+    return
+  }
   selectedEdgeId.value = null
   selectedColumnId.value = null
   if (compactLayout.value && tool.value === 'select' && !pendingLink.value) {
@@ -568,6 +597,7 @@ const persistNodeMove = (event: NodeDragEvent) => {
 }
 
 const onDrag = (event: NodeDragEvent) => {
+  ignorePaneClick = true
   nodeDragging.value = true
   hideChrome()
   persistNodeMove(event)
@@ -577,6 +607,9 @@ const onDragStop = (event: NodeDragEvent) => {
   persistNodeMove(event)
   nodeDragging.value = false
   showChromeSoon()
+  window.setTimeout(() => {
+    ignorePaneClick = false
+  }, 50)
 }
 
 const onPanStart = () => {
@@ -962,6 +995,15 @@ const removeProject = async () => {
         @edge-click="onEdgeClick"
       />
     </div>
+    <div
+      id="erd-canvas-controls"
+      class="pointer-events-auto absolute z-30"
+      :class="
+        compactLayout
+          ? 'bottom-[calc(var(--erd-sheet-peek,7.5rem)+0.75rem)] left-20'
+          : 'bottom-4 left-[4.75rem] xl:left-[19.75rem]'
+      "
+    />
     <div class="pointer-events-none absolute inset-0 z-20 flex flex-col">
     <header
       class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-16 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:px-4"
@@ -1097,7 +1139,7 @@ const removeProject = async () => {
       <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(25_31_40_/_0.06)]">
       <Toolbar
         class="w-16"
-        :current="tool"
+        :current="nodeDragging ? 'select' : tool"
         :flow-on="showFlow"
         :read-only="readOnly"
         :can-undo="canUndo"
@@ -1122,9 +1164,10 @@ const removeProject = async () => {
       />
       </div>
       <div
+        data-erd-sheet-host
         :class="
           compactLayout
-            ? 'erd-chrome erd-chrome-bottom pointer-events-auto absolute bottom-0 left-16 right-0 z-20'
+            ? 'erd-chrome erd-chrome-bottom pointer-events-none absolute inset-y-0 left-16 right-0 z-20'
             : 'erd-chrome erd-chrome-right pointer-events-auto absolute inset-y-0 right-0 z-20 w-[340px] border-l border-border/80 shadow-[-8px_0_24px_rgb(25_31_40_/_0.06)]'
         "
       >
@@ -1167,7 +1210,7 @@ const removeProject = async () => {
             key="chat"
             :messages="messages"
             :read-only="readOnly"
-            @send="sendChat"
+            @send="persistChat"
           />
           <HistoryPanel
             v-else

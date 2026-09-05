@@ -16,16 +16,31 @@ import { ChatService } from '../services/chat.service'
 const NOT_FOUND =
   '프로젝트를 찾을 수 없어요. 볼 권한이 없을 때도 같은 응답을 줘요.'
 
+const ProjectId = () =>
+  ApiParam({
+    name: 'id',
+    description: '프로젝트 ID예요.',
+    example: 'clz9k2p4x0001s601abcdefgh',
+  })
+
 @ApiTags('chat')
-@ApiParam({
-  name: 'id',
-  description: '프로젝트 ID예요.',
-  example: 'clz9k2p4x0001s601abcdefgh',
-})
-@Controller('projects/:id/chat')
+@Controller()
 @Auth()
 export class ChatController {
   constructor(private chat: ChatService) {}
+
+  @ApiOperation({
+    summary: '채팅 알림 보기',
+    description:
+      '내가 볼 수 있는 프로젝트의 마지막 메시지를 모아서 줘요. 워크스페이스에서 새 대화를 확인할 때 써요.',
+  })
+  @ApiOkResponse({
+    description: '프로젝트별 마지막 메시지 목록이에요.',
+  })
+  @Get('chat/inbox')
+  inbox(@CurrentUser() user: AuthUser) {
+    return this.chat.inbox(user)
+  }
 
   @ApiOperation({
     summary: '대화 보기',
@@ -37,7 +52,8 @@ export class ChatController {
   })
   @ApiForbiddenResponse({ description: '이 프로젝트의 멤버만 볼 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
-  @Get()
+  @ProjectId()
+  @Get('projects/:id/chat')
   list(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.chat.list(user, id)
   }
@@ -50,7 +66,8 @@ export class ChatController {
   @ApiCreatedResponse({ description: '보낸 메시지예요.' })
   @ApiForbiddenResponse({ description: '편집 권한이 없어요. 보기 전용 멤버는 읽기만 돼요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
-  @Post()
+  @ProjectId()
+  @Post('projects/:id/chat')
   send(
     @CurrentUser() user: AuthUser,
     @Param('id') id: string,

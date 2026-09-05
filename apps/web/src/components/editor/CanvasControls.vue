@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
-import { Panel, useVueFlow } from '@vue-flow/core'
+import { useVueFlow } from '@vue-flow/core'
 import { Lock, Maximize2, Unlock, ZoomIn, ZoomOut } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -58,7 +58,8 @@ const lockLabel = computed(() => {
 </script>
 
 <template>
-  <Panel class="vue-flow__controls canvas-controls" position="bottom-left">
+  <Teleport to="#erd-canvas-controls" defer>
+  <div class="vue-flow__controls canvas-controls erd-canvas-controls">
     <button
       type="button"
       class="canvas-ctrl"
@@ -107,5 +108,6 @@ const lockLabel = computed(() => {
       <Unlock v-else />
       <span class="canvas-ctrl-tip">{{ lockLabel }}</span>
     </button>
-  </Panel>
+  </div>
+  </Teleport>
 </template>

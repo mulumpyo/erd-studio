@@ -334,11 +334,6 @@ defineExpose({ focusNode, capture, viewportEl })
   cursor: default;
 }
 
-.erd-compact .vue-flow__controls.canvas-controls {
-  bottom: calc(7.25rem + env(safe-area-inset-bottom, 0px)) !important;
-  left: 76px !important;
-}
-
 .erd-compact .canvas-ctrl {
   width: 44px;
   height: 44px;

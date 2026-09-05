@@ -211,9 +211,22 @@ h3 {
   overflow: visible !important;
 }
 
-.vue-flow__node:hover,
-.vue-flow__node.selected {
-  z-index: 8 !important;
+.vue-flow__node-table {
+  z-index: 2;
+}
+
+.vue-flow__node-table:hover,
+.vue-flow__node-table.selected {
+  z-index: 4 !important;
+}
+
+.vue-flow__node-note {
+  z-index: 12 !important;
+}
+
+.vue-flow__node-note:hover,
+.vue-flow__node-note.selected {
+  z-index: 14 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -229,7 +242,8 @@ h3 {
   z-index: 8;
 }
 
-.vue-flow__controls.canvas-controls {
+.vue-flow__controls.canvas-controls,
+.erd-canvas-controls {
   display: flex;
   flex-direction: column;
   overflow: visible !important;
@@ -237,15 +251,14 @@ h3 {
   border-radius: 16px;
   background: var(--card);
   box-shadow: 0 8px 24px rgb(25 31 40 / 0.08);
-  left: 76px !important;
-  bottom: 16px !important;
+}
+
+.erd-canvas-controls {
+  position: relative;
+  pointer-events: auto;
 }
 
 @media (min-width: 1280px) {
-  .vue-flow__controls.canvas-controls {
-    left: 316px !important;
-  }
-
   .vue-flow__minimap {
     right: 352px !important;
     bottom: 16px !important;
@@ -286,16 +299,18 @@ h3 {
   pointer-events: none !important;
 }
 
+.erd-immersive #erd-canvas-controls,
 .erd-immersive .erd-chrome-float,
 .erd-immersive .erd-lock-hint,
-.erd-immersive .vue-flow__controls.canvas-controls {
+.erd-immersive .vue-flow__controls.canvas-controls,
+.erd-immersive .erd-canvas-controls {
   opacity: 0;
   pointer-events: none !important;
 }
 
 .erd-compact .vue-flow__minimap {
   right: 12px !important;
-  bottom: calc(7.25rem + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(var(--erd-sheet-peek, 7.5rem) + 0.75rem) !important;
 }
 
 .erd-immersive .vue-flow__minimap,
