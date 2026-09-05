@@ -4,7 +4,7 @@ import type { CollabUser } from '@/composables/useErdSession'
 import { initialOf } from '@/lib/format'
 import { safeCssColor } from '@/lib/color'
 
-const props = defineProps<{ users: CollabUser[] }>()
+defineProps<{ users: CollabUser[] }>()
 const hovered = ref<string | null>(null)
 
 const keyOf = (user: CollabUser, index: number) =>

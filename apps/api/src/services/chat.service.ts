@@ -48,7 +48,7 @@ export class ChatService {
     })
   }
 
-  inbox = async (user: AuthUser) => {
+  inbox = async (user: AuthUser, lastRead: Record<string, number> = {}) => {
     const access = {
       OR: [
         { ownerId: user.id },
@@ -80,6 +80,7 @@ export class ChatService {
       userName: string
       userId: string
       createdAt: Date
+      unreadCount: number
     }> = []
     for (const row of rows) {
       if (seen.has(row.projectId)) continue
@@ -92,9 +93,28 @@ export class ChatService {
         userName: row.user.name,
         userId: row.userId,
         createdAt: row.createdAt,
+        unreadCount: 0,
       })
       if (items.length >= 20) break
     }
+    const ids = items.map((item) => item.projectId)
+    if (!ids.length) return items
+    const counts = await this.prisma.chatMessage.groupBy({
+      by: ['projectId'],
+      where: {
+        projectId: { in: ids },
+        userId: { not: user.id },
+        OR: ids.map((id) => ({
+          projectId: id,
+          createdAt: { gt: new Date(lastRead[id] ?? 0) },
+        })),
+      },
+      _count: { _all: true },
+    })
+    const unread = new Map(
+      counts.map((row) => [row.projectId, row._count._all]),
+    )
+    for (const item of items) item.unreadCount = unread.get(item.projectId) ?? 0
     return items
   }
 }

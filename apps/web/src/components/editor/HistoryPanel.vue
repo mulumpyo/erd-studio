@@ -55,8 +55,8 @@ const save = async () => {
 const restore = async (id: string) => {
   if (props.readOnly) return
   const ok = await confirm({
-    title: '이 저장본으로 되돌릴까요?',
-    description: '지금 그린 내용이 이 저장본으로 바뀌어요.',
+    title: '이 버전으로 되돌릴까요?',
+    description: '지금 그린 내용이 이 버전으로 바뀌어요.',
     confirmLabel: '복원하기',
     destructive: true,
   })
@@ -83,10 +83,10 @@ onMounted(load)
       <Button class="h-12 shrink-0 px-4" @click="save">저장</Button>
     </div>
     <p v-if="!versions.length" class="text-[15px] text-muted-foreground">
-      {{ readOnly ? '저장된 기록이 없어요.' : '아직 저장본이 없어요.' }}
+      {{ readOnly ? '저장된 버전이 없어요.' : '아직 버전이 없어요.' }}
     </p>
     <div v-for="v in versions" :key="v.id" class="rounded-2xl bg-muted p-4">
-      <div class="text-[15px] font-bold tracking-[-0.02em]">{{ v.label || '저장본' }}</div>
+      <div class="text-[15px] font-bold tracking-[-0.02em]">{{ v.label || '버전' }}</div>
       <div class="mt-1 text-[13px] text-muted-foreground">
         {{ new Date(v.createdAt).toLocaleString() }} · {{ v.createdBy?.name }}
       </div>

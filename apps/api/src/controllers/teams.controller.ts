@@ -61,7 +61,7 @@ export class TeamsController {
   @ApiOperation({
     summary: '내 팀 목록 보기',
     description:
-      '내가 만들거나 속한 팀을 보여줘요. 팀마다 멤버와 프로젝트 개수를 함께 줘요.',
+      '내가 만들거나 속한 팀을 보여줘요. 팀마다 팀원과 프로젝트 개수를 함께 줘요.',
   })
   @ApiOkResponse({ description: '팀 목록이에요. 전체 개수와 페이지 정보도 함께 줘요.' })
   @Get()
@@ -81,7 +81,7 @@ export class TeamsController {
 
   @ApiOperation({
     summary: '팀 보기',
-    description: '내가 속한 팀의 멤버와 프로젝트 개수를 보여줘요.',
+    description: '내가 속한 팀의 팀원과 프로젝트 개수를 보여줘요.',
   })
   @TeamId()
   @ApiOkResponse({ description: '팀 정보예요.' })
@@ -104,7 +104,7 @@ export class TeamsController {
   })
   @ApiBadRequestResponse({ description: '자기 자신은 초대할 수 없어요.' })
   @ApiForbiddenResponse({
-    description: '멤버를 관리할 권한이 없거나, 이미 소유자인 사람이에요.',
+    description: '팀원을 관리할 권한이 없거나, 이미 소유자인 사람이에요.',
   })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Post(':id/members')
@@ -123,7 +123,7 @@ export class TeamsController {
   @TeamId()
   @InviteId()
   @ApiCreatedResponse({ description: '초대 메일을 다시 보냈어요.' })
-  @ApiForbiddenResponse({ description: '멤버를 관리할 권한이 없어요.' })
+  @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Post(':id/invitations/:inviteId/resend')
   resendInvite(
@@ -141,7 +141,7 @@ export class TeamsController {
   @TeamId()
   @InviteId()
   @ApiOkResponse({ description: '초대를 취소했어요.' })
-  @ApiForbiddenResponse({ description: '멤버를 관리할 권한이 없어요.' })
+  @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Delete(':id/invitations/:inviteId')
   revokeInvite(
@@ -210,7 +210,7 @@ export class TeamsController {
   @MemberId()
   @ApiOkResponse({ description: '권한을 바꿨어요.' })
   @ApiForbiddenResponse({ description: '권한을 바꿀 수 없거나, 소유자 역할이에요.' })
-  @ApiNotFoundResponse({ description: '팀 멤버가 아니에요.' })
+  @ApiNotFoundResponse({ description: '팀원이 아니에요.' })
   @Patch(':id/members/:userId')
   updateMember(
     @CurrentUser() user: AuthUser,

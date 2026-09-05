@@ -58,7 +58,6 @@ const {
   markSeen: markChatInboxSeen,
   unreadByProject,
 } = useChatInbox(() => auth.user?.id)
-const unreadChatIds = computed(() => new Set(unreadByProject.value.keys()))
 let searchTimer = 0
 let sizeTimer = 0
 
@@ -313,7 +312,7 @@ const removeTeam = async (team: Team) => {
   }
   const ok = await confirm({
     title: '팀을 삭제할까요?',
-    description: '팀과 멤버 구성이 사라져요. 되돌릴 수 없어요.',
+    description: '팀과 팀원 구성이 사라져요. 되돌릴 수 없어요.',
     matchValue: team.name,
     matchHint: '팀 이름을 똑같이 입력해 주세요',
     confirmLabel: '삭제하기',
@@ -373,11 +372,7 @@ onUnmounted(() => {
     :kicker-to="crumbTo"
   >
     <template #header-actions>
-      <ChatInbox
-        :items="chatInbox"
-        :unread-ids="unreadChatIds"
-        @open="openChat"
-      />
+      <ChatInbox :items="chatInbox" @open="openChat" />
     </template>
     <template #sidebar>
       <WorkspaceSidebar
@@ -506,11 +501,19 @@ onUnmounted(() => {
                   v-if="unreadByProject.has(project.id)"
                   type="button"
                   class="relative flex size-11 items-center justify-center rounded-xl text-primary hover:bg-muted"
-                  aria-label="새 채팅 보기"
+                  :aria-label="`읽지 않은 채팅 ${unreadByProject.get(project.id)?.unreadCount ?? 0}개`"
                   @click.stop="openChat(project.id)"
                 >
                   <MessageCircle class="size-4" />
-                  <span class="absolute right-2 top-2 size-1.5 rounded-full bg-primary" />
+                  <span
+                    class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white"
+                  >
+                    {{
+                      (unreadByProject.get(project.id)?.unreadCount ?? 0) > 99
+                        ? '99+'
+                        : unreadByProject.get(project.id)?.unreadCount
+                    }}
+                  </span>
                 </button>
                 <Button
                   v-if="canDeleteProject(project, auth.user?.id)"
@@ -600,7 +603,7 @@ onUnmounted(() => {
             {{
               search.trim()
                 ? '검색과 맞는 팀이 없어요.'
-                : '팀을 만들면 멤버와 프로젝트를 한곳에서 볼 수 있어요.'
+                : '팀을 만들면 팀원과 프로젝트를 한곳에서 볼 수 있어요.'
             }}
           </p>
           <div

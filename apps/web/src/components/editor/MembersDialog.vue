@@ -152,7 +152,7 @@ const invite = async () => {
     email.value = ''
     if (result.status === 'joined') {
       emit('acl', { userId: result.member.userId, role: result.member.role })
-      toast('멤버로 추가했어요')
+      toast('팀원으로 추가했어요')
     } else {
       toast(
         result.mailed
@@ -233,7 +233,8 @@ const remove = async (userId: string, name: string) => {
 
 const goTeam = () => {
   emit('update:open', false)
-  router.push('/app')
+  if (!team.value?.id) return
+  void router.push({ name: 'team', params: { teamId: team.value.id } })
 }
 </script>
 
@@ -242,26 +243,26 @@ const goTeam = () => {
     <DialogContent>
       <template #header>
         <DialogTitle>
-          {{ isTeamProject ? '팀 멤버' : '프로젝트 멤버' }}
+          {{ isTeamProject ? '팀원' : '프로젝트 팀원' }}
         </DialogTitle>
       </template>
       <p v-if="isTeamProject" class="text-[15px] text-muted-foreground">
         {{ team?.name }}
         {{
           canManageTeam
-            ? '팀 프로젝트예요. 멤버는 팀에서 관리해요.'
+            ? '팀 프로젝트예요. 팀원은 팀에서 관리해요.'
             : '팀과 함께 보고 있어요.'
         }}
       </p>
       <p v-else class="text-[15px] text-muted-foreground">
-        멤버는 팀에서 관리해요. 대시보드의 팀 설정으로 이동해 주세요.
+        팀원은 팀에서 관리해요. 대시보드의 팀 설정으로 이동해 주세요.
       </p>
       <p
         v-if="isPublic"
         class="text-[15px] text-muted-foreground"
       >
         공개 중이에요. 링크만 있으면 누구나 볼 수 있어서, 보기 권한은 비공개일
-        때만 필요해요. 같이 편집할 사람만 멤버로 두세요.
+        때만 필요해요. 같이 편집할 사람만 팀원으로 두세요.
       </p>
       <FieldBar v-if="canManage">
         <Input
@@ -326,7 +327,7 @@ const goTeam = () => {
           v-if="!paged.length"
           class="rounded-2xl bg-muted px-3 py-8 text-center text-[14px] text-muted-foreground"
         >
-          {{ query ? '찾는 멤버가 없어요.' : '아직 멤버가 없어요.' }}
+          {{ query ? '찾는 팀원이 없어요.' : '아직 팀원이 없어요.' }}
         </li>
         <li
           v-for="m in paged"
@@ -392,7 +393,7 @@ const goTeam = () => {
         size="sm"
         @click="goTeam"
       >
-        팀에서 멤버 관리
+        팀에서 팀원 관리
       </Button>
     </DialogContent>
   </DialogRoot>

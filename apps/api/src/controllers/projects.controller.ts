@@ -117,7 +117,7 @@ export class ProjectsController {
   @ApiOperation({
     summary: '프로젝트 하나 보기',
     description:
-      '다이어그램과 멤버를 함께 가져와요. 공개된 프로젝트는 로그인 없이도 볼 수 있어요.',
+      '다이어그램과 팀원을 함께 가져와요. 공개된 프로젝트는 로그인 없이도 볼 수 있어요.',
   })
   @ProjectId()
   @ApiOkResponse({ description: '프로젝트 상세 정보예요.' })
@@ -188,7 +188,7 @@ export class ProjectsController {
   @ApiOperation({
     summary: '프로젝트 삭제하기',
     description:
-      '프로젝트를 지워요. 다이어그램, 버전 기록, 대화가 함께 사라지고 되돌릴 수 없어요.',
+      '프로젝트를 지워요. 다이어그램, 버전, 대화가 함께 사라지고 되돌릴 수 없어요.',
   })
   @ProjectId()
   @ApiOkResponse({ description: '프로젝트를 지웠어요.' })
@@ -201,7 +201,7 @@ export class ProjectsController {
   }
 
   @ApiOperation({
-    summary: '버전 기록 보기',
+    summary: '버전 보기',
     description: '저장해 둔 버전 목록을 최근 순으로 보여줘요. 다이어그램 내용은 빼고 요약만 줘요.',
   })
   @ProjectId()
@@ -272,14 +272,14 @@ export class ProjectsController {
   }
 
   @ApiOperation({
-    summary: '멤버와 초대 현황 보기',
+    summary: '팀원과 초대 현황 보기',
     description:
       '지금 함께 보는 사람과, 아직 수락하지 않은 초대를 함께 보여줘요.\n\n' +
-      '팀 프로젝트라면 팀원이 그대로 멤버가 돼요.',
+      '팀 프로젝트라면 팀원이 그대로 들어가요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '멤버와 대기 중인 초대 목록이에요.' })
-  @ApiForbiddenResponse({ description: '이 프로젝트의 멤버만 볼 수 있어요.' })
+  @ApiOkResponse({ description: '팀원과 대기 중인 초대 목록이에요.' })
+  @ApiForbiddenResponse({ description: '이 프로젝트의 팀원만 볼 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
   @Get(':id/members')
@@ -288,20 +288,20 @@ export class ProjectsController {
   }
 
   @ApiOperation({
-    summary: '멤버 초대하기',
+    summary: '팀원 초대하기',
     description:
       '이메일로 프로젝트에 초대해요. 아직 가입하지 않은 사람도 초대해 두면, 가입할 때 자동으로 들어와요.\n\n' +
-      '팀 프로젝트의 멤버는 팀에서 관리하니 이 API를 쓸 수 없어요.',
+      '팀 프로젝트의 팀원은 팀에서 관리하니 이 API를 쓸 수 없어요.',
   })
   @ProjectId()
   @ApiCreatedResponse({
     description:
-      '이미 가입한 사람이면 바로 멤버로 넣고 `status: "joined"`를 줘요. 아니면 초대 메일을 보내요.',
+      '이미 가입한 사람이면 바로 팀원으로 넣고 `status: "joined"`를 줘요. 아니면 초대 메일을 보내요.',
   })
   @ApiBadRequestResponse({ description: '자기 자신은 초대할 수 없어요.' })
   @ApiForbiddenResponse({
     description:
-      '멤버를 관리할 권한이 없거나, 팀 프로젝트라 팀에서 관리해야 해요. 이미 소유자인 사람도 초대할 수 없어요.',
+      '팀원을 관리할 권한이 없거나, 팀 프로젝트라 팀에서 관리해야 해요. 이미 소유자인 사람도 초대할 수 없어요.',
   })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -321,7 +321,7 @@ export class ProjectsController {
   @ProjectId()
   @InviteId()
   @ApiCreatedResponse({ description: '초대 메일을 다시 보냈어요.' })
-  @ApiForbiddenResponse({ description: '멤버를 관리할 권한이 없어요.' })
+  @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Auth()
   @Post(':id/invitations/:inviteId/resend')
@@ -340,7 +340,7 @@ export class ProjectsController {
   @ProjectId()
   @InviteId()
   @ApiOkResponse({ description: '초대를 취소했어요.' })
-  @ApiForbiddenResponse({ description: '멤버를 관리할 권한이 없어요.' })
+  @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Auth()
   @Delete(':id/invitations/:inviteId')
@@ -353,9 +353,9 @@ export class ProjectsController {
   }
 
   @ApiOperation({
-    summary: '멤버 권한 바꾸기',
+    summary: '팀원 권한 바꾸기',
     description:
-      '멤버를 편집자나 보기 전용으로 바꿔요. 소유자 권한은 바꿀 수 없어요.\n\n' +
+      '팀원을 편집자나 보기 전용으로 바꿔요. 소유자 권한은 바꿀 수 없어요.\n\n' +
       '보기 전용으로 바꾸면 편집 중이던 연결은 바로 읽기 모드가 돼요.',
   })
   @ProjectId()
@@ -375,13 +375,13 @@ export class ProjectsController {
   }
 
   @ApiOperation({
-    summary: '멤버 내보내기',
+    summary: '팀원 내보내기',
     description:
-      '멤버를 프로젝트에서 내보내요. 편집 중이었다면 연결도 함께 끊어요. 소유자는 내보낼 수 없어요.',
+      '팀원을 프로젝트에서 내보내요. 편집 중이었다면 연결도 함께 끊어요. 소유자는 내보낼 수 없어요.',
   })
   @ProjectId()
   @MemberId()
-  @ApiOkResponse({ description: '멤버를 내보냈어요.' })
+  @ApiOkResponse({ description: '팀원을 내보냈어요.' })
   @ApiForbiddenResponse({ description: '권한이 없거나, 소유자는 내보낼 수 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()

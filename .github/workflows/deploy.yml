@@ -25,15 +25,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 저장소 코드 내려받기
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: pnpm 설치
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11.5.2
 
       - name: Node.js 22 설치
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -67,7 +67,7 @@ jobs:
             name: collab
     steps:
       - name: 저장소 코드 내려받기
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: ARM 빌드를 위한 QEMU 설정
         uses: docker/setup-qemu-action@v3
@@ -105,7 +105,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 저장소 코드 내려받기
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 실행 설정 서버로 복사
         uses: appleboy/scp-action@v0.1.7
