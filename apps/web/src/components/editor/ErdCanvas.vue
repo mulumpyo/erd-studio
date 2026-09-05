@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, markRaw, nextTick, ref, toValue } from 'vue'
+import { computed, markRaw, nextTick, onMounted, ref, toValue } from 'vue'
 import { toPng, toSvg } from 'html-to-image'
 import {
   VueFlow,
@@ -19,6 +19,7 @@ import TableNode from '@/components/editor/TableNode.vue'
 import NoteNode from '@/components/editor/NoteNode.vue'
 import CrowEdge from '@/components/editor/CrowEdge.vue'
 import CanvasControls from '@/components/editor/CanvasControls.vue'
+import { visibleFitPadding } from '@/composables/useCanvasInsets'
 import { useTheme } from '@/composables/useTheme'
 
 const props = withDefaults(
@@ -29,6 +30,7 @@ const props = withDefaults(
     linking?: boolean
     flowId?: string
     compact?: boolean
+    hint?: string
   }>(),
   { flowId: 'erd-canvas' },
 )
@@ -68,6 +70,7 @@ const rootRef = ref<HTMLElement | null>(null)
 const onlyVisible = ref(true)
 const exporting = ref(false)
 const viewLocked = ref(false)
+const focusMode = defineModel<boolean>('focus', { default: false })
 const canMoveNodes = computed(() => !props.readOnly && !viewLocked.value)
 const allowPan = computed(() => !viewLocked.value || Boolean(props.compact))
 let panePanning = false
@@ -112,8 +115,13 @@ const onPaneClick = (payload: MouseEvent | { event?: MouseEvent }) => {
 }
 
 const focusNode = (id: string) => {
-  fitView({ nodes: [id], padding: 0.42, duration: 280 })
+  fitView({ nodes: [id], padding: visibleFitPadding(48), duration: 280 })
 }
+
+onMounted(async () => {
+  await nextTick()
+  await fitView({ padding: visibleFitPadding(), duration: 0 })
+})
 
 const viewportEl = () =>
   rootRef.value?.querySelector('.vue-flow__viewport') as HTMLElement | null
@@ -290,7 +298,6 @@ defineExpose({ focusNode, capture, viewportEl })
       :only-render-visible-elements="onlyVisible"
       :min-zoom="0.05"
       :delete-key-code="null"
-      fit-view-on-init
       @pane-click="onPaneClick"
       @connect="emit('connect', $event)"
       @move="onMove"
@@ -304,6 +311,7 @@ defineExpose({ focusNode, capture, viewportEl })
       <Background :pattern-color="patternColor" :gap="20" />
       <CanvasControls
         v-model:locked="viewLocked"
+        v-model:focus="focusMode"
         :read-only="readOnly"
         :nodes-only="compact"
       />
@@ -314,14 +322,11 @@ defineExpose({ focusNode, capture, viewportEl })
         aria-label="미니맵"
       />
     </VueFlow>
-    <div
-      v-if="compact && viewLocked"
-      class="erd-lock-hint pointer-events-none absolute inset-x-0 z-10 flex justify-center px-4"
-    >
+    <div v-if="hint" class="erd-visible-hud pointer-events-none">
       <div
-        class="rounded-full bg-card/95 px-4 py-2 text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
+        class="rounded-full bg-card/95 px-4 py-2 text-center text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
       >
-        테이블을 고정했어요. 빈 곳을 밀어 화면을 옮기세요
+        {{ hint }}
       </div>
     </div>
   </div>

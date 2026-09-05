@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { setSheetVisible } from '@/composables/useCanvasInsets'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 
 const props = defineProps<{
@@ -88,14 +89,15 @@ const settleSnap = (predicted: number): SheetSnap => {
   return 'full'
 }
 
-const publishPeek = () => {
-  const peek = props.compact ? Math.max(peekHeight(), MIN_PEEK) : 16
-  document.documentElement.style.setProperty('--erd-sheet-peek', `${peek}px`)
-}
-
 const visibleHeight = computed(() =>
   Math.max(MIN_PEEK, sheetHeight.value - dragOffset.value),
 )
+
+const publishPeek = () => {
+  const peek = props.compact ? Math.max(peekHeight(), MIN_PEEK) : 16
+  document.documentElement.style.setProperty('--erd-sheet-peek', `${peek}px`)
+  setSheetVisible(props.compact ? visibleHeight.value : 0)
+}
 
 const applySnap = (next: SheetSnap, notify = true) => {
   snap.value = next
@@ -198,9 +200,14 @@ onMounted(async () => {
   window.addEventListener('resize', onResize)
 })
 
+watch(visibleHeight, () => {
+  if (props.compact) setSheetVisible(visibleHeight.value)
+})
+
 onUnmounted(() => {
   window.removeEventListener('resize', onResize)
   document.documentElement.style.removeProperty('--erd-sheet-peek')
+  setSheetVisible(0)
 })
 </script>
 

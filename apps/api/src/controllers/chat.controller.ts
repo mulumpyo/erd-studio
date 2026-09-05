@@ -15,6 +15,7 @@ import { Auth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import { ChatDto } from '../dto/chat.dto'
 import { ChatService } from '../services/chat.service'
+import { NotifyService } from '../services/notify.service'
 
 const NOT_FOUND =
   '프로젝트를 찾을 수 없어요. 볼 권한이 없을 때도 같은 응답을 줘요.'
@@ -46,7 +47,10 @@ const ProjectId = () =>
 @Controller()
 @Auth()
 export class ChatController {
-  constructor(private chat: ChatService) {}
+  constructor(
+    private chat: ChatService,
+    private notify: NotifyService,
+  ) {}
 
   @ApiOperation({
     summary: '채팅 알림 보기',
@@ -67,10 +71,10 @@ export class ChatController {
   @ApiOperation({
     summary: '채팅 알림 받기',
     description:
-      '새 메시지가 생기면 바로 알려 주는 연결이에요. 워크스페이스가 열려 있는 동안만 붙여 두고, 알림이 오면 inbox를 다시 받으면 돼요.',
+      '새 채팅·초대 알림을 받는 연결이에요. `GET /notify/stream`과 같아요.',
   })
   @ApiOkResponse({
-    description: 'SSE 연결이에요. `inbox` 이벤트가 오면 해당 프로젝트에 새 메시지가 생긴 거예요.',
+    description: 'SSE 연결이에요. `notify` 이벤트가 오면 알림 목록을 다시 받으면 돼요.',
   })
   @ApiProduces('text/event-stream')
   @SkipThrottle()
@@ -80,7 +84,7 @@ export class ChatController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    return this.chat.watchInbox(user, req, res)
+    return this.notify.watch(user, req, res)
   }
 
   @ApiOperation({

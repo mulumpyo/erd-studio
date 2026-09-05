@@ -53,6 +53,10 @@ export const openApiTags = [
   },
   { name: 'sql', description: '다이어그램을 SQL로 내보내거나, SQL을 읽어 들여요.' },
   { name: 'chat', description: '프로젝트 안에서 팀원과 메시지를 주고받아요.' },
+  {
+    name: 'notify',
+    description: '워크스페이스에서 채팅·초대 알림을 바로 받아요.',
+  },
   { name: 'invites', description: '받은 초대를 확인하고 수락해요.' },
   {
     name: 'admin',

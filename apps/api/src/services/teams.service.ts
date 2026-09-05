@@ -8,6 +8,7 @@ import { PrismaService } from './prisma.service'
 import { InvitationsService } from './invitations.service'
 import { ProjectsService } from './projects.service'
 import { CollabAclService } from './collab-acl.service'
+import { NotifyService } from './notify.service'
 import type { AuthUser } from '../common/auth/current-user'
 import { userSelect } from '../common/access'
 import { contains, pageResult, parsePage } from '../common/paging'
@@ -23,6 +24,7 @@ export class TeamsService {
     private invitations: InvitationsService,
     private projects: ProjectsService,
     private collabAcl: CollabAclService,
+    private notify: NotifyService,
   ) {}
 
   private getTeam = async (teamId: string) => {
@@ -76,7 +78,11 @@ export class TeamsService {
           ...memberUserInclude,
           _count: { select: { projects: true } },
           invitations: {
-            where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+            where: {
+              acceptedAt: null,
+              declinedAt: null,
+              expiresAt: { gt: new Date() },
+            },
             orderBy: { createdAt: 'desc' },
           },
         },
@@ -105,7 +111,11 @@ export class TeamsService {
         ...memberUserInclude,
         _count: { select: { projects: true } },
         invitations: {
-          where: { acceptedAt: null, expiresAt: { gt: new Date() } },
+          where: {
+            acceptedAt: null,
+            declinedAt: null,
+            expiresAt: { gt: new Date() },
+          },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -114,7 +124,7 @@ export class TeamsService {
     const { invitations, ...team } = row
     return {
       ...team,
-      invitations: invitations.map((item) => this.invitations.toClient(item)),
+      invitations: await this.invitations.withNames(invitations),
     }
   }
 
@@ -127,6 +137,7 @@ export class TeamsService {
       where: { id: teamId },
       data: { name: next },
     })
+    await this.notify.publishTeamChange(teamId)
     return this.get(user, teamId)
   }
 
@@ -151,27 +162,21 @@ export class TeamsService {
     const invitee = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase() },
     })
-    if (!invitee) {
-      return this.invitations.invite({
-        actor: user,
-        email,
-        role,
-        target: { kind: 'team', name: team.name, teamId },
-      })
-    }
-    if (invitee.id === team.ownerId)
+    if (invitee?.id === team.ownerId) {
       throw new ForbiddenException('소유자는 초대 대상이 아닙니다.')
-    await this.prisma.invitation.updateMany({
-      where: { email: invitee.email, teamId, acceptedAt: null },
-      data: { acceptedAt: new Date() },
+    }
+    if (invitee) {
+      const member = await this.prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId, userId: invitee.id } },
+      })
+      if (member) throw new ForbiddenException('이미 팀원이에요.')
+    }
+    return this.invitations.invite({
+      actor: user,
+      email,
+      role,
+      target: { kind: 'team', name: team.name, teamId },
     })
-    const member = await this.prisma.teamMember.upsert({
-      where: { teamId_userId: { teamId, userId: invitee.id } },
-      update: { role },
-      create: { teamId, userId: invitee.id, role },
-      include: { user: { select: userSelect } },
-    })
-    return { status: 'joined' as const, member }
   }
 
   resendInvite = async (user: AuthUser, teamId: string, inviteId: string) => {
@@ -210,6 +215,7 @@ export class TeamsService {
       include: { user: { select: userSelect } },
     }).then(async (member) => {
       await this.collabAcl.kickFromTeam(teamId, userId)
+      await this.notify.publishTeamChange(teamId)
       return member
     })
   }
@@ -227,6 +233,7 @@ export class TeamsService {
       where: { teamId_userId: { teamId, userId: user.id } },
     })
     await this.collabAcl.kickFromTeam(teamId, user.id)
+    await this.notify.publishTeamChange(teamId, user.id)
     return { ok: true }
   }
 
@@ -252,6 +259,7 @@ export class TeamsService {
       where: { teamId_userId: { teamId, userId } },
     })
     await this.collabAcl.kickFromTeam(teamId, userId)
+    await this.notify.publishTeamChange(teamId, userId)
     return { ok: true }
   }
 }

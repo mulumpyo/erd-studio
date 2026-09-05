@@ -27,9 +27,14 @@ import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
-import ChatInbox from '@/components/dashboard/ChatInbox.vue'
+import NotificationInbox from '@/components/dashboard/NotificationInbox.vue'
 import { confirm, notice } from '@/composables/useConfirm'
-import { useChatInbox } from '@/composables/useChatInbox'
+import {
+  inviteLocation,
+  onNotifyListsChange,
+  useNotifications,
+  type ReceivedInvite,
+} from '@/composables/useNotifications'
 import { useFitPageSize } from '@/composables/usePageSize'
 
 const auth = useAuthStore()
@@ -53,13 +58,12 @@ const projectDialogOpen = ref(false)
 const teamDialogOpen = ref(false)
 const listViewport = ref<HTMLElement | null>(null)
 const {
-  items: chatInbox,
-  load: loadChatInbox,
+  chats: chatInbox,
+  invites: receivedInvites,
+  load: loadNotifications,
   markSeen: markChatInboxSeen,
   unreadByProject,
-  listen: listenChatInbox,
-  stop: stopChatInbox,
-} = useChatInbox(() => auth.user?.id)
+} = useNotifications(() => auth.user?.id)
 let searchTimer = 0
 let sizeTimer = 0
 
@@ -100,8 +104,8 @@ const loadHasTeams = async () => {
   hasTeams.value = result.total > 0
 }
 
-const loadProjects = async () => {
-  loading.value = true
+const loadProjects = async (opts?: { quiet?: boolean }) => {
+  if (!opts?.quiet) loading.value = true
   error.value = ''
   try {
     const params = new URLSearchParams({
@@ -120,19 +124,19 @@ const loadProjects = async () => {
     total.value = result.total
     if (result.total > 0 && result.page > result.pages) {
       page.value = result.pages
-      await loadProjects()
+      await loadProjects(opts)
       return
     }
-    await loadHasTeams()
+    if (!opts?.quiet) await loadHasTeams()
   } catch (e) {
     error.value = errorMessage(e, '프로젝트를 불러오지 못했어요')
   } finally {
-    loading.value = false
+    if (!opts?.quiet) loading.value = false
   }
 }
 
-const loadTeams = async () => {
-  loading.value = true
+const loadTeams = async (opts?: { quiet?: boolean }) => {
+  if (!opts?.quiet) loading.value = true
   error.value = ''
   try {
     const params = new URLSearchParams({
@@ -151,17 +155,17 @@ const loadTeams = async () => {
     total.value = result.total
     if (result.total > 0 && result.page > result.pages) {
       page.value = result.pages
-      await loadTeams()
+      await loadTeams(opts)
     }
   } catch (e) {
     error.value = errorMessage(e, '팀을 불러오지 못했어요')
   } finally {
-    loading.value = false
+    if (!opts?.quiet) loading.value = false
   }
 }
 
-const loadTeam = async (id: string) => {
-  loading.value = true
+const loadTeam = async (id: string, opts?: { quiet?: boolean }) => {
+  if (!opts?.quiet) loading.value = true
   error.value = ''
   try {
     selectedTeam.value = await api<Team>(`/api/teams/${id}`, {}, auth.token)
@@ -172,20 +176,40 @@ const loadTeam = async (id: string) => {
       await router.replace({ name: 'teams' })
     }
   } finally {
-    loading.value = false
+    if (!opts?.quiet) loading.value = false
   }
 }
 
+const refreshInviteLists = (event?: { type?: string; teamId?: string }) => {
+  if (teamId.value) {
+    if (event?.teamId && event.teamId !== teamId.value) return
+    void loadTeam(teamId.value, { quiet: true })
+    return
+  }
+  if (event?.type !== 'project' && event?.type !== 'team') return
+  if (tab.value === 'projects') void loadProjects({ quiet: true })
+  else void loadTeams({ quiet: true })
+}
+
+const onInviteInboxChanged = () => {
+  void loadNotifications(auth.token)
+  refreshInviteLists()
+}
+
 const load = async () => {
+  void loadNotifications(auth.token)
   if (teamId.value) {
     await loadTeam(teamId.value)
-    void loadChatInbox(auth.token)
     return
   }
   selectedTeam.value = null
   if (tab.value === 'projects') await loadProjects()
   else await loadTeams()
-  void loadChatInbox(auth.token)
+}
+
+const onInviteAccepted = async (invite: ReceivedInvite) => {
+  await loadNotifications(auth.token)
+  await router.push(inviteLocation(invite))
 }
 
 const openChat = (projectId: string) => {
@@ -284,10 +308,12 @@ const leaveProject = async (id: string) => {
   }
 }
 
-const removeProject = async (id: string) => {
+const removeProject = async (id: string, name: string) => {
   const ok = await confirm({
     title: '프로젝트를 삭제할까요?',
     description: '다이어그램이 사라져요. 되돌릴 수 없어요.',
+    matchValue: name,
+    matchHint: '프로젝트 이름을 똑같이 입력해 주세요',
     confirmLabel: '삭제하기',
     destructive: true,
   })
@@ -360,34 +386,16 @@ watch(pageSize, () => {
   }, 120)
 })
 
-const onChatInboxVisibility = () => {
-  if (document.hidden) {
-    stopChatInbox()
-    return
-  }
-  void loadChatInbox(auth.token)
-  listenChatInbox(auth.token)
-}
-
-watch(
-  () => auth.token,
-  (token) => {
-    if (document.hidden) return
-    if (token) listenChatInbox(token)
-    else stopChatInbox()
-  },
-)
+let stopListNotify: (() => void) | null = null
 
 onMounted(() => {
   void load()
-  listenChatInbox(auth.token)
-  document.addEventListener('visibilitychange', onChatInboxVisibility)
+  stopListNotify = onNotifyListsChange(refreshInviteLists)
 })
 onUnmounted(() => {
   window.clearTimeout(searchTimer)
   window.clearTimeout(sizeTimer)
-  stopChatInbox()
-  document.removeEventListener('visibilitychange', onChatInboxVisibility)
+  stopListNotify?.()
 })
 </script>
 
@@ -398,7 +406,13 @@ onUnmounted(() => {
     :kicker-to="crumbTo"
   >
     <template #header-actions>
-      <ChatInbox :items="chatInbox" @open="openChat" />
+      <NotificationInbox
+        :chats="chatInbox"
+        :invites="receivedInvites"
+        @open="openChat"
+        @accepted="onInviteAccepted"
+        @changed="onInviteInboxChanged"
+      />
     </template>
     <template #sidebar>
       <WorkspaceSidebar
@@ -414,7 +428,7 @@ onUnmounted(() => {
     </template>
 
     <main
-      class="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 py-3 md:p-4"
+      class="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 py-3 md:p-4"
     >
       <p v-if="error" class="shrink-0 text-sm text-destructive">{{ error }}</p>
 
@@ -546,7 +560,7 @@ onUnmounted(() => {
                   variant="softDestructive"
                   size="sm"
                   class="min-h-11 min-w-16"
-                  @click.stop="removeProject(project.id)"
+                  @click.stop="removeProject(project.id, project.name)"
                 >
                   삭제
                 </Button>

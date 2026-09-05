@@ -44,7 +44,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     <button
       v-if="navOpen"
       type="button"
-      class="fixed inset-0 z-40 bg-black/40 md:hidden"
+      class="fixed inset-x-0 bottom-[var(--vv-chrome-gap)] z-40 bg-black/40 md:hidden top-[calc(4rem+env(safe-area-inset-top))]"
       aria-label="사이드바 닫기"
       @click="closeNav"
     />
@@ -52,10 +52,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       :class="
         cn(
           'flex h-full min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card px-2 pb-2',
-          'fixed bottom-[var(--vv-chrome-gap)] left-0 top-0 z-50 pt-[env(safe-area-inset-top)] transition-transform duration-200',
+          'fixed bottom-[var(--vv-chrome-gap)] left-0 z-50 transition-transform duration-200',
+          'top-[calc(4rem+env(safe-area-inset-top))] pt-0',
           navOpen ? 'translate-x-0' : '-translate-x-full',
           desktopOpen
-            ? 'md:relative md:z-auto md:translate-x-0 md:transition-none'
+            ? 'md:relative md:top-0 md:z-auto md:translate-x-0 md:transition-none'
             : 'md:hidden',
         )
       "
@@ -65,7 +66,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 
     <div class="flex min-w-0 flex-1 flex-col">
       <header
-        class="flex min-h-16 shrink-0 items-center gap-2 border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)]"
+        class="relative z-[60] flex min-h-16 shrink-0 items-center gap-2 border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)]"
       >
         <button
           type="button"
@@ -107,7 +108,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         </div>
       </header>
       <div
-        class="flex min-h-0 flex-1 flex-col overflow-y-auto pb-[env(safe-area-inset-bottom)]"
+        class="flex min-h-0 flex-1 flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]"
       >
         <slot />
       </div>

@@ -10,7 +10,6 @@ import {
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { PrismaService } from './prisma.service'
-import { InvitationsService } from './invitations.service'
 import { MailService } from './mail.service'
 import { RefreshTokenService } from './refresh-token.service'
 import { AccessTokenService } from './access-token.service'
@@ -46,7 +45,6 @@ export class AuthService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
-    private invitations: InvitationsService,
     private mail: MailService,
     private refreshTokens: RefreshTokenService,
     private accessTokens: AccessTokenService,
@@ -100,7 +98,6 @@ export class AuthService implements OnModuleInit {
       throw new ForbiddenException('이용이 정지된 계정이에요.')
     }
     const session = await this.issueSession(user)
-    await this.invitations.acceptPendingForUser(session.user)
     return session
   }
 
@@ -125,7 +122,6 @@ export class AuthService implements OnModuleInit {
       this.prisma.emailVerification.deleteMany({ where: { userId: user.id } }),
     ])
     const session = await this.issueSession(user, nextPath)
-    await this.invitations.acceptPendingForUser(session.user)
     return session
   }
 

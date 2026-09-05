@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
-import { Lock, Maximize2, Unlock, ZoomIn, ZoomOut } from 'lucide-vue-next'
+import { Expand, Lock, Maximize2, Shrink, Unlock, ZoomIn, ZoomOut } from 'lucide-vue-next'
+import { visibleFitPadding } from '@/composables/useCanvasInsets'
 
 const props = defineProps<{
   readOnly?: boolean
@@ -9,6 +10,7 @@ const props = defineProps<{
 }>()
 
 const locked = defineModel<boolean>('locked', { default: false })
+const focus = defineModel<boolean>('focus', { default: false })
 
 const { zoomIn, zoomOut, fitView, viewport, minZoom, maxZoom } = useVueFlow()
 const atMinZoom = computed(() => viewport.value.zoom <= minZoom.value)
@@ -41,12 +43,17 @@ const onZoomOut = () => {
 
 const onFit = () => {
   flash('fit')
-  fitView({ padding: 0.2, duration: 220 })
+  fitView({ padding: visibleFitPadding(), duration: 220 })
 }
 
 const onLock = () => {
   flash('lock')
   locked.value = !locked.value
+}
+
+const onFocus = () => {
+  flash('focus')
+  focus.value = !focus.value
 }
 
 const lockLabel = computed(() => {
@@ -91,6 +98,23 @@ const lockLabel = computed(() => {
     >
       <Maximize2 />
       <span class="canvas-ctrl-tip">화면에 맞추기</span>
+    </button>
+    <button
+      type="button"
+      class="canvas-ctrl"
+      :class="{
+        'is-pressed': pressed === 'focus',
+        'is-locked': focus,
+      }"
+      :aria-label="focus ? '전체 화면 끄기' : '다이어그램만 보기'"
+      :aria-pressed="focus"
+      @click="onFocus"
+    >
+      <Shrink v-if="focus" />
+      <Expand v-else />
+      <span class="canvas-ctrl-tip">{{
+        focus ? '전체 화면 끄기' : '다이어그램만 보기'
+      }}</span>
     </button>
     <button
       v-if="!readOnly"

@@ -1,6 +1,5 @@
 import { computed, ref } from 'vue'
 import { api } from '@/api'
-import { apiOrigin } from '@/lib/urls'
 
 export type ChatInboxItem = {
   projectId: string
@@ -47,11 +46,25 @@ export const isInboxUnread = (
   return at > (seen?.[item.projectId] ?? 0)
 }
 
+export type ChatNotice = {
+  projectId: string
+  projectName?: string
+  teamName?: string | null
+  body?: string
+  userName?: string
+  userId?: string
+  createdAt?: string
+}
+
+const items = ref<ChatInboxItem[]>([])
+const seen = ref<Record<string, number>>({})
+const openChatProject = ref<string | null>(null)
+
+export const setOpenChatProject = (projectId: string | null) => {
+  openChatProject.value = projectId
+}
+
 export const useChatInbox = (userId: () => string | undefined) => {
-  const items = ref<ChatInboxItem[]>([])
-  const seen = ref<Record<string, number>>({})
-  let source: EventSource | null = null
-  let reloadTimer = 0
 
   const refreshSeen = () => {
     const id = userId()
@@ -70,6 +83,46 @@ export const useChatInbox = (userId: () => string | undefined) => {
       {},
       token,
     )
+  }
+
+  const applyNotice = (notice: ChatNotice, selfId?: string) => {
+    if (!notice.projectId || (selfId && notice.userId === selfId)) return true
+    const at = notice.createdAt || new Date().toISOString()
+    const idx = items.value.findIndex((item) => item.projectId === notice.projectId)
+    if (idx < 0) {
+      if (!notice.projectName || !notice.body || !notice.userName) return false
+      const viewing = openChatProject.value === notice.projectId
+      if (viewing && selfId) markProjectChatSeen(selfId, notice.projectId)
+      items.value = [
+        {
+          projectId: notice.projectId,
+          projectName: notice.projectName,
+          teamName: notice.teamName ?? null,
+          body: notice.body,
+          userName: notice.userName,
+          userId: notice.userId || '',
+          createdAt: at,
+          unreadCount: viewing ? 0 : 1,
+        },
+        ...items.value,
+      ]
+      return true
+    }
+    const cur = items.value[idx]
+    const viewing = openChatProject.value === notice.projectId
+    if (viewing && selfId) markProjectChatSeen(selfId, notice.projectId)
+    const next: ChatInboxItem = {
+      ...cur,
+      body: notice.body ?? cur.body,
+      userName: notice.userName ?? cur.userName,
+      userId: notice.userId ?? cur.userId,
+      createdAt: at,
+      unreadCount: viewing ? 0 : (cur.unreadCount || 0) + 1,
+      projectName: notice.projectName ?? cur.projectName,
+      teamName: notice.teamName ?? cur.teamName,
+    }
+    items.value = [next, ...items.value.filter((_, i) => i !== idx)]
+    return true
   }
 
   const markSeen = (projectId: string) => {
@@ -91,26 +144,5 @@ export const useChatInbox = (userId: () => string | undefined) => {
     return map
   })
 
-  const stop = () => {
-    window.clearTimeout(reloadTimer)
-    source?.close()
-    source = null
-  }
-
-  const listen = (token?: string | null) => {
-    stop()
-    if (!token) return
-    const es = new EventSource(`${apiOrigin()}/api/chat/inbox/stream`, {
-      withCredentials: true,
-    })
-    es.addEventListener('inbox', () => {
-      window.clearTimeout(reloadTimer)
-      reloadTimer = window.setTimeout(() => {
-        void load(token)
-      }, 200)
-    })
-    source = es
-  }
-
-  return { items, seen, load, markSeen, unreadItems, unreadByProject, listen, stop }
+  return { items, seen, load, applyNotice, markSeen, unreadItems, unreadByProject }
 }

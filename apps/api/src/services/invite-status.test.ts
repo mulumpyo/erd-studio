@@ -26,8 +26,20 @@ test('pending invite is still valid', () => {
   assert.equal(
     inviteStatus({
       acceptedAt: null,
+      declinedAt: null,
       expiresAt: new Date(Date.now() + 86_400_000),
     }),
     'pending',
+  )
+})
+
+test('declined invite cannot be reused', () => {
+  assert.equal(
+    inviteStatus({
+      acceptedAt: null,
+      declinedAt: new Date(),
+      expiresAt: new Date(Date.now() + 86_400_000),
+    }),
+    'declined',
   )
 })

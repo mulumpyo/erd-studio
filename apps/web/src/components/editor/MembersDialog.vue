@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { DialogRoot } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/auth'
 import { toast } from '@/composables/useToast'
 import { confirm } from '@/composables/useConfirm'
 import type { PendingInvitation } from '@/types/workspace'
+import { onNotifyListsChange } from '@/composables/useNotifications'
 
 export type ProjectMember = {
   userId: string
@@ -109,17 +110,38 @@ const load = async () => {
   invitations.value = data.invitations ?? []
 }
 
+let stopListNotify: (() => void) | null = null
+
+const onRosterNotify = (event?: { type?: string; teamId?: string; projectId?: string }) => {
+  if (event?.type === 'project') {
+    if (event.projectId && event.projectId !== props.projectId) return
+    void load()
+    return
+  }
+  if (event?.type === 'team') {
+    if (team.value?.id && event.teamId && event.teamId !== team.value.id) return
+    void load()
+  }
+}
+
 watch(
   () => props.open,
   async (open) => {
+    stopListNotify?.()
+    stopListNotify = null
     if (!open) return
     query.value = ''
     page.value = 1
     email.value = ''
     error.value = ''
     await load()
+    stopListNotify = onNotifyListsChange(onRosterNotify)
   },
 )
+
+onUnmounted(() => {
+  stopListNotify?.()
+})
 
 watch(query, () => {
   page.value = 1
@@ -138,10 +160,7 @@ const invite = async () => {
   error.value = ''
   loading.value = true
   try {
-    const result = await api<
-      | { status: 'joined'; member: ProjectMember }
-      | { status: 'invited'; mailed: boolean }
-    >(
+    const result = await api<{ status: 'invited'; mailed: boolean }>(
       `/api/projects/${props.projectId}/members`,
       {
         method: 'POST',
@@ -150,16 +169,11 @@ const invite = async () => {
       auth.token,
     )
     email.value = ''
-    if (result.status === 'joined') {
-      emit('acl', { userId: result.member.userId, role: result.member.role })
-      toast('팀원으로 추가했어요')
-    } else {
-      toast(
-        result.mailed
-          ? '초대 메일을 보냈어요'
-          : '아직 가입하지 않은 분이에요. 링크를 복사해 초대해 주세요.',
-      )
-    }
+    toast(
+      result.mailed
+        ? '초대 메일을 보냈어요. 상대가 수락하면 들어와요.'
+        : '메일을 보내지 못했어요. 링크를 복사해 초대해 주세요.',
+    )
     await load()
   } catch (e) {
     error.value = errorMessage(e, '초대하지 못했어요')
@@ -295,8 +309,16 @@ const goTeam = () => {
         >
           <div class="flex min-w-0 items-center gap-2">
             <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium">{{ pending.email }}</div>
-              <div class="text-xs text-muted-foreground">초대 대기</div>
+              <div class="truncate text-sm font-medium">
+                {{ pending.name || pending.email }}
+              </div>
+              <div class="truncate text-xs text-muted-foreground">
+                {{
+                  pending.name && pending.name !== pending.email
+                    ? `${pending.email} · 초대 대기`
+                    : '초대 대기'
+                }}
+              </div>
             </div>
             <Badge class="shrink-0">{{ roleLabel(pending.role) }}</Badge>
           </div>

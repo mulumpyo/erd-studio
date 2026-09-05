@@ -11,6 +11,7 @@ import { SqlModule } from './sql.module'
 import { ChatModule } from './chat.module'
 import { InvitationsModule } from './invitations.module'
 import { RedisModule } from './redis.module'
+import { NotifyModule } from './notify.module'
 import { UsageModule } from './usage.module'
 import { AdminModule } from './admin.module'
 import { HealthController } from '../controllers/health.controller'
@@ -27,6 +28,7 @@ import { UsageInterceptor } from '../common/usage.interceptor'
     }),
     PrismaModule,
     RedisModule,
+    NotifyModule,
     ThrottlerModule.forRootAsync({
       imports: [RedisModule],
       inject: [RedisService],
