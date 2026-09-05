@@ -12,6 +12,7 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 
 const PAGE_SIZE = 8
 
@@ -198,12 +199,11 @@ const submitCreate = async () => {
         </div>
         <p v-if="error" class="text-sm text-destructive">{{ error }}</p>
         <div class="min-h-[16rem]">
-          <p
+          <Spinner
             v-if="loading && !teams.length"
-            class="py-8 text-center text-[15px] text-muted-foreground"
-          >
-            불러오는 중이에요.
-          </p>
+            class="py-10"
+            label="팀을 불러오고 있어요"
+          />
           <p
             v-else-if="!teams.length"
             class="py-8 text-center text-[15px] text-muted-foreground"

@@ -57,11 +57,14 @@ const download = () => {
 </script>
 
 <template>
-  <div class="space-y-3">
-    <Select v-model="dialect" :options="dialects" class="h-12" />
-    <Button class="h-12 w-full" @click="exportSql">내보내기</Button>
-    <Textarea v-model="sql" class="min-h-64 font-mono text-xs" />
-    <div class="grid grid-cols-2 gap-2">
+  <div class="flex min-h-0 flex-1 flex-col gap-3">
+    <Select v-model="dialect" :options="dialects" class="h-12 shrink-0" />
+    <Button class="h-12 w-full shrink-0" @click="exportSql">내보내기</Button>
+    <Textarea
+      v-model="sql"
+      class="min-h-32 flex-1 font-mono text-xs"
+    />
+    <div class="grid shrink-0 grid-cols-2 gap-2">
       <Button
         class="h-12"
         variant="secondary"

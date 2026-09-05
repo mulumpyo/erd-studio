@@ -6,6 +6,7 @@ import { errorMessage } from '@/lib/format'
 import { safeInternalPath } from '@/lib/urls'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -36,9 +37,11 @@ onMounted(async () => {
     :subtitle="error ? undefined : '인증하고 있어요'"
   >
     <div class="space-y-5">
-      <p v-if="loading" class="text-[15px] text-muted-foreground">
-        잠시만 기다려 주세요…
-      </p>
+      <Spinner
+        v-if="loading"
+        class="py-6"
+        label="인증하고 있어요"
+      />
       <template v-else>
         <p class="text-sm text-destructive">{{ error }}</p>
         <Button class="w-full" @click="router.replace('/login')">로그인으로</Button>

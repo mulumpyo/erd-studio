@@ -138,7 +138,7 @@ const sheetOpen = ref(false)
         class="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
       />
       <DialogContent
-        class="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-0 bg-card p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_32px_rgb(25_31_40_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom focus:outline-none"
+        class="fixed inset-x-0 bottom-[var(--vv-chrome-gap)] z-50 rounded-t-2xl border-0 bg-card p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_32px_rgb(25_31_40_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom focus:outline-none"
       >
         <!-- 드래그 핸들 -->
         <div class="flex justify-center py-1.5">

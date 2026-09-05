@@ -34,7 +34,7 @@ const onOpenAutoFocus = (event: Event) => {
       :class="
         cn(
           'fixed left-1/2 top-1/2 flex w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden border-0 bg-card p-0 shadow-[0_16px_48px_rgb(25_31_40_/_0.16)] sm:rounded-[24px]',
-          'max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:bottom-0 max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[24px] max-sm:rounded-b-none',
+          'max-sm:left-0 max-sm:right-0 max-sm:top-auto max-sm:bottom-[var(--vv-chrome-gap)] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[24px] max-sm:rounded-b-none',
           props.alert
             ? 'max-h-[min(90dvh,36rem)] max-w-[360px] max-sm:max-w-none'
             : 'max-h-[min(90dvh,46rem)] max-w-lg',

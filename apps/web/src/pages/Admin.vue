@@ -16,6 +16,7 @@ import FieldBar from '@/components/ui/field-bar/FieldBar.vue'
 import Input from '@/components/ui/input/Input.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
 import { confirm, notice } from '@/composables/useConfirm'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useFitPageSize } from '@/composables/usePageSize'
 import { toast } from '@/composables/useToast'
 
@@ -341,12 +342,10 @@ onUnmounted(() => {
         v-if="tab === 'usage'"
         class="flex min-h-0 flex-col gap-3 pb-10 md:pb-2"
       >
-        <p
+        <Spinner
           v-if="loading && !overview"
-          class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
-        >
-          불러오는 중이에요.
-        </p>
+          class="rounded-2xl bg-card px-4 py-16"
+        />
         <template v-else>
           <div class="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <h1 class="text-[18px] font-bold tracking-[-0.03em] md:text-[20px]">
@@ -521,12 +520,10 @@ onUnmounted(() => {
         </div>
 
         <div ref="listViewport" class="min-h-0 flex-1 overflow-y-auto">
-          <p
+          <Spinner
             v-if="loading && !users.length"
-            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
-          >
-            불러오는 중이에요.
-          </p>
+            class="rounded-2xl bg-card px-4 py-16"
+          />
           <p
             v-else-if="!users.length"
             class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
