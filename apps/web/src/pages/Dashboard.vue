@@ -57,6 +57,8 @@ const {
   load: loadChatInbox,
   markSeen: markChatInboxSeen,
   unreadByProject,
+  listen: listenChatInbox,
+  stop: stopChatInbox,
 } = useChatInbox(() => auth.user?.id)
 let searchTimer = 0
 let sizeTimer = 0
@@ -358,10 +360,34 @@ watch(pageSize, () => {
   }, 120)
 })
 
-onMounted(load)
+const onChatInboxVisibility = () => {
+  if (document.hidden) {
+    stopChatInbox()
+    return
+  }
+  void loadChatInbox(auth.token)
+  listenChatInbox(auth.token)
+}
+
+watch(
+  () => auth.token,
+  (token) => {
+    if (document.hidden) return
+    if (token) listenChatInbox(token)
+    else stopChatInbox()
+  },
+)
+
+onMounted(() => {
+  void load()
+  listenChatInbox(auth.token)
+  document.addEventListener('visibilitychange', onChatInboxVisibility)
+})
 onUnmounted(() => {
   window.clearTimeout(searchTimer)
   window.clearTimeout(sizeTimer)
+  stopChatInbox()
+  document.removeEventListener('visibilitychange', onChatInboxVisibility)
 })
 </script>
 

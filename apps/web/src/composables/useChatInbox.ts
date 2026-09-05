@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { api } from '@/api'
+import { apiOrigin } from '@/lib/urls'
 
 export type ChatInboxItem = {
   projectId: string
@@ -49,6 +50,8 @@ export const isInboxUnread = (
 export const useChatInbox = (userId: () => string | undefined) => {
   const items = ref<ChatInboxItem[]>([])
   const seen = ref<Record<string, number>>({})
+  let source: EventSource | null = null
+  let reloadTimer = 0
 
   const refreshSeen = () => {
     const id = userId()
@@ -88,5 +91,26 @@ export const useChatInbox = (userId: () => string | undefined) => {
     return map
   })
 
-  return { items, seen, load, markSeen, unreadItems, unreadByProject }
+  const stop = () => {
+    window.clearTimeout(reloadTimer)
+    source?.close()
+    source = null
+  }
+
+  const listen = (token?: string | null) => {
+    stop()
+    if (!token) return
+    const es = new EventSource(`${apiOrigin()}/api/chat/inbox/stream`, {
+      withCredentials: true,
+    })
+    es.addEventListener('inbox', () => {
+      window.clearTimeout(reloadTimer)
+      reloadTimer = window.setTimeout(() => {
+        void load(token)
+      }, 200)
+    })
+    source = es
+  }
+
+  return { items, seen, load, markSeen, unreadItems, unreadByProject, listen, stop }
 }
