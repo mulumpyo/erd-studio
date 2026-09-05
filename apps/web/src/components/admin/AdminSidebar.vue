@@ -92,7 +92,7 @@ const groups: {
       </div>
     </nav>
 
-    <div class="mt-auto space-y-1 pt-2">
+    <div class="mt-auto shrink-0 space-y-1 pt-2">
       <button
         type="button"
         class="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-medium tracking-[-0.02em] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"

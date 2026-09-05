@@ -81,7 +81,7 @@ const setTab = (id: WorkspaceTab) => {
       </div>
     </nav>
 
-    <div class="mt-auto space-y-1 pt-2">
+    <div class="mt-auto shrink-0 space-y-1 pt-2">
       <button
         v-if="isAdmin"
         type="button"

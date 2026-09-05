@@ -51,12 +51,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
     <aside
       :class="
         cn(
-          'flex h-full min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card px-2 pb-2',
-          'fixed bottom-[var(--vv-chrome-gap)] left-0 z-50 transition-transform duration-200',
-          'top-[calc(4rem+env(safe-area-inset-top))] pt-0',
+          'flex min-h-0 w-64 shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card px-2',
+          'fixed left-0 z-50 pb-[max(0.5rem,env(safe-area-inset-bottom))] transition-transform duration-200',
+          'top-[calc(4rem+env(safe-area-inset-top))] bottom-[var(--vv-chrome-gap)] pt-0',
           navOpen ? 'translate-x-0' : '-translate-x-full',
           desktopOpen
-            ? 'md:relative md:top-0 md:z-auto md:translate-x-0 md:transition-none'
+            ? 'md:relative md:top-0 md:bottom-auto md:z-auto md:h-full md:translate-x-0 md:pb-2 md:transition-none'
             : 'md:hidden',
         )
       "
