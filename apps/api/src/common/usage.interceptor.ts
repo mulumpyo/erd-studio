@@ -9,7 +9,11 @@ import { UsageService } from '../services/usage.service'
 
 const skipPath = (url: string) => {
   const path = url.split('?')[0]
-  return path.endsWith('/health') || path.endsWith('/auth/refresh')
+  return (
+    path.endsWith('/health') ||
+    path.endsWith('/auth/refresh') ||
+    path.endsWith('/chat/inbox/stream')
+  )
 }
 
 @Injectable()

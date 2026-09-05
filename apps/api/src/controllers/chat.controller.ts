@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common'
 import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
@@ -6,8 +6,11 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger'
+import { SkipThrottle } from '@nestjs/throttler'
+import type { Request, Response } from 'express'
 import { Auth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import { ChatDto } from '../dto/chat.dto'
@@ -59,6 +62,25 @@ export class ChatController {
     @Query('seen') seen?: string,
   ) {
     return this.chat.inbox(user, parseInboxSeen(seen))
+  }
+
+  @ApiOperation({
+    summary: '채팅 알림 받기',
+    description:
+      '새 메시지가 생기면 바로 알려 주는 연결이에요. 워크스페이스가 열려 있는 동안만 붙여 두고, 알림이 오면 inbox를 다시 받으면 돼요.',
+  })
+  @ApiOkResponse({
+    description: 'SSE 연결이에요. `inbox` 이벤트가 오면 해당 프로젝트에 새 메시지가 생긴 거예요.',
+  })
+  @ApiProduces('text/event-stream')
+  @SkipThrottle()
+  @Get('chat/inbox/stream')
+  stream(
+    @CurrentUser() user: AuthUser,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    return this.chat.watchInbox(user, req, res)
   }
 
   @ApiOperation({

@@ -54,12 +54,15 @@ const forward = (
       (proxyRes) => {
         const outHeaders = { ...proxyRes.headers }
         for (const name of HOP_BY_HOP) delete outHeaders[name]
+        req.socket.setTimeout(0)
+        proxyRes.socket?.setTimeout(0)
         res.writeHead(proxyRes.statusCode ?? 502, outHeaders)
         proxyRes.pipe(res)
         proxyRes.on('end', () => resolve('sent'))
         proxyRes.on('error', reject)
       },
     )
+    proxyReq.setTimeout(0)
     proxyReq.on('error', (err: NodeJS.ErrnoException) => {
       if (retryable(err)) resolve('retry')
       else reject(err)
@@ -84,7 +87,7 @@ export const apiProxy = (target: string): Plugin => {
             const deadline = Date.now() + 20_000
             while (true) {
               const result = await forward(dest, path, req, res, body)
-              if (result === 'sent') return
+              if (result === 'sent' || res.headersSent) return
               if (Date.now() >= deadline) break
               await sleep(250)
             }
