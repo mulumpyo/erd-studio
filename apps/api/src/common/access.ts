@@ -42,7 +42,7 @@ export const assertParticipant = (
 ) => {
   if (isProjectParticipant(user, project)) return
   if (!user) throw new UnauthorizedException('로그인이 필요해요.')
-  throw new ForbiddenException('이 프로젝트의 멤버만 볼 수 있어요.')
+  throw new ForbiddenException('이 프로젝트의 팀원만 볼 수 있어요.')
 }
 
 export const assertEdit = (user: AuthUser, project: ProjectAccess) => {
@@ -52,7 +52,7 @@ export const assertEdit = (user: AuthUser, project: ProjectAccess) => {
 
 export const assertManageMembers = (user: AuthUser, project: ProjectAccess) => {
   if (!canManageMembers(user, project))
-    throw new ForbiddenException('멤버를 관리할 권한이 없습니다.')
+    throw new ForbiddenException('팀원을 관리할 권한이 없습니다.')
 }
 
 export const assertDeleteProject = (user: AuthUser, project: ProjectAccess) => {
@@ -66,7 +66,7 @@ export const assertAdmin = (user: AuthUser) => {
 
 export const assertDirectProjectMembers = (project: ProjectAccess) => {
   if (isTeamOwned(project)) {
-    throw new ForbiddenException('팀 프로젝트의 멤버는 팀에서 관리합니다.')
+    throw new ForbiddenException('팀 프로젝트의 팀원은 팀에서 관리합니다.')
   }
 }
 

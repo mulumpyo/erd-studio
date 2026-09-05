@@ -211,7 +211,7 @@ export class ProjectsService {
     const member = project.members.find((m) => m.userId === user.id)
     if (!member) {
       throw new ForbiddenException(
-        '초대된 멤버만 프로젝트를 나갈 수 있습니다. 팀 소속이면 팀에서 나가세요.',
+        '초대된 팀원만 프로젝트를 나갈 수 있습니다. 팀 소속이면 팀에서 나가세요.',
       )
     }
     await this.prisma.projectMember.delete({
@@ -352,7 +352,7 @@ export class ProjectsService {
       })
     }
     if (invitee.id === project.ownerId)
-      throw new ForbiddenException('소유자는 이미 멤버입니다.')
+      throw new ForbiddenException('소유자는 이미 팀원입니다.')
     await this.prisma.invitation.updateMany({
       where: { email: invitee.email, projectId: id, acceptedAt: null },
       data: { acceptedAt: new Date() },
@@ -444,7 +444,9 @@ export class ProjectsService {
     const participant = isProjectParticipant(user, project)
     const canEdit = Boolean(user && canEditProject(user, project))
     if (participant) {
-      const { yjsState: _yjs, shareToken: _share, ...safe } = project
+      const safe = { ...project }
+      delete safe.yjsState
+      delete safe.shareToken
       return {
         ...safe,
         isParticipant: true,
@@ -550,7 +552,7 @@ export class ProjectsService {
       where: { teamId_userId: { teamId, userId } },
     })
     if (!member)
-      throw new ForbiddenException('팀 멤버만 팀 프로젝트를 만들 수 있습니다.')
+      throw new ForbiddenException('팀원만 팀 프로젝트를 만들 수 있습니다.')
     if (member.role === 'viewer') {
       throw new ForbiddenException(
         '보기 권한으로는 프로젝트를 만들 수 없습니다.',

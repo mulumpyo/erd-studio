@@ -194,8 +194,12 @@ export class AuthUserDto {
 }
 
 export class SessionResponseDto {
-  @ApiProperty({ type: AuthUserDto })
-  user: AuthUserDto
+  @ApiPropertyOptional({
+    type: AuthUserDto,
+    nullable: true,
+    description: '로그인하지 않았으면 null이에요.',
+  })
+  user: AuthUserDto | null
 
   @ApiProperty({
     description: '액세스 토큰이 만료되는 시각이에요. 밀리초예요.',

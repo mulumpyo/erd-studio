@@ -57,7 +57,7 @@ export class TeamsService {
   ) => {
     const me = team.members.find((m) => m.userId === user.id)
     if (!me || (me.role !== 'owner' && team.ownerId !== user.id)) {
-      throw new ForbiddenException('멤버를 관리할 권한이 없습니다.')
+      throw new ForbiddenException('팀원을 관리할 권한이 없습니다.')
     }
   }
 
@@ -222,7 +222,7 @@ export class TeamsService {
       )
     }
     const member = team.members.find((m) => m.userId === user.id)
-    if (!member) throw new NotFoundException('팀 멤버가 아닙니다.')
+    if (!member) throw new NotFoundException('팀원이 아닙니다.')
     await this.prisma.teamMember.delete({
       where: { teamId_userId: { teamId, userId: user.id } },
     })
@@ -245,7 +245,7 @@ export class TeamsService {
 
   removeMember = async (user: AuthUser, teamId: string, userId: string) => {
     const team = await this.requireTeamMember(user, teamId)
-    this.assertOwner(user, team, '소유자만 멤버를 제거할 수 있습니다.')
+    this.assertOwner(user, team, '소유자만 팀원을 제거할 수 있습니다.')
     if (userId === team.ownerId)
       throw new ForbiddenException('소유자는 제거할 수 없습니다.')
     await this.prisma.teamMember.delete({

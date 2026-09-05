@@ -198,7 +198,7 @@ const panelTabs = computed(() => [
     label: '채팅',
     badge: unreadChatCount.value || undefined,
   },
-  { value: 'history', label: '기록' },
+  { value: 'history', label: '버전' },
 ])
 
 watch(connected, (ok) => {
@@ -511,7 +511,7 @@ onMounted(async () => {
     }
     loadError.value = errorMessage(
       e,
-      '이 프로젝트에 접근할 수 없어요. 보기 권한이 있는 멤버만 열 수 있어요.',
+      '이 프로젝트에 접근할 수 없어요. 보기 권한이 있는 팀원만 열 수 있어요.',
     )
   }
 })
@@ -718,7 +718,7 @@ const setPublic = async (next: boolean) => {
     const ok = await confirm({
       title: '공개로 바꿀까요?',
       description:
-        '링크를 아는 누구나 로그인 없이 볼 수 있어요. 편집은 멤버만 할 수 있어요.',
+        '링크를 아는 누구나 로그인 없이 볼 수 있어요. 편집은 팀원만 할 수 있어요.',
       confirmLabel: '공개로 바꾸기',
     })
     if (!ok) return
@@ -934,7 +934,7 @@ const leaveProject = async () => {
 const removeProject = async () => {
   const ok = await confirm({
     title: '프로젝트를 삭제할까요?',
-    description: '다이어그램과 멤버 구성이 모두 사라져요. 되돌릴 수 없어요.',
+    description: '다이어그램과 팀원 구성이 모두 사라져요. 되돌릴 수 없어요.',
     matchValue: projectName.value,
     matchHint: '프로젝트 이름을 똑같이 입력해 주세요',
     confirmLabel: '삭제하기',
@@ -1084,7 +1084,7 @@ const removeProject = async () => {
             variant="secondary"
             size="sm"
             @click="membersOpen = true"
-            >멤버</Button
+            >팀원</Button
           >
           <SegmentedControl
             v-if="isOwner"

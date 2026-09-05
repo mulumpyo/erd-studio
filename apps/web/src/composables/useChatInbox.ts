@@ -9,6 +9,7 @@ export type ChatInboxItem = {
   userName: string
   userId: string
   createdAt: string
+  unreadCount: number
 }
 
 const seenKey = (userId: string) => `erd_chat_seen_${userId}`
@@ -60,7 +61,12 @@ export const useChatInbox = (userId: () => string | undefined) => {
       items.value = []
       return
     }
-    items.value = await api<ChatInboxItem[]>('/api/chat/inbox', {}, token)
+    const query = new URLSearchParams({ seen: JSON.stringify(seen.value) })
+    items.value = await api<ChatInboxItem[]>(
+      `/api/chat/inbox?${query}`,
+      {},
+      token,
+    )
   }
 
   const markSeen = (projectId: string) => {
@@ -68,10 +74,13 @@ export const useChatInbox = (userId: () => string | undefined) => {
     if (!id) return
     markProjectChatSeen(id, projectId)
     refreshSeen()
+    items.value = items.value.map((item) =>
+      item.projectId === projectId ? { ...item, unreadCount: 0 } : item,
+    )
   }
 
   const unreadItems = computed(() =>
-    items.value.filter((item) => isInboxUnread(item, userId(), seen.value)),
+    items.value.filter((item) => (item.unreadCount || 0) > 0),
   )
   const unreadByProject = computed(() => {
     const map = new Map<string, ChatInboxItem>()

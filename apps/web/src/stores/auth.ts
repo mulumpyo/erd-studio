@@ -13,7 +13,7 @@ export type RegisterResult = {
 }
 
 type SessionPayload = {
-  user: User
+  user: User | null
   expiresAt?: number
   nextPath?: string
 }
@@ -158,7 +158,8 @@ export const useAuthStore = defineStore('auth', () => {
   const fetchMe = async () => {
     try {
       const res = await api<SessionPayload>('/api/auth/me')
-      setSession(res.user, res.expiresAt)
+      if (res.user) setSession(res.user, res.expiresAt)
+      else clearSession()
     } catch {
       clearSession()
     } finally {

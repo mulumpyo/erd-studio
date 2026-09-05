@@ -49,6 +49,7 @@ const skipRefresh = (path: string) =>
   path.startsWith('/api/auth/register') ||
 
   path.startsWith('/api/auth/refresh') ||
+  path.startsWith('/api/auth/me') ||
 
   path.startsWith('/api/auth/logout') ||
 

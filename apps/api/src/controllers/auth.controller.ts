@@ -26,7 +26,7 @@ import {
   SessionResponseDto,
   VerifyEmailDto,
 } from '../common/auth/dto'
-import { Auth } from '../common/auth/decorators'
+import { Auth, OptionalAuth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import {
   ACCESS_COOKIE,
@@ -259,19 +259,33 @@ export class AuthController {
   @ApiOperation({
     summary: '내 정보 보기',
     description:
-      '로그인한 사용자 정보와 액세스 토큰이 언제 만료되는지 알려줘요. 새로고침했을 때 로그인 상태를 확인하는 데 써요.\n\n' +
+      '로그인한 사용자 정보와 액세스 토큰이 언제 만료되는지 알려줘요. 로그인하지 않았으면 `user`가 null인 200을 줘요.\n\n' +
+      '액세스 쿠키가 만료돼도 리프레시 쿠키가 있으면 여기서 세션을 다시 붙여요.\n\n' +
       '`user.isAdmin`이 true면 플랫폼 관리자라 `/admin`을 열 수 있어요.',
   })
   @ApiOkResponse({
-    description: '내 정보와 만료 시각(밀리초)이에요.',
+    description: '내 정보와 만료 시각(밀리초)이에요. 로그아웃 상태면 user는 null이에요.',
     type: SessionResponseDto,
   })
   @Get('me')
-  @Auth()
-  me(@CurrentUser() user: AuthUser) {
-    return {
-      user,
-      expiresAt: Date.now() + accessExpiresSeconds() * 1000,
+  @OptionalAuth()
+  async me(
+    @CurrentUser() user: AuthUser | undefined,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (user) {
+      return {
+        user,
+        expiresAt: Date.now() + accessExpiresSeconds() * 1000,
+      }
+    }
+    const refreshToken = readCookie(req, REFRESH_COOKIE)
+    if (!refreshToken) return { user: null }
+    try {
+      return this.attachSession(res, await this.auth.refresh(refreshToken))
+    } catch {
+      return { user: null }
     }
   }
 
