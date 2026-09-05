@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { KeyRound } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/lib/format'
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Label from '@/components/ui/label/Label.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { confirm } from '@/composables/useConfirm'
@@ -101,18 +102,35 @@ const withdraw = async () => {
       </div>
 
       <form class="space-y-5 rounded-[20px] bg-card p-6" @submit.prevent="submit">
-        <h2 class="text-[17px] font-bold">비밀번호 변경</h2>
+        <h2 class="flex items-center gap-2 text-[17px] font-bold">
+          <KeyRound class="size-5 text-muted-foreground" aria-hidden="true" />
+          비밀번호 변경
+        </h2>
         <div class="space-y-2">
           <Label>현재 비밀번호</Label>
-          <Input v-model="currentPassword" type="password" required />
+          <PasswordInput
+            v-model="currentPassword"
+            required
+            autocomplete="current-password"
+          />
         </div>
         <div class="space-y-2">
           <Label>새 비밀번호</Label>
-          <Input v-model="newPassword" type="password" minlength="8" required />
+          <PasswordInput
+            v-model="newPassword"
+            minlength="8"
+            required
+            autocomplete="new-password"
+          />
         </div>
         <div class="space-y-2">
           <Label>새 비밀번호 확인</Label>
-          <Input v-model="confirmPassword" type="password" minlength="8" required />
+          <PasswordInput
+            v-model="confirmPassword"
+            minlength="8"
+            required
+            autocomplete="new-password"
+          />
           <p v-if="mismatch" class="text-[13px] text-destructive">
             비밀번호가 일치하지 않아요
           </p>
@@ -132,9 +150,8 @@ const withdraw = async () => {
         </div>
         <div class="space-y-2">
           <Label>현재 비밀번호</Label>
-          <Input
+          <PasswordInput
             v-model="deletePassword"
-            type="password"
             autocomplete="current-password"
           />
         </div>

@@ -71,12 +71,9 @@ const revealColumn = (id: string) => {
   } else {
     card.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }
-  if (card.contains(document.activeElement)) return true
-  const input = card.querySelector<HTMLInputElement>(
-    'input:not([type=checkbox]):not([type=color])',
-  )
-  if (input && !input.disabled) input.focus({ preventScroll: true })
-  else card.focus({ preventScroll: true })
+  if (!card.contains(document.activeElement)) {
+    card.focus({ preventScroll: true })
+  }
   return true
 }
 
@@ -306,7 +303,16 @@ const onPickColor = (event: Event) => {
         </label>
       </div>
     </div>
-    <h4 class="text-[15px] font-bold tracking-[-0.02em]">컬럼</h4>
+    <div class="flex items-center justify-between gap-2">
+      <h4 class="text-[15px] font-bold tracking-[-0.02em]">컬럼</h4>
+    </div>
+    <Button
+      v-if="!readOnly"
+      variant="secondary"
+      class="w-full"
+      @click="addColumn"
+      >컬럼 추가</Button
+    >
     <div ref="columnListRef" class="space-y-3">
       <div
         v-for="(col, i) in table.columns"
@@ -478,9 +484,6 @@ const onPickColor = (event: Event) => {
       </div>
     </div>
     </div>
-    <Button variant="secondary" class="w-full" @click="addColumn"
-      >컬럼 추가</Button
-    >
     <Button variant="destructive" class="w-full" @click="emit('remove')"
       >테이블 삭제</Button
     >

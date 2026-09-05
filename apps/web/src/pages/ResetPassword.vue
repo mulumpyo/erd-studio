@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/lib/format'
 import AuthShell from '@/components/auth/AuthShell.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Label from '@/components/ui/label/Label.vue'
 
 const auth = useAuthStore()
@@ -43,11 +43,21 @@ const submit = async () => {
     <form class="space-y-5" @submit.prevent="submit">
       <div class="space-y-2">
         <Label>새 비밀번호</Label>
-        <Input v-model="password" type="password" minlength="8" required />
+        <PasswordInput
+          v-model="password"
+          minlength="8"
+          required
+          autocomplete="new-password"
+        />
       </div>
       <div class="space-y-2">
         <Label>새 비밀번호 확인</Label>
-        <Input v-model="confirmPassword" type="password" minlength="8" required />
+        <PasswordInput
+          v-model="confirmPassword"
+          minlength="8"
+          required
+          autocomplete="new-password"
+        />
         <p v-if="mismatch" class="text-[13px] text-destructive">
           비밀번호가 일치하지 않아요
         </p>

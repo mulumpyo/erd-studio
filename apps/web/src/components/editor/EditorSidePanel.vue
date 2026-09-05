@@ -14,11 +14,15 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
+type SheetSnap = 'peek' | 'mid' | 'full'
+
 const peekRef = ref<HTMLElement | null>(null)
 const dragOffset = ref(0)
 const dragging = ref(false)
 const viewportH = ref(800)
+const snap = ref<SheetSnap>('peek')
 const MIN_PEEK = 88
+const MID_MAX = 28 * 16
 
 let pointerId = 0
 let startY = 0
@@ -30,25 +34,79 @@ let lastY = 0
 let lastT = 0
 let velocity = 0
 
-const sheetHeight = computed(() =>
-  Math.min(viewportH.value * 0.48, 28 * 16),
-)
+const measureArea = () => {
+  const host = peekRef.value?.closest(
+    '[data-erd-sheet-host]',
+  ) as HTMLElement | null
+  viewportH.value = host?.clientHeight || window.innerHeight - 64
+}
+
+const sheetHeight = computed(() => Math.max(viewportH.value, MIN_PEEK))
 
 const peekHeight = () =>
   Math.max(peekRef.value?.offsetHeight || 0, MIN_PEEK)
 
-const maxOffset = () => Math.max(0, sheetHeight.value - peekHeight())
+const midHeight = () => {
+  const classic =
+    typeof window === 'undefined'
+      ? MID_MAX
+      : Math.min(window.innerHeight * 0.48, MID_MAX)
+  return Math.min(Math.max(classic, peekHeight()), sheetHeight.value)
+}
 
-const restOffset = () => (props.expanded ? 0 : maxOffset())
+const peekOffset = () => Math.max(0, sheetHeight.value - peekHeight())
+
+const midOffset = () => Math.max(0, sheetHeight.value - midHeight())
+
+const offsetFor = (next: SheetSnap) => {
+  if (next === 'full') return 0
+  if (next === 'mid') return midOffset()
+  return peekOffset()
+}
+
+const settleSnap = (predicted: number): SheetSnap => {
+  const peek = peekOffset()
+  const mid = midOffset()
+  const from = snap.value
+  const travel = startOffset - predicted
+  const flick = velocity * 180
+  const intent = travel + (velocity < 0 ? Math.abs(flick) : -Math.abs(flick))
+
+  if (Math.abs(travel) < 36 && Math.abs(velocity) < 0.45) return from
+
+  if (from === 'peek') {
+    if (intent < 36) return 'peek'
+    return predicted < mid ? 'full' : 'mid'
+  }
+  if (from === 'mid') {
+    if (intent > 48 && predicted < mid) return 'full'
+    if (intent < -48) return 'peek'
+    return 'mid'
+  }
+  if (predicted > (mid + peek) / 2) return 'peek'
+  if (intent < -48 || predicted > mid / 2) return 'mid'
+  return 'full'
+}
+
+const publishPeek = () => {
+  const peek = props.compact ? Math.max(peekHeight(), MIN_PEEK) : 16
+  document.documentElement.style.setProperty('--erd-sheet-peek', `${peek}px`)
+}
+
+const applySnap = (next: SheetSnap, notify = true) => {
+  snap.value = next
+  dragOffset.value = offsetFor(next)
+  if (!notify) return
+  const expanded = next !== 'peek'
+  if (expanded !== Boolean(props.expanded)) emit('toggle')
+}
 
 const syncOffset = () => {
   if (!props.compact || dragging.value) return
-  dragOffset.value = restOffset()
-}
-
-const setExpanded = (expand: boolean) => {
-  dragOffset.value = expand ? 0 : maxOffset()
-  if (expand !== props.expanded) emit('toggle')
+  if (!props.expanded) snap.value = 'peek'
+  else if (snap.value === 'peek') snap.value = 'mid'
+  dragOffset.value = offsetFor(snap.value)
+  publishPeek()
 }
 
 const onTab = (value: string) => {
@@ -90,7 +148,7 @@ const onSheetPointerMove = (event: PointerEvent) => {
   velocity = (event.clientY - lastY) / dt
   lastY = event.clientY
   lastT = now
-  dragOffset.value = Math.min(maxOffset(), Math.max(0, startOffset + dy))
+  dragOffset.value = Math.min(peekOffset(), Math.max(0, startOffset + dy))
 }
 
 const onSheetPointerUp = (event: PointerEvent) => {
@@ -98,9 +156,7 @@ const onSheetPointerUp = (event: PointerEvent) => {
   tracking = false
   if (!dragging.value) return
   dragging.value = false
-  const mid = maxOffset() / 2
-  const flick = velocity * 180
-  setExpanded(dragOffset.value + flick < mid)
+  applySnap(settleSnap(dragOffset.value + velocity * 180))
 }
 
 const onPeekClick = (event: MouseEvent) => {
@@ -111,11 +167,13 @@ const onPeekClick = (event: MouseEvent) => {
 
 const onHandleClick = () => {
   if (moved) return
-  emit('toggle')
+  if (snap.value === 'peek') applySnap('mid')
+  else if (snap.value === 'full') applySnap('mid')
+  else applySnap('peek')
 }
 
 const onResize = () => {
-  viewportH.value = window.innerHeight
+  measureArea()
   syncOffset()
 }
 
@@ -123,26 +181,28 @@ watch(
   () => [props.compact, props.expanded] as const,
   async () => {
     await nextTick()
+    measureArea()
     syncOffset()
   },
   { flush: 'post' },
 )
 
 onMounted(async () => {
-  viewportH.value = window.innerHeight
   await nextTick()
+  measureArea()
   syncOffset()
   window.addEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', onResize)
+  document.documentElement.style.removeProperty('--erd-sheet-peek')
 })
 </script>
 
 <template>
   <aside
-    class="flex min-h-0 flex-col bg-card"
+    class="pointer-events-auto flex min-h-0 flex-col bg-card"
     :class="
       compact
         ? 'overflow-hidden border-t border-border/80 bg-card/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_28px_rgb(25_31_40_/_0.1)] backdrop-blur-md'
@@ -170,8 +230,14 @@ onUnmounted(() => {
         v-if="compact"
         type="button"
         class="flex min-h-11 w-full touch-none flex-col items-center pt-2"
-        :aria-expanded="expanded"
-        :aria-label="expanded ? '속성 패널 접기' : '속성 패널 펼치기'"
+        :aria-expanded="snap !== 'peek'"
+        :aria-label="
+          snap === 'peek'
+            ? '속성 패널 펼치기'
+            : snap === 'full'
+              ? '속성 패널 줄이기'
+              : '속성 패널 접기'
+        "
         @click="onHandleClick"
       >
         <span class="h-1 w-10 rounded-full bg-border" />

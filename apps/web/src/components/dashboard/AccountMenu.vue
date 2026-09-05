@@ -102,7 +102,7 @@ const sheetOpen = ref(false)
           @select="emit('change-password')"
         >
           <KeyRound class="size-4 shrink-0 text-muted-foreground" />
-          계정
+          비밀번호 변경
         </DropdownMenuItem>
 
         <DropdownMenuSeparator class="my-1 h-px bg-border" />
@@ -182,7 +182,7 @@ const sheetOpen = ref(false)
             class="flex w-full items-center gap-3 rounded-[12px] px-4 py-3.5 text-[15px] font-medium transition-colors hover:bg-muted active:bg-muted"
           >
             <KeyRound class="size-[18px] shrink-0 text-muted-foreground" />
-            계정
+            비밀번호 변경
           </button>
         </DialogClose>
 
