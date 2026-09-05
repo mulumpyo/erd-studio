@@ -11,7 +11,6 @@ import { useFitPageSize } from '@/composables/usePageSize'
 import {
   canDeleteProject,
   canLeaveProject,
-  isProjectOwner,
   type PageResult,
   type PendingInvitation,
   type Project,
@@ -516,15 +515,6 @@ const renameTeam = async (name: string) => {
                   @click.stop="emit('remove-project', p.id)"
                 >
                   삭제
-                </Button>
-                <Button
-                  v-else-if="!isProjectOwner(p, auth.user?.id)"
-                  variant="secondary"
-                  size="sm"
-                  class="min-h-11 min-w-16"
-                  @click.stop="setTeamPane('members')"
-                >
-                  팀에서 관리
                 </Button>
                 <Button
                   v-else-if="canLeaveProject(p, auth.user?.id)"
