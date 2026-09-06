@@ -273,12 +273,13 @@ h3 {
 .erd-visible-hud {
   position: absolute;
   z-index: 10;
+  left: var(--erd-inset-left, 0px);
+  right: var(--erd-inset-right, 0px);
+  top: calc(var(--erd-inset-top, 0px) + 12px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 12px 16px;
-  inset: var(--erd-inset-top, 0px) var(--erd-inset-right, 0px)
-    var(--erd-inset-bottom, 0px) var(--erd-inset-left, 0px);
+  padding: 0 16px;
 }
 
 
