@@ -13,6 +13,12 @@ import {
 import { Throttle } from '@nestjs/throttler'
 import { Auth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
+import {
+  InviteAcceptResponseDto,
+  InviteInboxItemDto,
+  InvitePreviewResponseDto,
+  OkResponseDto,
+} from '../dto/invites-response.dto'
 import { InvitationsService } from '../services/invitations.service'
 
 @ApiTags('invites')
@@ -29,7 +35,11 @@ export class InvitationsController {
     description:
       '내가 받은 대기 중 초대와, 내가 보낸 초대를 상대가 수락하거나 거절한 알림을 줘요.',
   })
-  @ApiOkResponse({ description: '받은 초대 목록이에요.' })
+  @ApiOkResponse({
+    description: '받은 초대 목록이에요.',
+    type: InviteInboxItemDto,
+    isArray: true,
+  })
   @Auth()
   @Get()
   listMine(@CurrentUser() user: AuthUser) {
@@ -43,6 +53,7 @@ export class InvitationsController {
   @ApiParam({ name: 'id', description: '초대 ID예요.' })
   @ApiCreatedResponse({
     description: '수락했어요. 들어간 곳의 `projectId`를 줘요.',
+    type: InviteAcceptResponseDto,
   })
   @ApiBadRequestResponse({ description: '초대가 만료됐거나 이미 끝난 초대예요.' })
   @ApiNotFoundResponse({ description: '초대를 찾을 수 없어요.' })
@@ -57,7 +68,10 @@ export class InvitationsController {
     description: '워크스페이스에 보이는 프로젝트 초대를 거절해요.',
   })
   @ApiParam({ name: 'id', description: '초대 ID예요.' })
-  @ApiCreatedResponse({ description: '거절했어요.' })
+  @ApiCreatedResponse({
+    description: '거절했어요.',
+    type: OkResponseDto,
+  })
   @ApiBadRequestResponse({ description: '초대가 만료됐거나 이미 끝난 초대예요.' })
   @ApiNotFoundResponse({ description: '초대를 찾을 수 없어요.' })
   @Auth()
@@ -71,7 +85,10 @@ export class InvitationsController {
     description: '내가 보낸 초대를 상대가 수락하거나 거절했을 때 오는 알림을 닫아요.',
   })
   @ApiParam({ name: 'id', description: '초대 ID예요.' })
-  @ApiCreatedResponse({ description: '알림을 닫았어요.' })
+  @ApiCreatedResponse({
+    description: '알림을 닫았어요.',
+    type: OkResponseDto,
+  })
   @ApiNotFoundResponse({ description: '초대를 찾을 수 없어요.' })
   @Auth()
   @Post('sent/:id/dismiss')
@@ -93,6 +110,7 @@ export class InvitationsController {
   @ApiOkResponse({
     description:
       '초대한 사람, 초대된 곳, 받게 될 권한과 만료 시각이에요. `status`로 아직 유효한지 알 수 있어요.',
+    type: InvitePreviewResponseDto,
   })
   @ApiNotFoundResponse({ description: '초대를 찾을 수 없어요.' })
   @Get(':token')
@@ -112,6 +130,7 @@ export class InvitationsController {
   })
   @ApiCreatedResponse({
     description: '수락했어요. 들어간 곳의 `teamId` 또는 `projectId`를 줘요.',
+    type: InviteAcceptResponseDto,
   })
   @ApiBadRequestResponse({
     description: '초대가 만료됐거나 이미 거절한 초대예요.',
@@ -133,7 +152,10 @@ export class InvitationsController {
     name: 'token',
     description: '초대 메일 링크에 담긴 토큰이에요.',
   })
-  @ApiCreatedResponse({ description: '거절했어요.' })
+  @ApiCreatedResponse({
+    description: '거절했어요.',
+    type: OkResponseDto,
+  })
   @ApiBadRequestResponse({
     description: '초대가 만료됐거나 이미 수락한 초대예요.',
   })

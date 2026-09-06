@@ -27,6 +27,15 @@ import {
   UpdateTeamMemberDto,
 } from '../dto/teams.dto'
 import { ListQueryDto } from '../dto/list-query.dto'
+import {
+  InviteCreatedResponseDto,
+  InviteResendResponseDto,
+  OkResponseDto,
+  TeamCreatedResponseDto,
+  TeamListResponseDto,
+  TeamMemberResponseDto,
+  TeamResponseDto,
+} from '../dto/teams-response.dto'
 import { TeamsService } from '../services/teams.service'
 
 const NOT_FOUND = '팀을 찾을 수 없어요. 속한 팀이 아닐 때도 같은 응답을 줘요.'
@@ -63,7 +72,10 @@ export class TeamsController {
     description:
       '내가 만들거나 속한 팀을 보여줘요. 팀마다 팀원과 프로젝트 개수를 함께 줘요.',
   })
-  @ApiOkResponse({ description: '팀 목록이에요. 전체 개수와 페이지 정보도 함께 줘요.' })
+  @ApiOkResponse({
+    description: '팀 목록이에요. 전체 개수와 페이지 정보도 함께 줘요.',
+    type: TeamListResponseDto,
+  })
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() query: ListQueryDto) {
     return this.teams.list(user, query)
@@ -73,7 +85,10 @@ export class TeamsController {
     summary: '팀 만들기',
     description: '새 팀을 만들어요. 만든 사람이 소유자가 돼요.',
   })
-  @ApiCreatedResponse({ description: '팀을 만들었어요.' })
+  @ApiCreatedResponse({
+    description: '팀을 만들었어요.',
+    type: TeamCreatedResponseDto,
+  })
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateTeamDto) {
     return this.teams.create(user, dto.name)
@@ -84,7 +99,10 @@ export class TeamsController {
     description: '내가 속한 팀의 팀원과 프로젝트 개수를 보여줘요.',
   })
   @TeamId()
-  @ApiOkResponse({ description: '팀 정보예요.' })
+  @ApiOkResponse({
+    description: '팀 정보예요.',
+    type: TeamResponseDto,
+  })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Get(':id')
   get(@CurrentUser() user: AuthUser, @Param('id') id: string) {
@@ -100,6 +118,7 @@ export class TeamsController {
   @TeamId()
   @ApiCreatedResponse({
     description: '초대 메일을 보내고 `status: "invited"`를 줘요.',
+    type: InviteCreatedResponseDto,
   })
   @ApiBadRequestResponse({ description: '자기 자신은 초대할 수 없어요.' })
   @ApiForbiddenResponse({
@@ -121,7 +140,10 @@ export class TeamsController {
   })
   @TeamId()
   @InviteId()
-  @ApiCreatedResponse({ description: '초대 메일을 다시 보냈어요.' })
+  @ApiCreatedResponse({
+    description: '초대 메일을 다시 보냈어요.',
+    type: InviteResendResponseDto,
+  })
   @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Post(':id/invitations/:inviteId/resend')
@@ -139,7 +161,10 @@ export class TeamsController {
   })
   @TeamId()
   @InviteId()
-  @ApiOkResponse({ description: '초대를 취소했어요.' })
+  @ApiOkResponse({
+    description: '초대를 취소했어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Delete(':id/invitations/:inviteId')
@@ -157,7 +182,10 @@ export class TeamsController {
       '팀에서 스스로 빠져요. 팀 프로젝트도 더 이상 볼 수 없어요. 소유자는 나갈 수 없어요.',
   })
   @TeamId()
-  @ApiOkResponse({ description: '팀에서 나왔어요.' })
+  @ApiOkResponse({
+    description: '팀에서 나왔어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '소유자는 나갈 수 없어요. 팀을 삭제해 주세요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Delete(':id/leave')
@@ -170,7 +198,10 @@ export class TeamsController {
     description: '팀 이름을 바꿔요. 소유자만 할 수 있어요.',
   })
   @TeamId()
-  @ApiOkResponse({ description: '이름을 바꿨어요.' })
+  @ApiOkResponse({
+    description: '이름을 바꿨어요.',
+    type: TeamResponseDto,
+  })
   @ApiForbiddenResponse({ description: '소유자만 팀 이름을 바꿀 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Patch(':id')
@@ -189,7 +220,10 @@ export class TeamsController {
       '프로젝트를 먼저 정리한 다음에 다시 시도해 주세요.',
   })
   @TeamId()
-  @ApiOkResponse({ description: '팀을 지웠어요.' })
+  @ApiOkResponse({
+    description: '팀을 지웠어요.',
+    type: OkResponseDto,
+  })
   @ApiBadRequestResponse({
     description: '팀에 프로젝트가 남아 있어요. 프로젝트를 먼저 삭제해 주세요.',
   })
@@ -207,7 +241,10 @@ export class TeamsController {
   })
   @TeamId()
   @MemberId()
-  @ApiOkResponse({ description: '권한을 바꿨어요.' })
+  @ApiOkResponse({
+    description: '권한을 바꿨어요.',
+    type: TeamMemberResponseDto,
+  })
   @ApiForbiddenResponse({ description: '권한을 바꿀 수 없거나, 소유자 역할이에요.' })
   @ApiNotFoundResponse({ description: '팀원이 아니에요.' })
   @Patch(':id/members/:userId')
@@ -227,7 +264,10 @@ export class TeamsController {
   })
   @TeamId()
   @MemberId()
-  @ApiOkResponse({ description: '팀원을 내보냈어요.' })
+  @ApiOkResponse({
+    description: '팀원을 내보냈어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '권한이 없거나, 소유자는 내보낼 수 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Delete(':id/members/:userId')

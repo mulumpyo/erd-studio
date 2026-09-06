@@ -6,10 +6,18 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
+import {
+  connectionStatusLabel,
+  syncStatusLabel,
+  type CollabConnectionStatus,
+  type CollabSyncStatus,
+} from '@/lib/collab-status'
+import { computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   projectName: string
-  connected: boolean
+  connectionStatus: CollabConnectionStatus
+  syncStatus: CollabSyncStatus
   readOnly?: boolean
   peers: Array<{ id?: string; name: string; color: string; self?: boolean }>
   isOwner?: boolean
@@ -33,6 +41,7 @@ const emit = defineEmits<{
   login: []
   remove: []
   leave: []
+  reconnect: []
   png: []
   svg: []
   html: []
@@ -45,55 +54,94 @@ const emit = defineEmits<{
 const headerRef = defineModel<HTMLElement | null>('headerEl', {
   default: null,
 })
+
+const connLabel = computed(() => connectionStatusLabel(props.connectionStatus))
+const syncLabel = computed(() => syncStatusLabel(props.syncStatus))
+const statusTone = computed(() => {
+  switch (props.connectionStatus) {
+    case 'connected':
+      return props.syncStatus === 'syncing' ? 'syncing' : 'ok'
+    case 'connecting':
+      return 'pending'
+    case 'auth_failed':
+    case 'disconnected':
+      return 'bad'
+    default:
+      return 'muted'
+  }
+})
+const statusText = computed(() => {
+  if (props.connectionStatus === 'connected') {
+    return `${connLabel.value} · ${syncLabel.value}`
+  }
+  if (props.connectionStatus === 'connecting') return connLabel.value
+  if (props.connectionStatus === 'idle') return syncLabel.value
+  return `${connLabel.value} · ${syncLabel.value}`
+})
 </script>
 
 <template>
   <header
     ref="headerRef"
-    class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-16 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:px-4"
+    class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-14 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:min-h-16 sm:px-4"
   >
-    <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+    <div class="flex min-w-0 flex-1 items-center gap-2">
       <Button
         variant="secondary"
         size="sm"
-        class="min-h-11 px-3 xl:min-h-8"
+        class="h-9 min-h-9 shrink-0 px-2.5 xl:h-8 xl:min-h-8"
         @click="emit('back')"
         >목록</Button
       >
       <Input
         :model-value="projectName"
-        class="h-10 min-w-0 flex-1 bg-muted text-base sm:w-40 sm:flex-none xl:w-56"
+        class="h-9 min-w-0 flex-1 bg-muted px-2.5 text-[16px] font-semibold tracking-[-0.02em] sm:w-44 sm:flex-none sm:text-base sm:font-medium xl:w-64"
         :disabled="readOnly"
+        :title="projectName"
+        aria-label="프로젝트 제목"
         @update:model-value="emit('update:projectName', String($event))"
         @change="emit('rename')"
       />
       <span
-        class="inline-flex shrink-0 items-center gap-1.5 rounded-full xl:px-2.5 xl:py-0.5"
-        :class="connected ? 'xl:bg-[var(--editor-connected-bg)]' : 'xl:bg-muted'"
-        :title="connected ? '연결됨' : '연결 중'"
-        :aria-label="connected ? '연결됨' : '연결 중'"
+        class="inline-flex shrink-0 items-center gap-1.5 rounded-full p-1.5 sm:max-w-none sm:px-2 sm:py-0.5"
+        :class="{
+          'bg-[var(--editor-connected-bg)]': statusTone === 'ok',
+          'bg-muted': statusTone === 'pending' || statusTone === 'muted',
+          'bg-[var(--editor-syncing-bg)]': statusTone === 'syncing',
+          'bg-[var(--editor-offline-bg)]': statusTone === 'bad',
+        }"
+        :title="statusText"
+        :aria-label="statusText"
+        role="status"
       >
         <span
-          class="size-2.5 rounded-full"
-          :class="
-            connected
-              ? 'bg-[var(--editor-connected-dot)] shadow-[0_0_0_3px_var(--editor-connected-ring)]'
-              : 'animate-pulse bg-[var(--editor-connecting-dot)]'
-          "
+          class="size-2 shrink-0 rounded-full"
+          :class="{
+            'bg-[var(--editor-connected-dot)] shadow-[0_0_0_3px_var(--editor-connected-ring)]':
+              statusTone === 'ok',
+            'animate-pulse bg-[var(--editor-connecting-dot)]':
+              statusTone === 'pending' || statusTone === 'syncing',
+            'bg-muted-foreground': statusTone === 'muted',
+            'bg-[var(--editor-offline-dot)]': statusTone === 'bad',
+          }"
+          aria-hidden="true"
         />
         <span
-          class="hidden text-[12px] font-semibold tracking-[-0.01em] xl:inline"
-          :class="
-            connected
-              ? 'text-[var(--editor-connected-fg)]'
-              : 'text-muted-foreground'
-          "
-          >{{ connected ? '연결됨' : '연결 중' }}</span
+          class="hidden truncate text-[12px] font-semibold tracking-[-0.01em] sm:inline"
+          :class="{
+            'text-[var(--editor-connected-fg)]': statusTone === 'ok',
+            'text-muted-foreground':
+              statusTone === 'pending' ||
+              statusTone === 'muted' ||
+              statusTone === 'syncing',
+            'text-[var(--editor-offline-fg)]': statusTone === 'bad',
+          }"
+          >{{ statusText }}</span
         >
       </span>
-      <Badge v-if="readOnly" class="hidden sm:inline-flex">읽기 전용</Badge>
+      <Badge v-if="readOnly" class="inline-flex shrink-0">읽기 전용</Badge>
     </div>
-    <div class="flex shrink-0 items-center gap-2">
+    <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
       <PresenceAvatars :users="peers" />
       <div class="hidden items-center gap-2 xl:flex">
         <ExportMenu

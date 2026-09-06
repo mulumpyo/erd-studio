@@ -20,6 +20,7 @@ const emit = defineEmits<{
   select: [id: string]
   close: []
   'update:nameMode': [mode: NameMode]
+  'create-table': []
 }>()
 
 const query = ref('')
@@ -69,7 +70,17 @@ const modes: Array<{ id: NameMode; label: string }> = [
         v-if="!filtered.length"
         class="px-2 py-8 text-center text-[13px] text-muted-foreground"
       >
-        {{ query ? '검색 결과가 없어요.' : '테이블이 없어요.' }}
+        <template v-if="query">검색 결과가 없어요.</template>
+        <template v-else>
+          테이블이 없어요.
+          <button
+            type="button"
+            class="mt-3 block w-full font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            @click="emit('create-table')"
+          >
+            테이블 추가
+          </button>
+        </template>
       </p>
       <button
         v-for="table in filtered"

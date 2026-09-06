@@ -53,7 +53,8 @@ const onOpenAutoFocus = (event: Event) => {
         <div class="relative shrink-0 px-7 pb-5 pt-7 pr-12">
           <slot name="header" />
           <DialogClose
-            class="absolute right-3 top-3 flex size-11 items-center justify-center rounded-xl p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+            class="absolute right-3 top-3 flex size-11 items-center justify-center rounded-xl p-0 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            aria-label="닫기"
           >
             <X class="size-4" />
           </DialogClose>

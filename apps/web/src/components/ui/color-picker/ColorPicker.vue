@@ -98,10 +98,34 @@ const openPicker = async () => {
   open.value = true
   await nextTick()
   placeDesktopPanel()
+  const focusable = panel.value?.querySelector<HTMLElement>(
+    'button:not([disabled]), input:not([disabled])',
+  )
+  focusable?.focus()
 }
 
 const closePicker = () => {
   open.value = false
+  nextTick(() => trigger.value?.focus())
+}
+
+const onPanelKeydown = (event: KeyboardEvent) => {
+  if (event.key !== 'Tab' || !panel.value) return
+  const nodes = [
+    ...panel.value.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ]
+  if (!nodes.length) return
+  const first = nodes[0]
+  const last = nodes[nodes.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
 }
 
 const applyHexDraft = () => {
@@ -236,6 +260,7 @@ const bindDrag = (
 <template>
   <div
     ref="root"
+    :aria-disabled="disabled || undefined"
     :class="
       cn(
         'rounded-2xl bg-card p-2.5 ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.04)]',
@@ -258,6 +283,7 @@ const bindDrag = (
         :title="color"
         :aria-label="`색상 ${color}`"
         :aria-pressed="sameColor(modelValue, color)"
+        :disabled="disabled"
         @click="pick(color)"
       >
         <Check
@@ -281,6 +307,7 @@ const bindDrag = (
         title="직접 고르기"
         aria-label="직접 고르기"
         :aria-expanded="open"
+        :disabled="disabled"
         @click="open ? closePicker() : openPicker()"
       >
         <Plus
@@ -337,6 +364,7 @@ const bindDrag = (
         aria-label="색상 선택"
         class="pointer-events-auto relative w-full max-w-[20rem] overflow-hidden rounded-[24px] bg-card shadow-[0_16px_48px_rgb(28_25_23_/_0.18)] ring-1 ring-border"
         :style="isMobile ? undefined : panelStyle"
+        @keydown="onPanelKeydown"
       >
         <div class="flex items-center justify-between gap-3 px-4 pb-2 pt-4">
           <p class="text-[15px] font-bold tracking-[-0.01em]">색상 고르기</p>

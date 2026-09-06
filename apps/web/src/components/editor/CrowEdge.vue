@@ -112,7 +112,7 @@ const barPath = computed(() => {
       strokeDasharray: dashed ? '6 4' : undefined,
       opacity: dimmed ? 0.22 : 1,
     }"
-    :interaction-width="20"
+    :interaction-width="32"
   />
   <path
     v-if="flowing && !dimmed"

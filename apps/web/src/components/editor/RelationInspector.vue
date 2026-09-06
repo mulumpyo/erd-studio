@@ -86,6 +86,14 @@ const setAction = (
           :options="kindOptions"
           @update:model-value="patch({ kind: String($event) as RelationKind })"
         />
+        <p class="text-[12px] leading-5 text-muted-foreground">
+          <template v-if="relation.kind === 'identifying'">
+            식별(실선): 자식 테이블 기본 키에 부모 키가 포함돼요.
+          </template>
+          <template v-else>
+            비식별(점선): 자식에는 외래 키만 두고, 기본 키는 따로 가져요.
+          </template>
+        </p>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div class="space-y-1">

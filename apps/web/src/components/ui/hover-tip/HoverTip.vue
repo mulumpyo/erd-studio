@@ -92,11 +92,11 @@ const onPressEnd = () => {
 onMounted(() => {
   host = anchor.value?.parentElement ?? null
   if (!host) return
+  host.addEventListener('focusin', show)
+  host.addEventListener('focusout', hide)
   if (fineHover()) {
     host.addEventListener('mouseenter', show)
     host.addEventListener('mouseleave', hide)
-    host.addEventListener('focusin', show)
-    host.addEventListener('focusout', hide)
   } else {
     host.addEventListener('pointerdown', onPressStart)
     host.addEventListener('pointerup', onPressEnd)

@@ -5,7 +5,7 @@ import {
   Table2,
   StickyNote,
   Link2,
-  Unlink,
+  CircleDashed,
   GitCompare,
   Share2,
   Activity,
@@ -48,14 +48,14 @@ const tools: Array<{
   {
     id: 'identifying',
     label: '식별',
-    hint: '부모 테이블을 클릭한 뒤 자식 테이블을 클릭하세요',
+    hint: '실선 1:N — 부모 테이블을 클릭한 뒤 자식 테이블을 클릭하세요',
     icon: Link2,
   },
   {
     id: 'non-identifying',
     label: '비식별',
-    hint: '부모 테이블을 클릭한 뒤 자식 테이블을 클릭하세요',
-    icon: Unlink,
+    hint: '점선 1:N — 부모 테이블을 클릭한 뒤 자식 테이블을 클릭하세요',
+    icon: CircleDashed,
   },
   {
     id: 'one-to-one',
@@ -82,14 +82,14 @@ const tools: Array<{
       aria-label="엔티티 목록"
       :class="
         cn(
-          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
           entitiesOpen && 'bg-primary text-white hover:bg-primary',
         )
       "
       @click="emit('toggleEntities')"
     >
       <PanelLeft class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
+      <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]"
         >엔티티</span
       >
       <HoverTip>엔티티 목록</HoverTip>
@@ -101,14 +101,14 @@ const tools: Array<{
       :disabled="readOnly || !canUndo"
       :class="
         cn(
-          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
           (readOnly || !canUndo) && 'pointer-events-none opacity-30',
         )
       "
       @click="emit('undo')"
     >
       <Undo2 class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
+      <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]"
         >취소</span
       >
       <HoverTip>실행 취소 (Ctrl+Z)</HoverTip>
@@ -119,14 +119,14 @@ const tools: Array<{
       :disabled="readOnly || !canRedo"
       :class="
         cn(
-          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
           (readOnly || !canRedo) && 'pointer-events-none opacity-30',
         )
       "
       @click="emit('redo')"
     >
       <Redo2 class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
+      <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]"
         >재실행</span
       >
       <HoverTip>다시 실행 (Ctrl+Y)</HoverTip>
@@ -137,10 +137,11 @@ const tools: Array<{
       :key="t.id"
       type="button"
       :aria-label="`${t.label} — ${t.hint}`"
+      :aria-pressed="current === t.id"
       :disabled="readOnly && t.id !== 'select'"
       :class="
         cn(
-          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
           current === t.id && 'bg-primary text-white hover:bg-primary',
           readOnly && t.id !== 'select' && 'pointer-events-none opacity-30',
         )
@@ -148,7 +149,7 @@ const tools: Array<{
       @click="emit('change', readOnly && t.id !== 'select' ? 'select' : t.id)"
     >
       <component :is="t.icon" class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]">{{
+      <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]">{{
         t.label
       }}</span>
       <HoverTip>{{ t.label }} — {{ t.hint }}</HoverTip>
@@ -159,14 +160,14 @@ const tools: Array<{
       aria-label="관계 흐름 — 부모에서 자식으로 방향이 보여요"
       :class="
         cn(
-          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted',
+          'has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
           flowOn && 'bg-primary text-white hover:bg-primary',
         )
       "
       @click="emit('toggleFlow')"
     >
       <Activity class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
+      <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]"
         >흐름</span
       >
       <HoverTip>관계 흐름 — 부모에서 자식으로 방향이 보여요</HoverTip>
@@ -177,11 +178,11 @@ const tools: Array<{
       <button
         type="button"
         aria-label="프로젝트 설정"
-        class="has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
+        class="has-tip relative flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         @click="emit('settings')"
       >
         <Settings2 class="size-4" />
-        <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
+        <span class="text-[11px] font-semibold leading-none tracking-[-0.01em]"
           >설정</span
         >
         <HoverTip>프로젝트 설정</HoverTip>

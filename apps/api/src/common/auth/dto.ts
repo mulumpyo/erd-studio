@@ -201,11 +201,12 @@ export class SessionResponseDto {
   })
   user: AuthUserDto | null
 
-  @ApiProperty({
-    description: '액세스 토큰이 만료되는 시각이에요. 밀리초예요.',
+  @ApiPropertyOptional({
+    description:
+      '액세스 토큰이 만료되는 시각이에요. 밀리초예요. 로그아웃 상태면 없을 수 있어요.',
     example: 1710000000000,
   })
-  expiresAt: number
+  expiresAt?: number
 
   @ApiPropertyOptional({
     description:
@@ -213,4 +214,50 @@ export class SessionResponseDto {
     example: '/invite/abc123',
   })
   nextPath?: string
+}
+
+export class RegisterResponseDto {
+  @ApiProperty({ example: true })
+  needsVerification: true
+
+  @ApiProperty({ example: 'hong@example.com', format: 'email' })
+  email: string
+
+  @ApiProperty({
+    description: '인증 메일을 보냈으면 true예요. 메일 설정이 없으면 false예요.',
+    example: true,
+  })
+  mailed: boolean
+
+  @ApiPropertyOptional({
+    description:
+      '메일을 보내지 못했고 개발용 매직 링크가 허용될 때만 붙는 인증 URL이에요.',
+    example: 'https://app.example.com/verify/F3sQ1t0pV9xK7mB2nR8yZ4wL6cJ5hD0a',
+  })
+  verifyUrl?: string
+}
+
+export class ForgotPasswordResponseDto {
+  @ApiProperty({ example: true })
+  ok: true
+
+  @ApiPropertyOptional({
+    description:
+      '메일을 보내지 못했고 개발용 매직 링크가 허용될 때만 붙는 재설정 URL이에요.',
+    example: 'https://app.example.com/reset/A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6',
+  })
+  resetUrl?: string
+}
+
+export class WsTokenResponseDto {
+  @ApiProperty({
+    description: '협업 WebSocket에 붙을 때 쓰는 2분짜리 JWT예요.',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  token: string
+}
+
+export class OkAuthResponseDto {
+  @ApiProperty({ example: true })
+  ok: true
 }

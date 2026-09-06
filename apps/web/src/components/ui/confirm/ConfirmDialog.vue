@@ -4,6 +4,7 @@ import { DialogRoot } from 'reka-ui'
 import { useConfirm } from '@/composables/useConfirm'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
@@ -41,12 +42,12 @@ const submit = () => {
       <DialogTitle class="pr-1 text-[20px] leading-7">
         {{ request?.title }}
       </DialogTitle>
-      <p
+      <DialogDescription
         v-if="request?.description"
         class="mt-4 text-[15px] leading-6 text-muted-foreground"
       >
         {{ request.description }}
-      </p>
+      </DialogDescription>
       <form v-if="request" class="mt-6 space-y-4" @submit.prevent="submit">
         <div v-if="matchRequired" class="space-y-2">
           <div class="rounded-2xl bg-muted px-4 py-3">

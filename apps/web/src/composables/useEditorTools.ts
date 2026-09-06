@@ -105,18 +105,13 @@ export const useEditorTools = (opts: {
     }
     opts.selectedEdgeId.value = null
     opts.selectedColumnId.value = null
-    if (
-      opts.compactLayout.value &&
-      opts.tool.value === 'select' &&
-      !opts.pendingLink.value
-    ) {
-      opts.inspectorExpanded.value = false
-    }
     if (opts.pendingLink.value) {
       opts.pendingLink.value = null
       return
     }
     opts.selectedId.value = null
+    // Compact layouts keep the panel open; users close it with the sheet control.
+    // Auto-collapse was dropping in-progress attribute edits on canvas clicks.
     if (opts.readOnly.value) return
     if (opts.tool.value === 'table') opts.addTable(position)
     if (opts.tool.value === 'note') opts.addNote(position)

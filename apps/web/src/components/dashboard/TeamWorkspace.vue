@@ -443,7 +443,7 @@ const renameTeam = async (name: string) => {
         :class="teamPane !== 'projects' ? 'max-xl:hidden' : ''"
       >
         <div class="flex shrink-0 items-center justify-between gap-3">
-          <h2 class="text-[15px] font-semibold">프로젝트</h2>
+          <h2 class="text-[17px] font-semibold tracking-[-0.01em] sm:text-[15px]">프로젝트</h2>
           <Button size="sm" class="min-h-11 gap-1.5 px-3" @click="createOpen = true">
             <Plus class="size-4" />
             만들기

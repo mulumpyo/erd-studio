@@ -18,13 +18,17 @@ import {
   ChangePasswordDto,
   DeleteAccountDto,
   ForgotPasswordDto,
+  ForgotPasswordResponseDto,
   LoginDto,
+  OkAuthResponseDto,
   RegisterDto,
+  RegisterResponseDto,
   RefreshTokenDto,
   ResendVerificationDto,
   ResetPasswordDto,
   SessionResponseDto,
   VerifyEmailDto,
+  WsTokenResponseDto,
 } from '../common/auth/dto'
 import { Auth, OptionalAuth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
@@ -61,6 +65,7 @@ export class AuthController {
   @ApiCreatedResponse({
     description:
       '인증 메일을 보냈어요. `mailed`가 `false`면 서버에 메일 설정이 없다는 뜻이에요.',
+    type: RegisterResponseDto,
   })
   @ApiBadRequestResponse({
     description: '입력이 올바르지 않거나, 방금 보낸 메일이 있어서 조금 기다려야 해요.',
@@ -123,7 +128,10 @@ export class AuthController {
       '인증 메일을 다시 보내요. 계정이 있는지 알려주지 않으려고, 없는 이메일이어도 성공으로 답해요.\n\n' +
       '방금 보낸 메일이 있으면 1분 정도 기다려야 해요.',
   })
-  @ApiCreatedResponse({ description: '보낼 수 있으면 보냈어요.' })
+  @ApiCreatedResponse({
+    description: '보낼 수 있으면 보냈어요.',
+    type: OkAuthResponseDto,
+  })
   @ApiBadRequestResponse({ description: '방금 보냈어요. 잠시 후 다시 시도해 주세요.' })
   @Post('resend-verification')
   @Throttle({ default: { limit: 8, ttl: 60_000 } })
@@ -160,7 +168,10 @@ export class AuthController {
     description:
       '지금 쓰던 토큰을 못 쓰게 만들고 쿠키를 지워요. 이미 로그아웃된 상태여도 성공으로 답해요.',
   })
-  @ApiCreatedResponse({ description: '로그아웃했어요. 인증 쿠키를 지워요.' })
+  @ApiCreatedResponse({
+    description: '로그아웃했어요. 인증 쿠키를 지워요.',
+    type: OkAuthResponseDto,
+  })
   @Post('logout')
   async logout(
     @Body() dto: RefreshTokenDto = {},
@@ -180,7 +191,10 @@ export class AuthController {
     description:
       '비밀번호를 잊었을 때 재설정 링크를 메일로 보내요. 계정이 있는지 알려주지 않으려고 어떤 이메일이든 성공으로 답해요.',
   })
-  @ApiCreatedResponse({ description: '보낼 수 있으면 보냈어요.' })
+  @ApiCreatedResponse({
+    description: '보낼 수 있으면 보냈어요.',
+    type: ForgotPasswordResponseDto,
+  })
   @Post('forgot-password')
   @Throttle({ default: { limit: 8, ttl: 60_000 } })
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -192,7 +206,10 @@ export class AuthController {
     description:
       '메일로 받은 토큰으로 새 비밀번호를 정해요. 바꾸면 모든 기기에서 로그아웃되고, 편집 중이던 연결도 끊어요.',
   })
-  @ApiCreatedResponse({ description: '비밀번호를 바꿨어요. 다시 로그인해 주세요.' })
+  @ApiCreatedResponse({
+    description: '비밀번호를 바꿨어요. 다시 로그인해 주세요.',
+    type: OkAuthResponseDto,
+  })
   @ApiNotFoundResponse({ description: '재설정 링크가 만료됐거나 올바르지 않아요.' })
   @Post('reset-password')
   @Throttle({ default: { limit: 8, ttl: 60_000 } })
@@ -205,7 +222,10 @@ export class AuthController {
     description:
       '로그인한 상태에서 비밀번호를 바꿔요. 바꾸면 이 기기까지 모두 로그아웃되니 다시 로그인해 주세요.',
   })
-  @ApiCreatedResponse({ description: '비밀번호를 바꿨어요. 인증 쿠키를 지워요.' })
+  @ApiCreatedResponse({
+    description: '비밀번호를 바꿨어요. 인증 쿠키를 지워요.',
+    type: OkAuthResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: '현재 비밀번호가 맞지 않아요.' })
   @Post('change-password')
   @Auth()
@@ -226,7 +246,10 @@ export class AuthController {
       '내가 만든 팀과 그 안의 프로젝트는 함께 사라지고, 다른 팀에서 남긴 대화도 지워요. 같은 이메일로 다시 가입할 수 있어요.\n\n' +
       '마지막 플랫폼 관리자는 탈퇴할 수 없어요.',
   })
-  @ApiOkResponse({ description: '탈퇴했어요. 인증 쿠키를 지워요.' })
+  @ApiOkResponse({
+    description: '탈퇴했어요. 인증 쿠키를 지워요.',
+    type: OkAuthResponseDto,
+  })
   @ApiUnauthorizedResponse({ description: '현재 비밀번호가 맞지 않아요.' })
   @ApiBadRequestResponse({ description: '마지막 관리자는 탈퇴할 수 없어요.' })
   @Post('delete-account')
@@ -249,7 +272,10 @@ export class AuthController {
       '협업 서버(WebSocket)에 붙을 때 쓰는 2분짜리 토큰이에요.\n\n' +
       '웹과 협업 서버가 같은 도메인이면 쿠키로 바로 붙으니 이 API는 필요 없어요. 도메인이 다를 때만 써 주세요.',
   })
-  @ApiOkResponse({ description: '토큰을 발급했어요. 2분 안에 연결해 주세요.' })
+  @ApiOkResponse({
+    description: '토큰을 발급했어요. 2분 안에 연결해 주세요.',
+    type: WsTokenResponseDto,
+  })
   @Get('ws-token')
   @Auth()
   wsToken(@CurrentUser() user: AuthUser) {

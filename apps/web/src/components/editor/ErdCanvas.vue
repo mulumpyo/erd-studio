@@ -37,6 +37,7 @@ const props = withDefaults(
     flowId?: string
     compact?: boolean
     hint?: string
+    empty?: boolean
   }>(),
   { flowId: 'erd-canvas' },
 )
@@ -51,6 +52,7 @@ const emit = defineEmits<{
   edgeClick: [event: EdgeMouseEvent]
   panStart: []
   panEnd: []
+  createTable: []
 }>()
 
 const { resolved: theme } = useTheme()
@@ -395,6 +397,28 @@ defineExpose({ focusNode, capture, viewportEl })
         class="rounded-full bg-card/95 px-4 py-2 text-center text-[13px] font-semibold tracking-[-0.01em] text-foreground shadow-[0_8px_24px_rgb(28_25_23_/_0.12)]"
       >
         {{ hint }}
+      </div>
+    </div>
+    <div
+      v-if="empty && !readOnly"
+      class="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center p-6"
+    >
+      <div
+        class="pointer-events-auto max-w-sm rounded-3xl bg-card/95 px-6 py-7 text-center shadow-[0_16px_40px_rgb(28_25_23_/_0.14)] ring-1 ring-border/70"
+      >
+        <p class="text-[17px] font-bold tracking-[-0.02em]">
+          첫 테이블을 만들어 보세요
+        </p>
+        <p class="mt-2 text-[14px] leading-6 text-muted-foreground">
+          버튼을 누르거나, 왼쪽에서 「테이블」을 고른 뒤 빈 곳을 클릭하세요.
+        </p>
+        <button
+          type="button"
+          class="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          @click="emit('createTable')"
+        >
+          테이블 추가
+        </button>
       </div>
     </div>
   </div>

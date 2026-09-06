@@ -64,7 +64,7 @@ const onFile = (event: Event) => {
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('json')"
       >
-        ERD JSON으로 저장
+        ERD JSON 내보내기
       </button>
       <button
         type="button"
@@ -79,35 +79,35 @@ const onFile = (event: Event) => {
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('png')"
       >
-        PNG로 저장
+        PNG 내보내기
       </button>
       <button
         type="button"
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('svg')"
       >
-        SVG로 저장
+        SVG 내보내기
       </button>
       <button
         type="button"
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('html')"
       >
-        HTML 명세서로 저장
+        HTML 명세서 내보내기
       </button>
       <button
         type="button"
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('xls')"
       >
-        Excel로 저장
+        Excel 내보내기
       </button>
       <button
         type="button"
         class="block w-full px-4 py-2.5 text-left font-medium hover:bg-muted"
         @click="pick('csv')"
       >
-        CSV로 저장
+        CSV 내보내기
       </button>
     </div>
   </div>

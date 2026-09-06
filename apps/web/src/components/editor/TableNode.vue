@@ -266,7 +266,7 @@ onUnmounted(() => {
       >
         <div
           class="table-head-logical"
-          title="더블클릭해서 이름을 바꿔 보세요"
+          :title="header.primary"
           @dblclick.stop="
             startTable(mode === 'physical' ? 'physicalName' : 'logicalName')
           "
@@ -284,6 +284,7 @@ onUnmounted(() => {
         <div
           v-if="header.secondary"
           class="table-head-physical"
+          :title="header.secondary"
           @dblclick.stop="startTable('physicalName')"
         >
           {{ header.secondary }}
@@ -393,6 +394,7 @@ onUnmounted(() => {
         >
           <span
             class="col-logical"
+            :title="colNames(col).primary"
             @dblclick.stop="
               startCol(
                 col.id,
@@ -413,6 +415,7 @@ onUnmounted(() => {
           <span
             v-if="colNames(col).secondary"
             class="col-physical"
+            :title="colNames(col).secondary"
             @dblclick.stop="startCol(col.id, 'physicalName')"
           >
             {{ colNames(col).secondary }}

@@ -44,6 +44,11 @@ import { toast } from '@/composables/useToast'
 import { confirm, useConfirm } from '@/composables/useConfirm'
 import { markProjectChatSeen, setOpenChatProject } from '@/composables/useChatInbox'
 import { onNotifyListsChange } from '@/composables/useNotifications'
+import {
+  connectionStatusLabel,
+  isConnectionUnhealthy,
+  syncStatusLabel,
+} from '@/lib/collab-status'
 
 const route = useRoute()
 const router = useRouter()
@@ -114,6 +119,9 @@ const {
   messages,
   tool,
   connected,
+  connectionStatus,
+  syncStatus,
+  reconnect,
   peers,
   addTable,
   addNote,
@@ -172,7 +180,12 @@ const persistChat = (body: string) => {
     `/api/projects/${projectId.value}/chat`,
     { method: 'POST', body: JSON.stringify({ body }) },
     auth.token,
-  ).catch(() => undefined)
+  ).catch((e) => {
+    toast(errorMessage(e, '채팅 서버 저장에 실패했어요. 화면에는 남았을 수 있어요'), {
+      kind: 'error',
+      ms: 4000,
+    })
+  })
 }
 
 const openChatFromQuery = () => {
@@ -333,13 +346,36 @@ const isEditingField = (target: EventTarget | null) => {
 }
 
 const onKey = (event: KeyboardEvent) => {
-  if (readOnly.value) return
   if (confirmOpen.value) return
   if (isEditingField(event.target)) return
   if (event.key === 'Escape') {
+    if (readOnly.value) return
     resetToolOnEscape()
     return
   }
+  if (!readOnly.value && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    const hotkeys: Record<string, typeof tool.value> = {
+      v: 'select',
+      t: 'table',
+      n: 'note',
+      i: 'identifying',
+      r: 'non-identifying',
+      o: 'one-to-one',
+      m: 'many-to-many',
+    }
+    const nextTool = hotkeys[event.key.toLowerCase()]
+    if (nextTool) {
+      event.preventDefault()
+      onToolChange(nextTool)
+      return
+    }
+    if (event.key === 'Enter' && selectedId.value && isRelationTool(tool.value)) {
+      event.preventDefault()
+      beginRelationFromTable(selectedId.value)
+      return
+    }
+  }
+  if (readOnly.value) return
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault()
     if (event.shiftKey) redo()
@@ -505,6 +541,22 @@ const onProjectNotify = (event?: {
   }
 }
 
+const createFirstTable = async () => {
+  if (readOnly.value) return
+  const before = new Set(erd.value.tables.map((t) => t.id))
+  addTable({ x: 180, y: 160 })
+  await nextTick()
+  const created = erd.value.tables.find((t) => !before.has(t.id))
+  if (!created) return
+  selectedId.value = created.id
+  selectedColumnId.value = null
+  selectedEdgeId.value = null
+  tab.value = 'props'
+  inspectorExpanded.value = true
+  entitiesOpen.value = false
+  canvasRef.value?.focusNode(created.id)
+}
+
 const rename = async () => {
   if (readOnly.value) return
   await saveProjectMeta({ name: projectName.value })
@@ -533,18 +585,30 @@ const saveProjectMeta = async (payload: {
     toast(errorMessage(e, '프로젝트 정보를 저장하지 못했어요'), {
       kind: 'error',
     })
+    throw e
   }
 }
 
-const onSaveSettingsMeta = (payload: {
+const onSaveSettingsMeta = async (payload: {
   name: string
   description: string
   tags: string[]
 }) => {
+  const prev = {
+    name: projectName.value,
+    description: projectDescription.value,
+    tags: [...projectTags.value],
+  }
   projectName.value = payload.name
   projectDescription.value = payload.description
   projectTags.value = payload.tags
-  void saveProjectMeta(payload)
+  try {
+    await saveProjectMeta(payload)
+  } catch {
+    projectName.value = prev.name
+    projectDescription.value = prev.description
+    projectTags.value = prev.tags
+  }
 }
 
 const setPublic = async (next: boolean) => {
@@ -844,6 +908,7 @@ const removeProject = async () => {
         :linking="isRelationTool(tool)"
         :compact="compactLayout"
         :hint="focusMode ? '' : canvasHint"
+        :empty="!erd.tables.length && !erd.notes.length"
         @pane-click="onPaneClick"
         @connect="onConnect"
         @pan-start="onPanStart"
@@ -852,6 +917,7 @@ const removeProject = async () => {
         @node-drag-stop="onDragStop"
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
+        @create-table="createFirstTable"
       />
     </div>
     <div
@@ -869,7 +935,8 @@ const removeProject = async () => {
     <EditorChrome
       v-model:header-el="headerRef"
       v-model:project-name="projectName"
-      :connected="connected"
+      :connection-status="connectionStatus"
+      :sync-status="syncStatus"
       :read-only="readOnly"
       :peers="peers"
       :is-owner="isOwner"
@@ -886,6 +953,7 @@ const removeProject = async () => {
       @manage-team="goTeam"
       @update:public="setPublic"
       @copy-share="copyShare"
+      @reconnect="reconnect"
       @login="
         router.push({ name: 'login', query: { redirect: route.fullPath } })
       "
@@ -899,6 +967,42 @@ const removeProject = async () => {
       @json="exportJson"
       @import-json="importJsonFile"
     />
+    <div
+      v-if="
+        isConnectionUnhealthy(connectionStatus) ||
+        (focusMode && connectionStatus !== 'idle')
+      "
+      class="erd-status-sticky pointer-events-auto relative z-40 flex items-center justify-between gap-3 border-b px-3 py-2 text-[13px] sm:px-4"
+      :class="
+        isConnectionUnhealthy(connectionStatus)
+          ? 'border-[var(--editor-offline-dot)]/30 bg-[var(--editor-offline-bg)] text-[var(--editor-offline-fg)]'
+          : 'border-border/80 bg-card/95 text-muted-foreground'
+      "
+      :role="isConnectionUnhealthy(connectionStatus) ? 'alert' : 'status'"
+    >
+      <p class="min-w-0 leading-5">
+        <span class="font-semibold">{{ connectionStatusLabel(connectionStatus) }}</span>
+        <template v-if="isConnectionUnhealthy(connectionStatus)">
+          —
+          {{
+            connectionStatus === 'auth_failed'
+              ? '다시 로그인한 뒤 재연결해 주세요. 편집이 서버에 반영되지 않을 수 있어요.'
+              : '편집이 서버에 반영되지 않을 수 있어요. 연결을 다시 시도해 주세요.'
+          }}
+        </template>
+        <span class="opacity-80">
+          · {{ syncStatusLabel(syncStatus) }}
+        </span>
+      </p>
+      <Button
+        v-if="isConnectionUnhealthy(connectionStatus)"
+        size="sm"
+        variant="secondary"
+        class="h-9 shrink-0"
+        @click="reconnect"
+        >다시 연결</Button
+      >
+    </div>
     <div class="relative min-h-0 flex-1">
       <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(28_25_23_/_0.06)]">
       <Toolbar
@@ -925,6 +1029,7 @@ const removeProject = async () => {
         :name-mode="viewSettings.nameMode"
         @select="onSelectTable"
         @update:name-mode="patchView({ nameMode: $event })"
+        @create-table="createFirstTable"
       />
       </div>
       <div
@@ -961,6 +1066,7 @@ const removeProject = async () => {
             @add-domain="addDomain"
             @update-domain="updateDomain"
             @remove-domain="onRemoveDomain"
+            @create-table="createFirstTable"
           />
           <SqlPanel
             v-else-if="tab === 'sql'"
@@ -1005,6 +1111,7 @@ const removeProject = async () => {
           @select="onSelectTable"
           @close="entitiesOpen = false"
           @update:name-mode="patchView({ nameMode: $event })"
+          @create-table="createFirstTable"
         />
       </div>
     </div>
