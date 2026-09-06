@@ -57,7 +57,7 @@ const onFile = (event: Event) => {
     />
     <div
       v-if="open"
-      class="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl bg-card py-2 text-[14px] text-card-foreground shadow-[0_12px_32px_rgb(25_31_40_/_0.12)]"
+      class="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-2xl bg-card py-2 text-[14px] text-card-foreground shadow-[0_12px_32px_rgb(28_25_23_/_0.12)]"
     >
       <button
         type="button"

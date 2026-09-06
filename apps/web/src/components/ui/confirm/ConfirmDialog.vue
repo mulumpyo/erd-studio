@@ -53,7 +53,7 @@ const submit = () => {
             <p class="text-[13px] font-semibold text-muted-foreground">
               {{ request.matchHint || '아래 이름을 그대로 입력해 주세요' }}
             </p>
-            <p class="mt-1 break-all text-[17px] font-bold tracking-[-0.03em]">
+            <p class="mt-1 break-all text-[17px] font-bold tracking-[-0.015em]">
               {{ request.matchValue }}
             </p>
           </div>

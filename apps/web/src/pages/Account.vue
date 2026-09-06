@@ -75,7 +75,7 @@ const withdraw = async () => {
       class="flex h-16 items-center justify-between border-b border-border/80 bg-card px-6"
     >
       <button
-        class="text-[17px] font-bold tracking-[-0.03em]"
+        class="text-[17px] font-bold tracking-[-0.015em]"
         @click="router.push('/app')"
       >
         ERD Studio

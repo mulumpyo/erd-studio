@@ -86,7 +86,7 @@ onMounted(load)
       {{ readOnly ? '저장된 버전이 없어요.' : '아직 버전이 없어요.' }}
     </p>
     <div v-for="v in versions" :key="v.id" class="rounded-2xl bg-muted p-4">
-      <div class="text-[15px] font-bold tracking-[-0.02em]">{{ v.label || '버전' }}</div>
+      <div class="text-[15px] font-bold tracking-[-0.01em]">{{ v.label || '버전' }}</div>
       <div class="mt-1 text-[13px] text-muted-foreground">
         {{ new Date(v.createdAt).toLocaleString() }} · {{ v.createdBy?.name }}
       </div>

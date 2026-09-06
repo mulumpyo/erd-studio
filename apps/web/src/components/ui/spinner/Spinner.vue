@@ -28,7 +28,7 @@ const px = { sm: 20, md: 28, lg: 36 }
     />
     <p
       v-if="label"
-      class="whitespace-pre-line text-center text-[15px] font-medium leading-snug tracking-[-0.02em] text-muted-foreground"
+      class="whitespace-pre-line text-center text-[15px] font-medium leading-snug tracking-[-0.01em] text-muted-foreground"
     >
       {{ label }}
     </p>

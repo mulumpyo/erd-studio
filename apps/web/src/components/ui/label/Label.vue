@@ -9,7 +9,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
   <label
     :class="
       cn(
-        'text-[13px] font-semibold leading-none tracking-[-0.02em] text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+        'text-[13px] font-semibold leading-none tracking-[-0.01em] text-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
         props.class,
       )
     "

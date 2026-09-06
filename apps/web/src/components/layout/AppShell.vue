@@ -78,7 +78,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
         </button>
         <Separator orientation="vertical" class="mr-1 h-4" />
         <nav
-          class="flex min-w-0 items-center gap-1 text-[13px] font-medium tracking-[-0.02em]"
+          class="flex min-w-0 items-center gap-1 text-[13px] font-medium tracking-[-0.01em]"
           aria-label="현재 위치"
         >
           <RouterLink

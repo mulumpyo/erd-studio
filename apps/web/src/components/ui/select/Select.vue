@@ -120,7 +120,7 @@ const choose = (value: string) => {
       :disabled="disabled"
       :class="
         cn(
-          'flex h-12 w-full items-center justify-between gap-2 rounded-2xl border-0 bg-muted px-4 text-left text-base font-medium tracking-[-0.01em] text-foreground shadow-none outline-none transition-colors',
+          'flex h-12 w-full items-center justify-between gap-2 rounded-xl border-0 bg-muted px-4 text-left text-base font-medium tracking-[-0.01em] text-foreground shadow-none outline-none transition-colors',
           'hover:bg-muted/80 focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-ring/30',
           'disabled:cursor-not-allowed disabled:opacity-50',
           '[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
@@ -135,7 +135,7 @@ const choose = (value: string) => {
       <DropdownMenuContent
         align="start"
         :side-offset="6"
-        class="z-[200] max-h-72 overflow-y-auto rounded-2xl border-0 bg-card p-1.5 shadow-[0_8px_32px_rgb(25_31_40_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        class="z-[200] max-h-72 overflow-y-auto rounded-xl border-0 bg-card p-1.5 shadow-[0_8px_32px_rgb(28_25_23_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         :style="{ minWidth: 'var(--reka-popper-anchor-width)' }"
       >
         <DropdownMenuItem

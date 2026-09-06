@@ -89,7 +89,7 @@ const tools: Array<{
       @click="emit('toggleEntities')"
     >
       <PanelLeft class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
         >엔티티</span
       >
       <HoverTip>엔티티 목록</HoverTip>
@@ -108,7 +108,7 @@ const tools: Array<{
       @click="emit('undo')"
     >
       <Undo2 class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
         >취소</span
       >
       <HoverTip>실행 취소 (Ctrl+Z)</HoverTip>
@@ -126,7 +126,7 @@ const tools: Array<{
       @click="emit('redo')"
     >
       <Redo2 class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
         >재실행</span
       >
       <HoverTip>다시 실행 (Ctrl+Y)</HoverTip>
@@ -148,7 +148,7 @@ const tools: Array<{
       @click="emit('change', readOnly && t.id !== 'select' ? 'select' : t.id)"
     >
       <component :is="t.icon" class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]">{{
+      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]">{{
         t.label
       }}</span>
       <HoverTip>{{ t.label }} — {{ t.hint }}</HoverTip>
@@ -166,7 +166,7 @@ const tools: Array<{
       @click="emit('toggleFlow')"
     >
       <Activity class="size-4" />
-      <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+      <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
         >흐름</span
       >
       <HoverTip>관계 흐름 — 부모에서 자식으로 방향이 보여요</HoverTip>
@@ -181,7 +181,7 @@ const tools: Array<{
         @click="emit('settings')"
       >
         <Settings2 class="size-4" />
-        <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+        <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
           >설정</span
         >
         <HoverTip>프로젝트 설정</HoverTip>

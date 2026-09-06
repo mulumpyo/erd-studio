@@ -29,7 +29,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
   >
     <Sun v-if="mode === 'light'" class="size-4" />
     <Moon v-else class="size-4" />
-    <span class="text-[9px] font-semibold leading-none tracking-[-0.02em]"
+    <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
       >화면</span
     >
   </button>

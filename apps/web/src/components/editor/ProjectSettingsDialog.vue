@@ -114,7 +114,7 @@ const toggleShow = (key: ErdShowKey, on: boolean) => {
         <DialogTitle>프로젝트 설정</DialogTitle>
       </template>
       <section class="space-y-3">
-        <p class="text-[13px] font-bold tracking-[-0.02em]">기본 정보</p>
+        <p class="text-[13px] font-bold tracking-[-0.01em]">기본 정보</p>
         <div class="space-y-1">
           <Label>이름</Label>
           <Input v-model="name" :disabled="readOnly" />
@@ -164,7 +164,7 @@ const toggleShow = (key: ErdShowKey, on: boolean) => {
       </section>
       <section class="space-y-3">
         <div>
-          <p class="text-[13px] font-bold tracking-[-0.02em]">다이어그램 표시</p>
+          <p class="text-[13px] font-bold tracking-[-0.01em]">다이어그램 표시</p>
           <p class="mt-1 text-[13px] text-muted-foreground">
             테이블에 어떤 컬럼 정보를 그릴지 골라 주세요. ERD Cloud처럼 필요한
             항목만 켜면 돼요.
@@ -194,7 +194,7 @@ const toggleShow = (key: ErdShowKey, on: boolean) => {
               class="min-w-0 text-left"
               @click="toggleShow(option.key, !view.show[option.key])"
             >
-              <span class="block text-[14px] font-semibold tracking-[-0.02em]">{{
+              <span class="block text-[14px] font-semibold tracking-[-0.01em]">{{
                 option.label
               }}</span>
               <span class="block text-[12px] text-muted-foreground">{{

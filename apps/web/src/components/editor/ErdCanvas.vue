@@ -52,7 +52,7 @@ const patternColor = computed(() =>
   theme.value === 'dark' ? '#3a3d46' : '#e5e8eb',
 )
 const canvasColor = computed(() =>
-  theme.value === 'dark' ? '#1c1d22' : '#f2f4f6',
+  theme.value === 'dark' ? '#18181b' : '#f6f5f2',
 )
 const {
   fitView,
@@ -324,7 +324,7 @@ defineExpose({ focusNode, capture, viewportEl })
     </VueFlow>
     <div v-if="hint" class="erd-visible-hud pointer-events-none">
       <div
-        class="rounded-full bg-card/95 px-4 py-2 text-center text-[13px] font-semibold tracking-[-0.02em] text-foreground shadow-[0_8px_24px_rgb(25_31_40_/_0.12)]"
+        class="rounded-full bg-card/95 px-4 py-2 text-center text-[13px] font-semibold tracking-[-0.01em] text-foreground shadow-[0_8px_24px_rgb(28_25_23_/_0.12)]"
       >
         {{ hint }}
       </div>

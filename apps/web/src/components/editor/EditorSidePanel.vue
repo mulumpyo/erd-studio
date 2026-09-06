@@ -216,7 +216,7 @@ onUnmounted(() => {
     class="pointer-events-auto flex min-h-0 flex-col bg-card"
     :class="
       compact
-        ? 'overflow-hidden border-t border-border/80 bg-card/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_28px_rgb(25_31_40_/_0.1)] backdrop-blur-md'
+        ? 'overflow-hidden border-t border-border/80 bg-card/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_28px_rgb(28_25_23_/_0.1)] backdrop-blur-md'
         : ''
     "
     :style="

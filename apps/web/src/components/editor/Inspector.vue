@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
-import { GripVertical, Plus } from 'lucide-vue-next'
+import { GripVertical } from 'lucide-vue-next'
 import {
   COLUMN_TYPES,
-  TABLE_COLORS,
   applyDomain,
   columnRank,
   defaultColumn,
@@ -15,6 +14,7 @@ import {
 } from '@erd-studio/shared'
 import Button from '@/components/ui/button/Button.vue'
 import Checkbox from '@/components/ui/checkbox/Checkbox.vue'
+import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Label from '@/components/ui/label/Label.vue'
 import Select from '@/components/ui/select/Select.vue'
@@ -189,27 +189,6 @@ const onDragEnd = () => {
   overIndex.value = null
 }
 
-const sameColor = (a: string, b: string) =>
-  a.trim().toLowerCase() === b.trim().toLowerCase()
-
-const toHexColor = (value: string) => {
-  const hex = value.trim()
-  if (/^#[0-9a-f]{6}$/i.test(hex)) return hex.toLowerCase()
-  if (/^#[0-9a-f]{3}$/i.test(hex)) {
-    const [r, g, b] = hex.slice(1)
-    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase()
-  }
-  return '#3b82f6'
-}
-
-const isPresetColor = computed(() =>
-  TABLE_COLORS.some((color) => sameColor(color, props.table?.color ?? '')),
-)
-
-const onPickColor = (event: Event) => {
-  const value = (event.target as HTMLInputElement).value
-  if (value) patch({ color: value })
-}
 </script>
 
 <template>
@@ -261,50 +240,14 @@ const onPickColor = (event: Event) => {
     </div>
     <div class="space-y-1">
       <Label>색상</Label>
-      <div class="flex flex-wrap items-center gap-2">
-        <button
-          v-for="color in TABLE_COLORS"
-          :key="color"
-          type="button"
-          class="size-7 rounded-full"
-          :style="{
-            background: color,
-            outline: sameColor(table.color, color) ? '2px solid black' : '',
-          }"
-          :title="color"
-          @click="patch({ color })"
-        />
-        <label
-          class="relative size-7 shrink-0 cursor-pointer overflow-hidden rounded-full"
-          :class="
-            isPresetColor
-              ? 'border border-dashed border-border bg-card'
-              : ''
-          "
-          :style="
-            isPresetColor
-              ? undefined
-              : { background: table.color, outline: '2px solid black' }
-          "
-          title="직접 고르기"
-        >
-          <Plus
-            v-if="isPresetColor"
-            class="pointer-events-none absolute inset-0 m-auto size-3.5 text-[#8b95a1]"
-          />
-          <input
-            type="color"
-            class="absolute inset-0 cursor-pointer opacity-0"
-            :value="toHexColor(table.color)"
-            :disabled="readOnly"
-            aria-label="직접 고르기"
-            @input="onPickColor"
-          />
-        </label>
-      </div>
+      <ColorPicker
+        :model-value="table.color"
+        :disabled="readOnly"
+        @update:model-value="patch({ color: $event })"
+      />
     </div>
     <div class="flex items-center justify-between gap-2">
-      <h4 class="text-[15px] font-bold tracking-[-0.02em]">컬럼</h4>
+      <h4 class="text-[15px] font-bold tracking-[-0.01em]">컬럼</h4>
     </div>
     <Button
       v-if="!readOnly"
@@ -319,7 +262,7 @@ const onPickColor = (event: Event) => {
         :key="col.id"
         :data-column-id="col.id"
         tabindex="-1"
-      class="space-y-2.5 rounded-2xl bg-card p-3 ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.04)] outline-none"
+      class="space-y-2.5 rounded-2xl bg-card p-3 ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.04)] outline-none"
       :class="{
         'opacity-40': dragIndex === i,
         'ring-primary': overIndex === i && dragIndex !== i,
@@ -489,7 +432,7 @@ const onPickColor = (event: Event) => {
     >
   </fieldset>
   <details class="mt-4 rounded-2xl bg-muted p-4" :open="!table">
-    <summary class="cursor-pointer text-[14px] font-bold tracking-[-0.02em]">
+    <summary class="cursor-pointer text-[14px] font-bold tracking-[-0.01em]">
       도메인
     </summary>
     <div class="mt-3">

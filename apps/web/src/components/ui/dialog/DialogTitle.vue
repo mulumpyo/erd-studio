@@ -10,7 +10,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
   <DialogTitle
     :class="
       cn(
-        'text-[22px] font-bold leading-7 tracking-[-0.04em]',
+        'text-[22px] font-bold leading-7 tracking-[-0.01em]',
         props.class,
       )
     "

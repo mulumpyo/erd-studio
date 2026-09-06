@@ -261,7 +261,7 @@ const tableStyle = (id: TableId) => {
     transform: `translateY(${-p.lift * 10}px) scale(${p.scale})`,
     transformOrigin: 'center center',
     boxShadow: p.dragging
-      ? `0 ${shadowY}px ${shadowBlur}px rgb(25 31 40 / ${shadowA}), 0 0 0 3px rgb(49 130 246 / 0.3)`
+      ? `0 ${shadowY}px ${shadowBlur}px rgb(25 31 40 / ${shadowA}), 0 0 0 3px rgb(79 70 229 / 0.3)`
       : `0 ${shadowY}px ${shadowBlur}px rgb(25 31 40 / ${shadowA})`,
   }
 }
@@ -822,7 +822,7 @@ onUnmounted(() => {
 }
 
 .landing-erd-edge-group.active .landing-erd-edge {
-  stroke: #3182f6;
+  stroke: var(--primary);
   stroke-width: 1.85;
 }
 
@@ -851,7 +851,7 @@ onUnmounted(() => {
 
 .landing-erd-edge-group.active .landing-erd-bar,
 .landing-erd-edge-group.active .landing-erd-crow {
-  stroke: #3182f6;
+  stroke: var(--primary);
 }
 
 .landing-erd-label {
@@ -880,7 +880,7 @@ onUnmounted(() => {
 }
 
 .landing-erd-edge-group.active .landing-erd-label text {
-  fill: #1b64da;
+  fill: #4f46e5;
 }
 
 .landing-erd-scene :deep(.table-node) {
@@ -924,7 +924,7 @@ onUnmounted(() => {
   height: 28px;
   margin-left: -4px;
   margin-top: -2px;
-  color: #191f28;
+  color: #1c1917;
   pointer-events: none;
   filter: drop-shadow(0 6px 10px rgb(25 31 40 / 0.28));
   transition: color 0.15s ease;
@@ -936,7 +936,7 @@ onUnmounted(() => {
 }
 
 .landing-erd-cursor.grabbing {
-  color: #1b64da;
+  color: #4f46e5;
   transform: rotate(-8deg) scale(0.92);
 }
 
@@ -973,7 +973,7 @@ onUnmounted(() => {
     filter: drop-shadow(0 4px 12px rgb(25 31 40 / 0.08));
   }
   40% {
-    filter: drop-shadow(0 4px 16px rgb(49 130 246 / 0.35));
+    filter: drop-shadow(0 4px 16px rgb(79 70 229 / 0.35));
   }
 }
 
