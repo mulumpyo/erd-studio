@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { onKeyStroke, useMediaQuery } from '@vueuse/core'
-import type { Connection, EdgeMouseEvent, NodeDragEvent, NodeMouseEvent } from '@vue-flow/core'
 import {
   mergeViewSettings,
   parseErdFile,
@@ -22,18 +21,14 @@ import {
 import { buildSpecCsv, buildSpecHtml } from '@/lib/erd-spec'
 import { canDeleteProject, canLeaveProject, isProjectOwner } from '@/types/workspace'
 import { useAuthStore } from '@/stores/auth'
-import {
-  columnIdFromHandle,
-  defaultRelation,
-  isRelationTool,
-  relationFromTool,
-  toolGuide,
-} from '@/composables/erd-tools'
-import { ErdFlowKey } from '@/composables/useErdFlow'
+import { isRelationTool } from '@/composables/erd-tools'
 import { useErdSession } from '@/composables/useErdSession'
+import { useEditorCanvas } from '@/composables/useEditorCanvas'
+import { useEditorTools } from '@/composables/useEditorTools'
 import { clearCanvasInsets, syncCanvasInsets } from '@/composables/useCanvasInsets'
 import { setDocumentTitle } from '@/lib/seo'
 import ErdCanvas from '@/components/editor/ErdCanvas.vue'
+import EditorChrome from '@/components/editor/EditorChrome.vue'
 import Toolbar from '@/components/editor/Toolbar.vue'
 import Inspector from '@/components/editor/Inspector.vue'
 import SqlPanel from '@/components/editor/SqlPanel.vue'
@@ -42,15 +37,9 @@ import HistoryPanel from '@/components/editor/HistoryPanel.vue'
 import MembersDialog from '@/components/editor/MembersDialog.vue'
 import ProjectSettingsDialog from '@/components/editor/ProjectSettingsDialog.vue'
 import EntityList from '@/components/editor/EntityList.vue'
-import PresenceAvatars from '@/components/editor/PresenceAvatars.vue'
-import ExportMenu from '@/components/editor/ExportMenu.vue'
-import EditorOverflowMenu from '@/components/editor/EditorOverflowMenu.vue'
 import EditorSidePanel from '@/components/editor/EditorSidePanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 import { toast } from '@/composables/useToast'
 import { confirm, useConfirm } from '@/composables/useConfirm'
 import { markProjectChatSeen, setOpenChatProject } from '@/composables/useChatInbox'
@@ -92,13 +81,9 @@ const entitiesOpen = ref(false)
 const inspectorExpanded = ref(false)
 const chromeHidden = ref(false)
 const focusMode = ref(false)
-const nodeDragging = ref(false)
-const panePanning = ref(false)
 const compactLayout = useMediaQuery('(max-width: 1279px)')
 const { open: confirmOpen } = useConfirm()
 let deleteBusy = false
-let chromeShowTimer = 0
-let ignorePaneClick = false
 const projectDescription = ref('')
 const projectTags = ref<string[]>([])
 const localView = ref<ErdViewPatch | null>(null)
@@ -137,6 +122,8 @@ const {
   updateDomain,
   removeDomain,
   moveNode,
+  beginDrag,
+  endDrag,
   deleteTable,
   undo,
   redo,
@@ -266,135 +253,73 @@ const selectedRelation = computed(
     erd.value.relations.find((rel) => rel.id === selectedEdgeId.value) ?? null,
 )
 
-const flowFocusId = computed(() => {
-  if (!showFlow.value) return null
-  return selectedTable.value?.id ?? null
+const {
+  onToolChange,
+  onPaneClick,
+  onConnect,
+  onNodeClick,
+  beginRelationFromTable,
+  resetToolOnEscape,
+  markIgnorePaneClick,
+  clearIgnorePaneClickSoon,
+} = useEditorTools({
+  tool,
+  pendingLink,
+  selectedId,
+  selectedColumnId,
+  selectedEdgeId,
+  tab,
+  compactLayout,
+  inspectorExpanded,
+  readOnly,
+  erd,
+  addTable,
+  addNote,
+  connectTables,
+  connectManyToMany,
 })
 
-const flowNeighborIds = computed(() => {
-  const id = flowFocusId.value
-  if (!id) return null
-  const ids = new Set([id])
-  for (const edge of edges.value) {
-    if (edge.source === id) ids.add(edge.target)
-    if (edge.target === id) ids.add(edge.source)
-  }
-  return ids
+const {
+  canvasNodes,
+  canvasEdges,
+  canvasHint,
+  nodeDragging,
+  removeCanvasNode,
+  removeCanvasColumn,
+  onDrag,
+  onDragStop,
+  onPanStart,
+  onPanEnd,
+  onEdgeClick,
+  clearChromeTimer,
+  resetChromeMotion,
+} = useEditorCanvas({
+  erd,
+  nodes,
+  edges,
+  tool,
+  pendingLink,
+  selectedId,
+  selectedColumnId,
+  selectedEdgeId,
+  tab,
+  showFlow,
+  compactLayout,
+  inspectorExpanded,
+  chromeHidden,
+  focusMode,
+  readOnly,
+  viewSettings,
+  updateTable,
+  deleteTable,
+  removeNote,
+  removeRelation,
+  moveNode,
+  beginDrag,
+  endDrag,
+  onIgnorePaneClick: markIgnorePaneClick,
+  onClearIgnorePaneClickSoon: clearIgnorePaneClickSoon,
 })
-
-provide(ErdFlowKey, {
-  on: showFlow,
-  focusTableId: flowFocusId,
-})
-
-const canvasHint = computed(() => {
-  const guide = readOnly.value
-    ? ''
-    : toolGuide(tool.value, Boolean(pendingLink.value))
-  if (guide) return guide
-  if (!showFlow.value) return ''
-  return flowFocusId.value
-    ? '연결된 테이블로 흐름이 보여요'
-    : '관계 흐름을 켜 두었어요. 테이블을 고르면 연결만 강조돼요'
-})
-
-const removeCanvasNode = async (id: string) => {
-  if (readOnly.value) return
-  const table = erd.value.tables.find((item) => item.id === id)
-  if (table) {
-    const name = table.logicalName || table.physicalName || '이 테이블'
-    const ok = await confirm({
-      title: '테이블을 삭제할까요?',
-      description: `"${name}" 테이블과 연결된 관계가 함께 사라져요. Ctrl+Z로 되돌릴 수 있어요.`,
-      confirmLabel: '삭제하기',
-      destructive: true,
-    })
-    if (!ok) return
-    deleteTable(id)
-    toast('테이블을 삭제했어요. Ctrl+Z로 되돌릴 수 있어요')
-  } else {
-    const ok = await confirm({
-      title: '메모를 삭제할까요?',
-      description: 'Ctrl+Z로 되돌릴 수 있어요.',
-      confirmLabel: '삭제하기',
-      destructive: true,
-    })
-    if (!ok) return
-    removeNote(id)
-  }
-  if (selectedId.value === id) selectedId.value = null
-  selectedColumnId.value = null
-  if (pendingLink.value === id) pendingLink.value = null
-}
-
-const removeCanvasColumn = async (tableId: string, columnId: string) => {
-  if (readOnly.value) return
-  const table = erd.value.tables.find((item) => item.id === tableId)
-  if (!table) return
-  if (table.columns.length <= 1) {
-    toast('컬럼이 하나일 때는 지울 수 없어요', { kind: 'error' })
-    return
-  }
-  const col = table.columns.find((item) => item.id === columnId)
-  const name = col?.logicalName || col?.physicalName || '이 컬럼'
-  const ok = await confirm({
-    title: '컬럼을 삭제할까요?',
-    description: `"${name}" 컬럼이 사라져도 Ctrl+Z로 되돌릴 수 있어요.`,
-    confirmLabel: '삭제하기',
-    destructive: true,
-  })
-  if (!ok) return
-  updateTable(tableId, {
-    columns: table.columns.filter((item) => item.id !== columnId),
-  })
-  if (selectedColumnId.value === columnId) selectedColumnId.value = null
-  toast('컬럼을 삭제했어요. Ctrl+Z로 되돌릴 수 있어요')
-}
-const canvasNodes = computed(() =>
-  nodes.value.map((node) => ({
-    ...node,
-    selected: node.id === selectedId.value,
-    class:
-      flowNeighborIds.value && !flowNeighborIds.value.has(node.id)
-        ? 'erd-node-dim'
-        : undefined,
-    data:
-      node.type === 'table'
-        ? {
-            ...node.data,
-            nameMode: viewSettings.value.nameMode,
-            show: viewSettings.value.show,
-            linking: isRelationTool(tool.value),
-            linkSource: pendingLink.value === node.id,
-            selectedColumnId:
-              node.id === selectedId.value ? selectedColumnId.value : null,
-            onSelectColumn: (id: string | null) => {
-              selectedEdgeId.value = null
-              if (!id) {
-                selectedColumnId.value = null
-                return
-              }
-              selectedId.value = node.id
-              selectedColumnId.value = id
-              tab.value = 'props'
-              if (compactLayout.value) inspectorExpanded.value = true
-            },
-            onRemoveColumn: (id: string) => removeCanvasColumn(node.id, id),
-            onRemove: () => removeCanvasNode(node.id),
-          }
-        : {
-            ...node.data,
-            onRemove: () => removeCanvasNode(node.id),
-          },
-  })),
-)
-
-const canvasEdges = computed(() =>
-  edges.value.map((edge) => ({
-    ...edge,
-    selected: edge.id === selectedEdgeId.value,
-  })),
-)
 
 const isEditingField = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false
@@ -412,10 +337,7 @@ const onKey = (event: KeyboardEvent) => {
   if (confirmOpen.value) return
   if (isEditingField(event.target)) return
   if (event.key === 'Escape') {
-    pendingLink.value = null
-    if (isRelationTool(tool.value) || tool.value === 'table' || tool.value === 'note') {
-      tool.value = 'select'
-    }
+    resetToolOnEscape()
     return
   }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
@@ -544,7 +466,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.clearTimeout(chromeShowTimer)
+  clearChromeTimer()
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('resize', syncInsets)
   stopListNotify?.()
@@ -552,156 +474,8 @@ onUnmounted(() => {
   clearCanvasInsets()
 })
 
-const onPaneClick = (position: { x: number; y: number }) => {
-  if (ignorePaneClick) {
-    ignorePaneClick = false
-    return
-  }
-  selectedEdgeId.value = null
-  selectedColumnId.value = null
-  if (compactLayout.value && tool.value === 'select' && !pendingLink.value) {
-    inspectorExpanded.value = false
-  }
-  if (pendingLink.value) {
-    pendingLink.value = null
-    return
-  }
-  selectedId.value = null
-  if (readOnly.value) return
-  if (tool.value === 'table') addTable(position)
-  if (tool.value === 'note') addNote(position)
-}
-
-const applyRelation = (sourceId: string, targetId: string) => {
-  if (tool.value === 'many-to-many') {
-    connectManyToMany(sourceId, targetId)
-  } else {
-    const spec = relationFromTool(tool.value) ?? defaultRelation()
-    connectTables(
-      sourceId,
-      targetId,
-      undefined,
-      undefined,
-      spec.kind,
-      spec.sourceCardinality,
-      spec.targetCardinality,
-    )
-  }
-  pendingLink.value = null
-  tool.value = 'select'
-  toast('관계를 연결했어요')
-}
-
-const onConnect = (params: Connection) => {
-  if (readOnly.value) return
-  if (!params.source || !params.target) return
-  if (params.source === params.target) return
-  if (tool.value === 'many-to-many') {
-    connectManyToMany(params.source, params.target)
-  } else {
-    const spec = relationFromTool(tool.value) ?? defaultRelation()
-    connectTables(
-      params.source,
-      params.target,
-      columnIdFromHandle(params.sourceHandle),
-      columnIdFromHandle(params.targetHandle),
-      spec.kind,
-      spec.sourceCardinality,
-      spec.targetCardinality,
-    )
-  }
-  pendingLink.value = null
-  tool.value = 'select'
-  toast('관계를 연결했어요')
-}
-
-const hideChrome = () => {
-  window.clearTimeout(chromeShowTimer)
-  chromeHidden.value = true
-}
-
 const exitFocusMode = () => {
   focusMode.value = false
-}
-
-const showChromeSoon = () => {
-  window.clearTimeout(chromeShowTimer)
-  chromeShowTimer = window.setTimeout(() => {
-    if (!nodeDragging.value && !panePanning.value) chromeHidden.value = false
-  }, 140)
-}
-
-const persistNodeMove = (event: NodeDragEvent) => {
-  if (readOnly.value) return
-  moveNode({ id: event.node.id, position: event.node.position })
-}
-
-const onDrag = (event: NodeDragEvent) => {
-  ignorePaneClick = true
-  nodeDragging.value = true
-  hideChrome()
-  persistNodeMove(event)
-}
-
-const onDragStop = (event: NodeDragEvent) => {
-  persistNodeMove(event)
-  nodeDragging.value = false
-  showChromeSoon()
-  window.setTimeout(() => {
-    ignorePaneClick = false
-  }, 50)
-}
-
-const onPanStart = () => {
-  panePanning.value = true
-  hideChrome()
-}
-
-const onPanEnd = () => {
-  panePanning.value = false
-  showChromeSoon()
-}
-
-const onNodeClick = (event: NodeMouseEvent) => {
-  selectedEdgeId.value = null
-  const fromColumn =
-    event.event?.target instanceof Element &&
-    event.event.target.closest('.col-row')
-  if (
-    selectedId.value === event.node.id &&
-    !fromColumn &&
-    !pendingLink.value &&
-    !isRelationTool(tool.value)
-  ) {
-    selectedId.value = null
-    selectedColumnId.value = null
-    return
-  }
-  if (!fromColumn) selectedColumnId.value = null
-  selectedId.value = event.node.id
-  tab.value = 'props'
-  if (compactLayout.value) inspectorExpanded.value = true
-  if (readOnly.value || event.node.type !== 'table') return
-  if (!isRelationTool(tool.value)) return
-  if (!pendingLink.value) {
-    pendingLink.value = event.node.id
-    return
-  }
-  if (pendingLink.value === event.node.id) return
-  applyRelation(pendingLink.value, event.node.id)
-}
-
-const onEdgeClick = (event: EdgeMouseEvent) => {
-  selectedId.value = null
-  selectedColumnId.value = null
-  selectedEdgeId.value = event.edge.id
-  tab.value = 'props'
-  if (compactLayout.value) inspectorExpanded.value = true
-}
-
-const onToolChange = (next: typeof tool.value) => {
-  tool.value = next
-  pendingLink.value = null
 }
 
 const refreshProjectName = async () => {
@@ -840,13 +614,7 @@ const onSelectTable = (id: string) => {
   canvasRef.value?.focusNode(id)
   if (compactLayout.value) entitiesOpen.value = false
   if (compactLayout.value) inspectorExpanded.value = true
-  if (readOnly.value || !isRelationTool(tool.value)) return
-  if (!pendingLink.value) {
-    pendingLink.value = id
-    return
-  }
-  if (pendingLink.value === id) return
-  applyRelation(pendingLink.value, id)
+  beginRelationFromTable(id)
 }
 
 watch(compactLayout, (compact) => {
@@ -869,10 +637,7 @@ watch(compactLayout, syncInsets)
 
 watch(loaded, (value) => {
   if (!value) return
-  window.clearTimeout(chromeShowTimer)
-  nodeDragging.value = false
-  panePanning.value = false
-  chromeHidden.value = false
+  resetChromeMotion()
   void nextTick(syncInsets)
 })
 
@@ -1101,136 +866,39 @@ const removeProject = async () => {
       "
     />
     <div class="pointer-events-none absolute inset-0 z-20 flex flex-col">
-    <header
-      ref="headerRef"
-      class="erd-chrome erd-chrome-top pointer-events-auto relative z-30 flex min-h-16 items-center justify-between gap-2 overflow-visible border-b border-border/80 bg-card px-3 pt-[env(safe-area-inset-top)] sm:px-4"
-    >
-      <div class="flex min-w-0 items-center gap-2 sm:gap-3">
-        <Button
-          variant="secondary"
-          size="sm"
-          class="min-h-11 px-3 xl:min-h-8"
-          @click="router.push(auth.user ? '/app' : '/')"
-          >목록</Button
-        >
-        <Input
-          v-model="projectName"
-          class="h-10 min-w-0 flex-1 bg-muted text-base sm:w-40 sm:flex-none xl:w-56"
-          :disabled="readOnly"
-          @change="rename"
-        />
-        <span
-          class="inline-flex shrink-0 items-center gap-1.5 rounded-full xl:px-2.5 xl:py-0.5"
-          :class="
-            connected
-              ? 'xl:bg-[#e6f8ef]'
-              : 'xl:bg-muted'
-          "
-          :title="connected ? '연결됨' : '연결 중'"
-          :aria-label="connected ? '연결됨' : '연결 중'"
-        >
-          <span
-            class="size-2.5 rounded-full"
-            :class="
-              connected
-                ? 'bg-[#00c471] shadow-[0_0_0_3px_rgb(0_196_113_/_0.22)]'
-                : 'animate-pulse bg-[#8b95a1]'
-            "
-          />
-          <span
-            class="hidden text-[12px] font-semibold tracking-[-0.01em] xl:inline"
-            :class="connected ? 'text-[#0a8f5a]' : 'text-muted-foreground'"
-            >{{ connected ? '연결됨' : '연결 중' }}</span
-          >
-        </span>
-        <Badge v-if="readOnly" class="hidden sm:inline-flex">읽기 전용</Badge>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <PresenceAvatars :users="peers" />
-        <div class="hidden items-center gap-2 xl:flex">
-          <ExportMenu
-            @png="exportImage('png')"
-            @svg="exportImage('svg')"
-            @html="exportSpec('html')"
-            @csv="exportSpec('csv')"
-            @xls="exportSpec('xls')"
-            @json="exportJson"
-            @import-json="importJsonFile"
-          />
-          <Button
-            v-if="showTeamManage"
-            variant="secondary"
-            size="sm"
-            @click="goTeam"
-            >나의 팀</Button
-          >
-          <Button
-            v-else-if="isParticipant"
-            variant="secondary"
-            size="sm"
-            @click="membersOpen = true"
-            >팀원</Button
-          >
-          <SegmentedControl
-            v-if="isOwner"
-            :model-value="isPublic ? 'public' : 'private'"
-            :options="shareOptions"
-            @update:model-value="setPublic($event === 'public')"
-          />
-          <Button size="sm" variant="secondary" @click="copyShare"
-            >링크 복사</Button
-          >
-          <Button
-            v-if="!auth.user"
-            size="sm"
-            @click="
-              router.push({ name: 'login', query: { redirect: route.fullPath } })
-            "
-            >로그인</Button
-          >
-          <Button
-            v-if="canDelete"
-            variant="destructive"
-            size="sm"
-            @click="removeProject"
-            >삭제</Button
-          >
-          <Button
-            v-else-if="canLeave"
-            variant="ghost"
-            size="sm"
-            @click="leaveProject"
-            >나가기</Button
-          >
-        </div>
-        <EditorOverflowMenu
-          :is-owner="isOwner"
-          :is-participant="isParticipant"
-          :can-delete="canDelete"
-          :can-leave="canLeave"
-          :is-public="isPublic"
-          :signed-in="Boolean(auth.user)"
-          :show-team-manage="showTeamManage"
-          :share-options="shareOptions"
-          @members="membersOpen = true"
-          @manage-team="goTeam"
-          @update:public="setPublic"
-          @copy-share="copyShare"
-          @login="
-            router.push({ name: 'login', query: { redirect: route.fullPath } })
-          "
-          @remove="removeProject"
-          @leave="leaveProject"
-          @png="exportImage('png')"
-          @svg="exportImage('svg')"
-          @html="exportSpec('html')"
-          @csv="exportSpec('csv')"
-          @xls="exportSpec('xls')"
-          @json="exportJson"
-          @import-json="importJsonFile"
-        />
-      </div>
-    </header>
+    <EditorChrome
+      v-model:header-el="headerRef"
+      v-model:project-name="projectName"
+      :connected="connected"
+      :read-only="readOnly"
+      :peers="peers"
+      :is-owner="isOwner"
+      :is-participant="isParticipant"
+      :can-delete="canDelete"
+      :can-leave="canLeave"
+      :is-public="isPublic"
+      :signed-in="Boolean(auth.user)"
+      :show-team-manage="showTeamManage"
+      :share-options="shareOptions"
+      @rename="rename"
+      @back="router.push(auth.user ? '/app' : '/')"
+      @members="membersOpen = true"
+      @manage-team="goTeam"
+      @update:public="setPublic"
+      @copy-share="copyShare"
+      @login="
+        router.push({ name: 'login', query: { redirect: route.fullPath } })
+      "
+      @remove="removeProject"
+      @leave="leaveProject"
+      @png="exportImage('png')"
+      @svg="exportImage('svg')"
+      @html="exportSpec('html')"
+      @csv="exportSpec('csv')"
+      @xls="exportSpec('xls')"
+      @json="exportJson"
+      @import-json="importJsonFile"
+    />
     <div class="relative min-h-0 flex-1">
       <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(28_25_23_/_0.06)]">
       <Toolbar
@@ -1324,7 +992,7 @@ const removeProject = async () => {
       >
         <button
           type="button"
-          class="absolute inset-0 bg-[#1c1917]/25"
+          class="absolute inset-0 bg-[var(--editor-overlay)]"
           aria-label="엔티티 목록 닫기"
           @click="entitiesOpen = false"
         />

@@ -280,6 +280,8 @@ https://erd-studio.com
 
 앱 포트는 루프백에만 열고, 공개는 nginx의 80/443만 사용해요. PostgreSQL과 Redis는 컨테이너 네트워크에서만 접근해요.
 
+Collab을 여러 인스턴스로 띄울 때는 `@hocuspocus/extension-redis`가 `REDIS_URL`로 문서 업데이트를 동기화해요. 그래도 **WebSocket은 sticky session**이 필요해요 — 한 연결은 같은 collab 인스턴스에 유지하고, Redis는 인스턴스 간 Yjs 상태만 맞춥니다. nginx upstream을 쓸 때 `ip_hash` 또는 sticky cookie를 설정하세요.
+
 API 컨테이너는 시작할 때 `prisma db push`로 스키마를 맞춘 뒤 Nest를 띄워요.
 
 ### GitHub Secrets
@@ -345,6 +347,7 @@ server {
 
     # Hocuspocus는 루트에서 듣습니다. WebSocket은 301을 따라가지 않으니
     # /collaboration 과 /collaboration/ 둘 다 프록시해야 해요.
+    # collab 복제본을 여러 개 두면 upstream에 sticky(ip_hash 등)를 켜세요.
     location /collaboration/ {
         proxy_pass http://127.0.0.1:3030/;
         proxy_http_version 1.1;

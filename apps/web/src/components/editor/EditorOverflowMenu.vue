@@ -52,7 +52,12 @@ const pick = (
   kind: 'png' | 'svg' | 'html' | 'csv' | 'xls' | 'json',
 ) => {
   close()
-  emit(kind)
+  if (kind === 'png') emit('png')
+  else if (kind === 'svg') emit('svg')
+  else if (kind === 'html') emit('html')
+  else if (kind === 'csv') emit('csv')
+  else if (kind === 'xls') emit('xls')
+  else emit('json')
 }
 
 const pickImport = () => {
@@ -71,7 +76,12 @@ const run = (
   name: 'members' | 'manage-team' | 'copy-share' | 'login' | 'remove' | 'leave',
 ) => {
   close()
-  emit(name)
+  if (name === 'members') emit('members')
+  else if (name === 'manage-team') emit('manage-team')
+  else if (name === 'copy-share') emit('copy-share')
+  else if (name === 'login') emit('login')
+  else if (name === 'remove') emit('remove')
+  else emit('leave')
 }
 </script>
 
@@ -168,7 +178,7 @@ const run = (
           <button
             v-if="canDelete"
             type="button"
-            :class="[itemClass, 'text-destructive hover:bg-[#fff1f1] dark:hover:bg-[#3a1d22]']"
+            :class="[itemClass, 'text-destructive hover:bg-[var(--editor-danger-hover)]']"
             @click="run('remove')"
           >
             삭제

@@ -215,6 +215,15 @@ export const parseSql = (sql: string, dialect?: SqlDialect): ErdDocument => {
     doc.relations.push(rel)
   }
 
+  const tableCommentRe =
+    /COMMENT\s+ON\s+TABLE\s+((?:[`"\[]?[\w가-힣]+[`"\]]?\.)*["`\[]?[\w가-힣]+["`\]]?)\s+IS\s+'([^']*)'\s*;/gi
+  while ((match = tableCommentRe.exec(sql))) {
+    const table = findTable(doc, parseQualifiedName(match[1]))
+    if (!table) continue
+    table.logicalName = match[2]
+    table.comment = match[2]
+  }
+
   for (const table of doc.tables) {
     table.columns = orderTableColumns(table.columns)
   }

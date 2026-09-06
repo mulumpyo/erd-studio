@@ -2,22 +2,32 @@ import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
-import Redis from 'ioredis'
+import RedisClient from 'ioredis'
 import { Server } from '@hocuspocus/server'
 import { Database } from '@hocuspocus/extension-database'
+import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
-import * as Y from 'yjs'
 import {
   canEditProject,
   canViewProject,
   type ErdDocument,
 } from '@erd-studio/shared'
-import { isDocEmpty, seedIfEmpty, yToErd } from '@erd-studio/yjs-erd'
+import { isDocEmpty, seedIfEmpty } from '@erd-studio/yjs-erd'
 import { requireJwtSecret } from './secrets'
 import { isAllowedCollabOrigin } from './origin'
 import { accessTokenFromCookie } from './cookies'
 import { touchUsage } from './usage'
+import { assertJwtNotDenied } from './deny-list'
+import { persistDocumentState } from './persist-document'
+import {
+  applyCachedAuth,
+  applyKick,
+  buildAuthCapabilities,
+  dropConnection,
+  type AuthContext,
+  type KickPayload,
+} from './auth-capabilities'
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -30,6 +40,7 @@ const secret = requireJwtSecret()
 const port = Number(process.env.COLLAB_PORT ?? 3030)
 const jwtOpts = { algorithms: ['HS256'] as jwt.Algorithm[] }
 const COLLAB_KICK_CHANNEL = 'erd:collab:kick'
+const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379'
 
 type JwtPayload = {
   sub: string
@@ -39,9 +50,7 @@ type JwtPayload = {
   iat?: number
 }
 
-type KickPayload = { projectId?: string; userId?: string }
-
-const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
+const redis = new RedisClient(redisUrl, {
   maxRetriesPerRequest: 3,
   lazyConnect: true,
 })
@@ -55,29 +64,12 @@ const hasVerifiedEmail = <T extends object>(
       (user as { emailVerifiedAt?: Date | null }).emailVerifiedAt,
   )
 
-const dropConnection = (connection: unknown) => {
-  const conn = connection as {
-    readOnly: unknown
-    close?: (event?: { code: number; reason: string }) => void
-  }
-  conn.readOnly = true
-  conn.close?.({ code: 4403, reason: 'forbidden' })
-}
-
 const verifyAccessJwt = async (token: string) => {
   const payload = jwt.verify(token, secret, jwtOpts) as JwtPayload
   if (payload.typ && payload.typ !== 'access' && payload.typ !== 'collab') {
     throw new Error('unauthorized')
   }
-  if (payload.jti) {
-    try {
-      if (await redis.get(`auth:deny:${payload.jti}`)) {
-        throw new Error('unauthorized')
-      }
-    } catch (error) {
-      if (error instanceof Error && error.message === 'unauthorized') throw error
-    }
-  }
+  await assertJwtNotDenied(redis, payload.jti)
   return payload
 }
 
@@ -113,31 +105,13 @@ const authorize = async (
   throw new Error('forbidden')
 }
 
-const canSee = async (token: string | undefined, projectId: string) => {
-  try {
-    await authorize(token, projectId, false)
-    return true
-  } catch {
-    return false
-  }
-}
-
-const canWrite = async (token: string | undefined, projectId: string) => {
-  if (!token || token === 'public-read') return false
-  try {
-    await authorize(token, projectId, true)
-    return true
-  } catch {
-    return false
-  }
-}
-
 const presentedToken = (
   protocolToken: string | undefined,
   cookieHeader?: string,
 ) => accessTokenFromCookie(cookieHeader) || protocolToken
 
 const server = Server.configure({
+  name: process.env.COLLAB_INSTANCE_NAME || `collab-${randomUUID()}`,
   port,
   async onAuthenticate({ token, documentName, connection, request }) {
     const origin = request?.headers?.origin
@@ -157,6 +131,12 @@ const server = Server.configure({
       return {
         user: { id: user.id, name: user.name, email: user.email },
         token: presented,
+        auth: buildAuthCapabilities({
+          projectId: documentName,
+          token: presented || '',
+          userId: user.id,
+          canEdit: true,
+        }),
       }
     } catch (error) {
       if (error instanceof Error && error.message === 'forbidden') {
@@ -170,12 +150,24 @@ const server = Server.configure({
           return {
             user: { id: `guest:${randomUUID()}`, name: '방문자' },
             token: presented || '',
+            auth: buildAuthCapabilities({
+              projectId: documentName,
+              token: presented || '',
+              userId: null,
+              canEdit: false,
+            }),
           }
         }
         void touchUsage(redis, prisma, user.id)
         return {
           user: { id: user.id, name: user.name, email: user.email },
           token: presented,
+          auth: buildAuthCapabilities({
+            projectId: documentName,
+            token: presented || '',
+            userId: user.id,
+            canEdit: false,
+          }),
         }
       } catch {
         dropConnection(connection)
@@ -183,14 +175,13 @@ const server = Server.configure({
       }
     }
   },
-  async beforeHandleMessage({ context, documentName, connection }) {
-    const token = (context as { token?: string }).token
-    if (!(await canSee(token, documentName))) {
+  async beforeHandleMessage({ context, connection }) {
+    try {
+      applyCachedAuth(connection, context as AuthContext)
+    } catch {
       dropConnection(connection)
       throw new Error('forbidden')
     }
-    const writable = await canWrite(token, documentName)
-    connection.readOnly = !writable
   },
   async onLoadDocument({ document, documentName }) {
     if (!isDocEmpty(document)) return document
@@ -202,6 +193,10 @@ const server = Server.configure({
     return document
   },
   extensions: [
+    new RedisExtension({
+      // Multi-instance Yjs sync via the same REDIS_URL used for kicks/deny-list.
+      createClient: () => new RedisClient(redisUrl),
+    }),
     new Database({
       fetch: async ({ documentName }) => {
         const project = await prisma.project.findUnique({
@@ -211,15 +206,7 @@ const server = Server.configure({
         return null
       },
       store: async ({ documentName, state }) => {
-        const ydoc = new Y.Doc()
-        Y.applyUpdate(ydoc, state)
-        await prisma.project.update({
-          where: { id: documentName },
-          data: {
-            yjsState: Buffer.from(state),
-            snapshot: yToErd(ydoc) as object,
-          },
-        })
+        await persistDocumentState(prisma as never, documentName, state)
       },
     }),
   ],
@@ -233,28 +220,6 @@ const documentsOf = (instance: unknown) => {
   return root.documents || root.hocuspocus?.documents
 }
 
-const applyKick = (payload: KickPayload) => {
-  const documents = documentsOf(server)
-  if (!documents) return
-  for (const [name, doc] of documents) {
-    if (payload.projectId && name !== payload.projectId) continue
-    const connections = (
-      doc as {
-        connections?: Map<
-          unknown,
-          { context?: { user?: { id?: string } } }
-        >
-      }
-    ).connections
-    if (!connections) continue
-    for (const [, connection] of connections) {
-      const id = connection.context?.user?.id
-      if (payload.userId && id !== payload.userId) continue
-      dropConnection(connection)
-    }
-  }
-}
-
 const listenForKicks = async () => {
   try {
     await redis.connect()
@@ -262,7 +227,10 @@ const listenForKicks = async () => {
     await sub.subscribe(COLLAB_KICK_CHANNEL)
     sub.on('message', (_channel, message) => {
       try {
-        applyKick(JSON.parse(message) as KickPayload)
+        applyKick(
+          documentsOf(server),
+          JSON.parse(message) as KickPayload,
+        )
       } catch {
         /* ignore malformed */
       }

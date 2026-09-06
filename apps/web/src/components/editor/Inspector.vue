@@ -277,7 +277,7 @@ const onDragEnd = () => {
         <button
           v-if="!readOnly"
           type="button"
-          class="flex size-8 shrink-0 cursor-grab items-center justify-center rounded-xl text-[#c9cdd2] hover:bg-muted hover:text-muted-foreground active:cursor-grabbing"
+          class="flex size-8 shrink-0 cursor-grab items-center justify-center rounded-xl text-[var(--editor-grip)] hover:bg-muted hover:text-muted-foreground active:cursor-grabbing"
           draggable="true"
           aria-label="컬럼 순서 바꾸기"
           @dragstart="onDragStart(i, $event)"

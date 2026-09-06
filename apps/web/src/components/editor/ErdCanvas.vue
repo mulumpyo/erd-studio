@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, markRaw, nextTick, onMounted, ref, toValue } from 'vue'
+import { computed, markRaw, nextTick, onMounted, provide, ref, toValue } from 'vue'
 import { toPng, toSvg } from 'html-to-image'
 import {
   VueFlow,
@@ -9,6 +9,7 @@ import {
   type EdgeMouseEvent,
   type NodeDragEvent,
   type NodeMouseEvent,
+  type Position,
 } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { MiniMap } from '@vue-flow/minimap'
@@ -21,6 +22,11 @@ import CrowEdge from '@/components/editor/CrowEdge.vue'
 import CanvasControls from '@/components/editor/CanvasControls.vue'
 import { visibleFitPadding } from '@/composables/useCanvasInsets'
 import { useTheme } from '@/composables/useTheme'
+import {
+  buildLaneRoutes,
+  type RoutedEdge,
+} from '@/lib/erd-edge-route'
+import { ErdLaneRoutesKey } from '@/composables/useErdLaneRoutes'
 
 const props = withDefaults(
   defineProps<{
@@ -48,15 +54,25 @@ const emit = defineEmits<{
 }>()
 
 const { resolved: theme } = useTheme()
-const patternColor = computed(() =>
-  theme.value === 'dark' ? '#3a3d46' : '#e5e8eb',
-)
-const canvasColor = computed(() =>
-  theme.value === 'dark' ? '#18181b' : '#f6f5f2',
-)
+const cssColor = (name: string, fallback: string) => {
+  if (typeof document === 'undefined') return fallback
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+  return value || fallback
+}
+const patternColor = computed(() => {
+  void theme.value
+  return cssColor('--pattern', '#e4e2dc')
+})
+const canvasColor = computed(() => {
+  void theme.value
+  return cssColor('--canvas', '#f6f5f2')
+})
 const {
   fitView,
   getNodes,
+  getEdges,
   updateNodeInternals,
   getViewport,
   setViewport,
@@ -67,6 +83,55 @@ const {
 const nodeTypes = { table: markRaw(TableNode), note: markRaw(NoteNode) } as never
 const edgeTypes = { crow: markRaw(CrowEdge) } as never
 const rootRef = ref<HTMLElement | null>(null)
+
+const asRouted = (edge: {
+  id: string
+  sourceX?: number
+  sourceY?: number
+  targetX?: number
+  targetY?: number
+  sourcePosition?: Position
+  targetPosition?: Position
+}): RoutedEdge | null => {
+  if (
+    edge.sourceX == null ||
+    edge.sourceY == null ||
+    edge.targetX == null ||
+    edge.targetY == null ||
+    !edge.sourcePosition ||
+    !edge.targetPosition
+  ) {
+    return null
+  }
+  return {
+    id: edge.id,
+    sourceX: edge.sourceX,
+    sourceY: edge.sourceY,
+    targetX: edge.targetX,
+    targetY: edge.targetY,
+    sourcePosition: edge.sourcePosition,
+    targetPosition: edge.targetPosition,
+  }
+}
+
+/** One O(E log E) lane build per frame; CrowEdge looks up by id (no peer scan). */
+const laneRoutes = computed(() => {
+  // Touch node geometry so drag/resize invalidates the shared lane cache.
+  const nodes = toValue(getNodes)
+  for (const node of nodes) {
+    void node.position.x
+    void node.position.y
+    void node.dimensions?.width
+    void node.dimensions?.height
+  }
+  const routed: RoutedEdge[] = []
+  for (const edge of toValue(getEdges)) {
+    const item = asRouted(edge)
+    if (item) routed.push(item)
+  }
+  return buildLaneRoutes(routed)
+})
+provide(ErdLaneRoutesKey, laneRoutes)
 const onlyVisible = ref(true)
 const exporting = ref(false)
 const viewLocked = ref(false)
@@ -75,13 +140,16 @@ const canMoveNodes = computed(() => !props.readOnly && !viewLocked.value)
 const allowPan = computed(() => !viewLocked.value || Boolean(props.compact))
 let panePanning = false
 
-const isUserPan = (payload: { event?: { sourceEvent?: Event | null } | Event | null }) => {
+const isUserPan = (payload: { event?: unknown }) => {
   const event = payload.event
-  if (!event || event instanceof WheelEvent) return false
-  const source =
-    'sourceEvent' in event ? event.sourceEvent : event
-  if (!source || source instanceof WheelEvent) return false
-  const type = source.type
+  if (!event || typeof event !== 'object') return false
+  if (event instanceof WheelEvent) return false
+  const raw =
+    'sourceEvent' in event
+      ? (event as { sourceEvent?: Event | null }).sourceEvent
+      : (event as Event)
+  if (!raw || !(raw instanceof Event) || raw instanceof WheelEvent) return false
+  const type = raw.type
   return (
     type === 'mousemove' ||
     type === 'pointermove' ||
@@ -92,7 +160,7 @@ const isUserPan = (payload: { event?: { sourceEvent?: Event | null } | Event | n
   )
 }
 
-const onMove = (payload: { event?: { sourceEvent?: Event } | Event | null }) => {
+const onMove = (payload: { event?: unknown }) => {
   if (!isUserPan(payload)) return
   if (panePanning) return
   panePanning = true
@@ -141,7 +209,7 @@ const MAX_LONG_SIDE = 4096
 const MAX_CANVAS_SIDE = 8192
 const MAX_CANVAS_AREA = 16_777_216
 
-const exportFrame = (nodes: ReturnType<typeof getNodes>) => {
+const exportFrame = (nodes: typeof getNodes.value) => {
   const rect = getRectOfNodes(nodes)
   const contentW = Math.max(rect.width + EXPORT_PAD * 2, 320)
   const contentH = Math.max(rect.height + EXPORT_PAD * 2, 240)
@@ -235,7 +303,7 @@ const capture = async (format: 'png' | 'svg') => {
     await waitFrame()
     setMinZoom(0.05)
     await fitView({
-      padding: '96px',
+      padding: '96px' as `${number}px`,
       includeHiddenNodes: true,
       duration: 0,
       minZoom: 0.05,
@@ -274,7 +342,7 @@ defineExpose({ focusNode, capture, viewportEl })
 <template>
   <div
     ref="rootRef"
-    class="relative h-full min-h-0 min-w-0"
+    class="relative h-full min-h-0 min-w-0 bg-[var(--canvas)]"
     :class="{
       'erd-exporting': exporting,
       'erd-linking': linking,

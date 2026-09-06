@@ -22,6 +22,11 @@ services:
       redis:
         condition: service_healthy
 
+  # Multi-instance collab: @hocuspocus/extension-redis syncs docs via REDIS_URL.
+  # WebSocket clients still need sticky sessions (ip_hash / sticky cookie) at the
+  # load balancer / nginx upstream when scaling `collab` horizontally — Redis
+  # keeps Yjs state in sync, but a single WS connection must stay on one instance.
+  # Optional: set COLLAB_INSTANCE_NAME per replica (defaults to a random UUID).
   collab:
     image: ${COLLAB_IMAGE:-ghcr.io/mulumpyo/erd-studio-collab:latest}
     restart: unless-stopped

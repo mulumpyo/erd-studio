@@ -27,6 +27,7 @@ export type ChatLine = {
 }
 
 export const DRAG_ORIGIN = 'drag'
+export const CHAT_ORIGIN = 'chat'
 
 export const tablesMap = (doc: Y.Doc) => doc.getMap<Y.Map<unknown>>('tables')
 export const relationsMap = (doc: Y.Doc) =>
@@ -67,9 +68,7 @@ const tableToY = (table: ErdTable) => {
   m.set('logicalName', table.logicalName)
   m.set('physicalName', table.physicalName)
   m.set('comment', table.comment ?? '')
-  m.set('color', table.color)
-  m.set('x', table.position.x)
-  m.set('y', table.position.y)
+  // Position/color live in layoutsMap only (legacy x/y on table are read fallback).
   const cols = new Y.Array<Y.Map<unknown>>()
   cols.insert(0, orderTableColumns(table.columns).map(columnToY))
   m.set('columns', cols)
@@ -318,7 +317,51 @@ export const pushChat = (
     body: line.body,
     createdAt: line.createdAt ?? Date.now(),
   })
-  chatArray(doc).push([m])
+  doc.transact(() => {
+    chatArray(doc).push([m])
+  }, CHAT_ORIGIN)
+}
+
+export const getTable = (doc: Y.Doc, id: string): ErdTable | null => {
+  const map = tablesMap(doc).get(id)
+  if (!(map instanceof Y.Map)) return null
+  return yToTable(map, id, layoutsMap(doc).get(id))
+}
+
+export const getRelation = (doc: Y.Doc, id: string): ErdRelation | null => {
+  const map = relationsMap(doc).get(id)
+  if (!(map instanceof Y.Map)) return null
+  const raw = yMapToObj(map) as unknown as ErdRelation
+  return {
+    ...raw,
+    id: String(raw.id || id),
+    onDelete: raw.onDelete || undefined,
+    onUpdate: raw.onUpdate || undefined,
+  }
+}
+
+export const getNote = (doc: Y.Doc, id: string): ErdNote | null => {
+  const map = notesMap(doc).get(id)
+  if (!(map instanceof Y.Map)) return null
+  const raw = yMapToObj(map)
+  return {
+    id: String(raw.id || id),
+    text: String(raw.text ?? ''),
+    color: String(raw.color ?? '#fef3c7'),
+    position: { x: Number(raw.x ?? 0), y: Number(raw.y ?? 0) },
+    width: Number(raw.width ?? 200),
+    height: Number(raw.height ?? 120),
+  }
+}
+
+export const getSchemaId = (doc: Y.Doc): string | undefined => {
+  let first: string | undefined
+  schemasMap(doc).forEach((value) => {
+    if (first || !(value instanceof Y.Map)) return
+    const id = String(value.get('id') ?? '')
+    if (id) first = id
+  })
+  return first
 }
 
 export const seedIfEmpty = (

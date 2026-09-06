@@ -45,6 +45,9 @@ jobs:
       - name: 문법·코드 스타일 검사 (ESLint)
         run: pnpm lint
 
+      - name: 웹 타입 검사 (vue-tsc)
+        run: pnpm --filter @erd-studio/web typecheck
+
       - name: 단위 테스트 실행
         run: pnpm test
 

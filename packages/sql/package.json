@@ -17,7 +17,7 @@
     "build": "tsup --clean",
     "dev": "tsup --watch",
     "lint": "echo ok",
-    "test": "tsx --test src/index.test.ts"
+    "test": "tsx --test src/index.test.ts src/roundtrip.test.ts"
   },
   "dependencies": {
     "@erd-studio/shared": "workspace:*"
