@@ -8,12 +8,13 @@
     "build": "tsup src/index.ts --format esm --clean",
     "start": "node dist/index.js",
     "lint": "echo ok",
-    "test": "tsx --test src/jwt-token.test.ts src/origin.test.ts src/cookies.test.ts"
+    "test": "tsx --test src/jwt-token.test.ts src/origin.test.ts src/cookies.test.ts src/hardening.test.ts"
   },
   "dependencies": {
     "@erd-studio/shared": "workspace:*",
     "@erd-studio/yjs-erd": "workspace:*",
     "@hocuspocus/extension-database": "^2.15.3",
+    "@hocuspocus/extension-redis": "^2.15.3",
     "@hocuspocus/server": "^2.15.3",
     "@prisma/client": "^6.15.0",
     "dotenv": "^17.2.1",

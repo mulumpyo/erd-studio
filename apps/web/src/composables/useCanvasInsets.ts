@@ -48,9 +48,13 @@ const readInset = (name: string) => {
   return Number.isFinite(n) ? n : 0
 }
 
+type FitPaddingPx = `${number}px`
+
+const px = (n: number): FitPaddingPx => `${n}px`
+
 export const visibleFitPadding = (extra = 24) => ({
-  top: `${readInset(VAR.top) + extra}px`,
-  right: `${readInset(VAR.right) + extra}px`,
-  bottom: `${readInset(VAR.bottom) + extra}px`,
-  left: `${readInset(VAR.left) + extra}px`,
+  top: px(readInset(VAR.top) + extra),
+  right: px(readInset(VAR.right) + extra),
+  bottom: px(readInset(VAR.bottom) + extra),
+  left: px(readInset(VAR.left) + extra),
 })

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 import { GripVertical, Trash2 } from 'lucide-vue-next'
 import {
@@ -41,9 +41,11 @@ const props = defineProps<{
     onRemoveColumn?: (id: string) => void
     linking?: boolean
     linkSource?: boolean
+    onSize?: (size: { w: number; h: number }) => void
   }
 }>()
 
+const rootRef = ref<HTMLElement | null>(null)
 const editing = ref<EditTarget | null>(null)
 
 const mode = computed(() => props.data.nameMode ?? 'both')
@@ -199,10 +201,36 @@ const onDragEnd = () => {
   dragId.value = null
   overId.value = null
 }
+
+let resizeObserver: ResizeObserver | null = null
+
+const publishSize = (w: number, h: number) => {
+  if (w <= 0 || h <= 0) return
+  props.data.onSize?.({ w: Math.round(w), h: Math.round(h) })
+}
+
+onMounted(() => {
+  const el = rootRef.value
+  if (!el || typeof ResizeObserver === 'undefined') return
+  resizeObserver = new ResizeObserver((entries) => {
+    const entry = entries[0]
+    if (!entry) return
+    const box = entry.contentRect
+    publishSize(box.width, box.height)
+  })
+  resizeObserver.observe(el)
+  publishSize(el.offsetWidth, el.offsetHeight)
+})
+
+onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+})
 </script>
 
 <template>
   <div
+    ref="rootRef"
     class="table-node"
     :class="{
       selected,

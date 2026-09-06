@@ -51,6 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'POST',
         body: JSON.stringify({}),
       })
+      if (!res.user) {
+        clearSession()
+        return null
+      }
       setSession(res.user, res.expiresAt)
       return SESSION
     } catch {
@@ -89,6 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
+    if (!res.user) throw new Error('로그인에 실패했어요')
     setSession(res.user, res.expiresAt)
   }
 
@@ -117,6 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
         body: JSON.stringify({ token: verifyToken }),
       },
     )
+    if (!res.user) throw new Error('이메일 인증에 실패했어요')
     setSession(res.user, res.expiresAt)
     return res.nextPath
   }

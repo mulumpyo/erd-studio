@@ -24,6 +24,8 @@ import {
   domainsMap,
   erdToY,
   getAclRole,
+  getSchemaId,
+  getTable,
   isDocEmpty,
   layoutsMap,
   notesMap,
@@ -39,6 +41,8 @@ import {
   removeTable,
   seedIfEmpty,
   setAclRole,
+  schemasMap,
+  settingsMap,
   tablesMap,
   upsertDomain,
   upsertNote,
@@ -50,6 +54,7 @@ import {
 } from '@erd-studio/yjs-erd'
 import { planForeignKeyLink } from '@/lib/erd-relations'
 import { relationHandles } from '@/lib/erd-edge-route'
+import { applyErdStructuralPatch } from '@/lib/erd-session-patch'
 import { type Tool } from './erd-tools'
 
 export type { Tool } from './erd-tools'
@@ -64,7 +69,7 @@ export type CollabUser = {
 }
 
 const COLORS = [
-  '#3182f6',
+  'var(--color-primary, #4f46e5)',
   '#00c471',
   '#f04452',
   '#8b5cf6',
@@ -93,7 +98,10 @@ const throttleRaf = <T>(fn: (arg: T) => void) => {
 
 export const useErdSession = (options: {
   projectId?: string
-  token?: string | null | (() => string | null | undefined | Promise<string | null | undefined>)
+  token?:
+    | string
+    | null
+    | (() => string | null | undefined | Promise<string | null | undefined>)
   collabUrl?: string
   initial?: ErdDocument | null
   userName?: string
@@ -102,12 +110,13 @@ export const useErdSession = (options: {
   readOnly?: boolean | Ref<boolean>
 }) => {
   const ydoc = shallowRef(new Y.Doc())
-  const erd = ref<ErdDocument>(options.initial ?? emptyDocument())
+  const erd = shallowRef<ErdDocument>(options.initial ?? emptyDocument())
   const messages = ref<ChatLine[]>([])
   const connected = ref(false)
   const peers = ref<CollabUser[]>([])
   const tool = ref<Tool>('select')
   const myRole = ref('viewer')
+  const draggingIds = new Set<string>()
   const readOnly = computed(() => {
     const opt = options.readOnly
     if (isRef(opt)) return Boolean(opt.value)
@@ -118,6 +127,13 @@ export const useErdSession = (options: {
   let provider: HocuspocusProvider | null = null
   let undoManager: Y.UndoManager | null = null
   const canEdit = () => !readOnly.value
+
+  const tablePatchHandlers = new Map<
+    string,
+    (patch: Partial<ErdTable>) => void
+  >()
+  const tableAddColumnHandlers = new Map<string, () => void>()
+  const notePatchHandlers = new Map<string, (patch: Partial<ErdNote>) => void>()
 
   const refreshUndo = () => {
     canUndo.value = undoManager?.canUndo() ?? false
@@ -136,22 +152,76 @@ export const useErdSession = (options: {
   }
 
   const refreshErd = () => {
-    erd.value = yToErd(ydoc.value)
+    const next = yToErd(ydoc.value)
+    if (draggingIds.size) {
+      for (const id of draggingIds) {
+        const liveTable = erd.value.tables.find((t) => t.id === id)
+        const nextTable = next.tables.find((t) => t.id === id)
+        if (liveTable && nextTable) nextTable.position = { ...liveTable.position }
+        const liveNote = erd.value.notes.find((n) => n.id === id)
+        const nextNote = next.notes.find((n) => n.id === id)
+        if (liveNote && nextNote) nextNote.position = { ...liveNote.position }
+      }
+    }
+    erd.value = next
+    pruneHandlers(next)
+  }
+
+  const pruneHandlers = (next: ErdDocument) => {
+    const tableIds = new Set(next.tables.map((t) => t.id))
+    const noteIds = new Set(next.notes.map((n) => n.id))
+    for (const id of tablePatchHandlers.keys()) {
+      if (!tableIds.has(id)) {
+        tablePatchHandlers.delete(id)
+        tableAddColumnHandlers.delete(id)
+      }
+    }
+    for (const id of notePatchHandlers.keys()) {
+      if (!noteIds.has(id)) notePatchHandlers.delete(id)
+    }
+  }
+
+  const applyStructuralPatch = (events: Y.YEvent<any>[]) => {
+    const next = applyErdStructuralPatch(
+      ydoc.value,
+      erd.value,
+      events,
+      draggingIds,
+    )
+    if (!next || next === erd.value) return Boolean(next)
+    erd.value = next
+    pruneHandlers(next)
+    return true
   }
 
   const refreshChat = () => {
     messages.value = yToChat(ydoc.value)
   }
 
-  const onUpdate = (_update: Uint8Array, origin: unknown) => {
-    if (origin === DRAG_ORIGIN) return
+  const onErdMapsChange = (
+    events: Y.YEvent<any>[],
+    transaction: { origin: unknown },
+  ) => {
+    if (transaction.origin === DRAG_ORIGIN) return
+    if (applyStructuralPatch(events)) return
     refreshErd()
+  }
+
+  const onChatChange = () => {
     refreshChat()
   }
 
   onMounted(() => {
-    ydoc.value.on('update', onUpdate)
-    aclMap(ydoc.value).observe(syncRoleFromAcl)
+    const doc = ydoc.value
+    tablesMap(doc).observeDeep(onErdMapsChange)
+    relationsMap(doc).observeDeep(onErdMapsChange)
+    notesMap(doc).observeDeep(onErdMapsChange)
+    domainsMap(doc).observeDeep(onErdMapsChange)
+    layoutsMap(doc).observeDeep(onErdMapsChange)
+    schemasMap(doc).observeDeep(onErdMapsChange)
+    settingsMap(doc).observeDeep(onErdMapsChange)
+    chatArrayObserve(doc, onChatChange)
+    aclMap(doc).observe(syncRoleFromAcl)
     undoManager = new Y.UndoManager(
       [
         tablesMap(ydoc.value),
@@ -208,6 +278,9 @@ export const useErdSession = (options: {
           (a, b) => Number(Boolean(b.self)) - Number(Boolean(a.self)),
         )
       }
+      const markDisconnected = () => {
+        connected.value = false
+      }
       provider.on('synced', () => {
         connected.value = true
         if (options.initial && isDocEmpty(ydoc.value))
@@ -218,6 +291,17 @@ export const useErdSession = (options: {
         resetUndo()
         syncPeers()
       })
+      provider.on('disconnect', markDisconnected)
+      provider.on('close', markDisconnected)
+      provider.on('authenticationFailed', markDisconnected)
+      provider.on('status', ({ status }: { status?: string }) => {
+        if (status === 'disconnected') markDisconnected()
+      })
+      // Transport / protocol errors should not leave UI stuck as "connected".
+      ;(provider as { on: (event: string, fn: () => void) => void }).on(
+        'error',
+        markDisconnected,
+      )
       provider.on('awarenessUpdate', syncPeers)
       provider.awareness?.on('update', syncPeers)
       provider.awareness?.on('change', syncPeers)
@@ -233,17 +317,52 @@ export const useErdSession = (options: {
   })
 
   onUnmounted(() => {
-    aclMap(ydoc.value).unobserve(syncRoleFromAcl)
-    ydoc.value.off('update', onUpdate)
+    const doc = ydoc.value
+    tablesMap(doc).unobserveDeep(onErdMapsChange)
+    relationsMap(doc).unobserveDeep(onErdMapsChange)
+    notesMap(doc).unobserveDeep(onErdMapsChange)
+    domainsMap(doc).unobserveDeep(onErdMapsChange)
+    layoutsMap(doc).unobserveDeep(onErdMapsChange)
+    schemasMap(doc).unobserveDeep(onErdMapsChange)
+    settingsMap(doc).unobserveDeep(onErdMapsChange)
+    aclMap(doc).unobserve(syncRoleFromAcl)
+    chatArrayUnobserve(doc, onChatChange)
     undoManager?.destroy()
     undoManager = null
     provider?.destroy()
-    ydoc.value.destroy()
+    doc.destroy()
   })
+
+  const ensureTablePatch = (id: string) => {
+    let handler = tablePatchHandlers.get(id)
+    if (!handler) {
+      handler = (patch: Partial<ErdTable>) => updateTable(id, patch)
+      tablePatchHandlers.set(id, handler)
+    }
+    return handler
+  }
+
+  const ensureAddColumn = (id: string) => {
+    let handler = tableAddColumnHandlers.get(id)
+    if (!handler) {
+      handler = () => addColumn(id)
+      tableAddColumnHandlers.set(id, handler)
+    }
+    return handler
+  }
+
+  const ensureNotePatch = (id: string) => {
+    let handler = notePatchHandlers.get(id)
+    if (!handler) {
+      handler = (patch: Partial<ErdNote>) => updateNote(id, patch)
+      notePatchHandlers.set(id, handler)
+    }
+    return handler
+  }
 
   const addTable = (position = { x: 160, y: 160 }) => {
     if (!canEdit()) return
-    const schemaId = yToErd(ydoc.value).schemas[0]?.id
+    const schemaId = getSchemaId(ydoc.value) ?? erd.value.schemas[0]?.id
     upsertTable(ydoc.value, defaultTable({ position, schemaId }))
     tool.value = 'select'
   }
@@ -261,7 +380,9 @@ export const useErdSession = (options: {
 
   const addColumn = (tableId: string) => {
     if (!canEdit()) return
-    const table = yToErd(ydoc.value).tables.find((item) => item.id === tableId)
+    const table =
+      getTable(ydoc.value, tableId) ??
+      erd.value.tables.find((item) => item.id === tableId)
     if (!table) return
     patchTable(ydoc.value, tableId, {
       columns: [...table.columns, defaultColumn()],
@@ -302,13 +423,29 @@ export const useErdSession = (options: {
     refreshUndo()
   }
 
+  const beginDrag = (id: string) => {
+    draggingIds.add(id)
+  }
+
+  const endDrag = (id: string) => {
+    draggingIds.delete(id)
+  }
+
   const moveNode = throttleRaf(
     (payload: { id: string; position: { x: number; y: number } }) => {
       if (!canEdit()) return
-      const table = erd.value.tables.find((item) => item.id === payload.id)
+      const tables = erd.value.tables
+      const notes = erd.value.notes
+      const table = tables.find((item) => item.id === payload.id)
       if (table) table.position = payload.position
-      const note = erd.value.notes.find((item) => item.id === payload.id)
+      const note = notes.find((item) => item.id === payload.id)
       if (note) note.position = payload.position
+      // Trigger shallow consumers that read erd.value identity for positions via nodes computed
+      erd.value = {
+        ...erd.value,
+        tables: [...tables],
+        notes: [...notes],
+      }
       patchPosition(ydoc.value, payload.id, payload.position)
     },
   )
@@ -327,10 +464,15 @@ export const useErdSession = (options: {
     sourceCardinality: Cardinality = '1',
     targetCardinality: Cardinality = 'N',
   ) => {
-    if (!canEdit() || sourceTableId === targetTableId) return
-    const current = yToErd(ydoc.value)
-    const source = current.tables.find((t) => t.id === sourceTableId)
-    const target = current.tables.find((t) => t.id === targetTableId)
+    if (!canEdit()) return
+    const source =
+      getTable(ydoc.value, sourceTableId) ??
+      erd.value.tables.find((t) => t.id === sourceTableId)
+    const target =
+      sourceTableId === targetTableId
+        ? source
+        : (getTable(ydoc.value, targetTableId) ??
+          erd.value.tables.find((t) => t.id === targetTableId))
     if (!source || !target) return
     const planned = planForeignKeyLink(source, target, {
       sourceColumnId,
@@ -346,9 +488,10 @@ export const useErdSession = (options: {
 
   const connectManyToMany = (aId: string, bId: string) => {
     if (!canEdit()) return
-    const current = yToErd(ydoc.value)
-    const a = current.tables.find((t) => t.id === aId)
-    const b = current.tables.find((t) => t.id === bId)
+    const a =
+      getTable(ydoc.value, aId) ?? erd.value.tables.find((t) => t.id === aId)
+    const b =
+      getTable(ydoc.value, bId) ?? erd.value.tables.find((t) => t.id === bId)
     if (!a || !b) return
     const junction = defaultTable({
       schemaId: a.schemaId,
@@ -361,24 +504,8 @@ export const useErdSession = (options: {
       columns: [pkColumn()],
     })
     upsertTable(ydoc.value, junction)
-    connectTables(
-      a.id,
-      junction.id,
-      undefined,
-      undefined,
-      'identifying',
-      '1',
-      'N',
-    )
-    connectTables(
-      b.id,
-      junction.id,
-      undefined,
-      undefined,
-      'identifying',
-      '1',
-      'N',
-    )
+    connectTables(a.id, junction.id, undefined, undefined, 'identifying', '1', 'N')
+    connectTables(b.id, junction.id, undefined, undefined, 'identifying', '1', 'N')
   }
 
   const replaceDocument = (next: ErdDocument) => {
@@ -389,7 +516,6 @@ export const useErdSession = (options: {
   const updateViewSettings = (patch: ErdViewPatch) => {
     if (!canEdit()) return
     patchViewSettings(ydoc.value, patch)
-    refreshErd()
   }
 
   const seedFromSnapshot = (next: ErdDocument | null | undefined) => {
@@ -436,8 +562,8 @@ export const useErdSession = (options: {
         table,
         readOnly: readOnly.value,
         domains: erd.value.domains,
-        onPatch: (patch: Partial<ErdTable>) => updateTable(table.id, patch),
-        onAddColumn: () => addColumn(table.id),
+        onPatch: ensureTablePatch(table.id),
+        onAddColumn: ensureAddColumn(table.id),
       },
     })),
     ...erd.value.notes.map((note) => ({
@@ -447,7 +573,7 @@ export const useErdSession = (options: {
       data: {
         note,
         readOnly: readOnly.value,
-        onPatch: (patch: Partial<ErdNote>) => updateNote(note.id, patch),
+        onPatch: ensureNotePatch(note.id),
       },
       connectable: false,
       style: { width: `${note.width}px`, height: `${note.height}px` },
@@ -495,6 +621,8 @@ export const useErdSession = (options: {
     updateDomain,
     removeDomain: deleteDomainItem,
     moveNode,
+    beginDrag,
+    endDrag,
     deleteTable,
     undo,
     redo,
@@ -523,4 +651,23 @@ export const useErdSession = (options: {
     readOnly,
     myRole,
   }
+}
+
+const chatObservers = new WeakMap<Y.Doc, Set<() => void>>()
+
+const chatArrayObserve = (doc: Y.Doc, fn: () => void) => {
+  let set = chatObservers.get(doc)
+  if (!set) {
+    set = new Set()
+    chatObservers.set(doc, set)
+    const arr = doc.getArray('chat')
+    arr.observe(() => {
+      chatObservers.get(doc)?.forEach((cb) => cb())
+    })
+  }
+  set.add(fn)
+}
+
+const chatArrayUnobserve = (doc: Y.Doc, fn: () => void) => {
+  chatObservers.get(doc)?.delete(fn)
 }

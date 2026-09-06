@@ -27,8 +27,10 @@ const source = () =>
 const target = () =>
   props.tables.find((table) => table.id === props.relation.targetTableId)
 
-const columnName = (table: ErdTable | undefined, id: string) =>
-  table?.columns.find((column) => column.id === id)?.name ?? id
+const columnName = (table: ErdTable | undefined, id: string) => {
+  const col = table?.columns.find((column) => column.id === id)
+  return col?.physicalName || col?.logicalName || id
+}
 
 const kindOptions = [
   { value: 'identifying', label: '식별' },

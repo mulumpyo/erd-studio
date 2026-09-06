@@ -8,8 +8,21 @@ const TABLE_FOOTER = 34
 const LANE_GAP = 18
 const STEP_OFFSET = 28
 const STACK_BIAS = 48
+const MID_BUCKET = 56
+const SAME_X_BUCKET = 48
 
 type HandleSide = 'left' | 'right'
+
+export type NodeBox = {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+export type NodeSize = { w: number; h: number }
+export type NodeSizeMap = Map<string, NodeSize> | Record<string, NodeSize>
 
 export type RoutedEdge = {
   id: string
@@ -21,18 +34,38 @@ export type RoutedEdge = {
   targetPosition: Position
 }
 
+export type LaneRoute = {
+  offset: number
+  borderRadius: number
+  centerX?: number
+}
+
 const intervalGap = (a0: number, a1: number, b0: number, b1: number) => {
   if (a1 < b0) return b0 - a1
   if (b1 < a0) return a0 - b1
   return 0
 }
 
-const tableBox = (table: ErdTable) => ({
-  x: table.position.x,
-  y: table.position.y,
-  w: TABLE_WIDTH,
-  h: TABLE_HEAD + table.columns.length * COL_H + TABLE_FOOTER,
-})
+const lookupSize = (id: string, sizes?: NodeSizeMap): NodeSize | undefined => {
+  if (!sizes) return undefined
+  if (sizes instanceof Map) return sizes.get(id)
+  return sizes[id]
+}
+
+export const tableBox = (
+  table: ErdTable,
+  sizes?: NodeSizeMap,
+): Omit<NodeBox, 'id'> => {
+  const measured = lookupSize(table.id, sizes)
+  return {
+    x: table.position.x,
+    y: table.position.y,
+    w: measured?.w ?? TABLE_WIDTH,
+    h:
+      measured?.h ??
+      TABLE_HEAD + table.columns.length * COL_H + TABLE_FOOTER,
+  }
+}
 
 const colCenterY = (table: ErdTable, columnId?: string) => {
   const index = Math.max(
@@ -53,11 +86,12 @@ const pickSides = (
   target: ErdTable,
   sourceColumnId?: string,
   targetColumnId?: string,
+  sizes?: NodeSizeMap,
 ): { source: HandleSide; target: HandleSide } => {
   if (source.id === target.id) return { source: 'right', target: 'right' }
 
-  const a = tableBox(source)
-  const b = tableBox(target)
+  const a = tableBox(source, sizes)
+  const b = tableBox(target, sizes)
   const gx = intervalGap(a.x, a.x + a.w, b.x, b.x + b.w)
   const gy = intervalGap(a.y, a.y + a.h, b.y, b.y + b.h)
 
@@ -81,10 +115,11 @@ export const relationHandles = (
   target: ErdTable | undefined,
   sourceColumnId?: string,
   targetColumnId?: string,
+  sizes?: NodeSizeMap,
 ) => {
   const sides =
     source && target
-      ? pickSides(source, target, sourceColumnId, targetColumnId)
+      ? pickSides(source, target, sourceColumnId, targetColumnId, sizes)
       : { source: 'right' as const, target: 'left' as const }
   return {
     sourceHandle: sourceColumnId
@@ -108,61 +143,91 @@ const isSameHorizontal = (edge: RoutedEdge) =>
   (edge.sourcePosition === Position.Left &&
     edge.targetPosition === Position.Left)
 
-const yOverlaps = (a: RoutedEdge, b: RoutedEdge, pad = 12) => {
-  const a1 = Math.min(a.sourceY, a.targetY) - pad
-  const a2 = Math.max(a.sourceY, a.targetY) + pad
-  const b1 = Math.min(b.sourceY, b.targetY)
-  const b2 = Math.max(b.sourceY, b.targetY)
-  return b1 <= a2 && b2 >= a1
+const defaultRoute = (): LaneRoute => ({
+  offset: STEP_OFFSET,
+  borderRadius: 10,
+})
+
+const sortByMidY = (a: RoutedEdge, b: RoutedEdge) => {
+  const ay = (a.sourceY + a.targetY) / 2
+  const by = (b.sourceY + b.targetY) / 2
+  if (ay !== by) return ay - by
+  return a.id.localeCompare(b.id)
 }
 
-const laneIndex = (edge: RoutedEdge, group: RoutedEdge[]) => {
-  const sorted = [...group].sort((a, b) => {
-    const ay = (a.sourceY + a.targetY) / 2
-    const by = (b.sourceY + b.targetY) / 2
-    if (ay !== by) return ay - by
-    return a.id.localeCompare(b.id)
-  })
-  const i = sorted.findIndex((item) => item.id === edge.id)
-  return { i: Math.max(0, i), n: sorted.length }
+const pushGroup = (
+  groups: Map<string, RoutedEdge[]>,
+  key: string,
+  edge: RoutedEdge,
+) => {
+  const list = groups.get(key)
+  if (list) list.push(edge)
+  else groups.set(key, [edge])
 }
 
-export const smoothStepRoute = (edge: RoutedEdge, all: RoutedEdge[]) => {
-  if (isOppositeHorizontal(edge)) {
-    const midX = (edge.sourceX + edge.targetX) / 2
-    const group = all.filter((other) => {
-      if (!isOppositeHorizontal(other)) return false
-      const otherMid = (other.sourceX + other.targetX) / 2
-      if (Math.abs(otherMid - midX) > 56) return false
-      return yOverlaps(edge, other)
-    })
-    const { i, n } = laneIndex(edge, group)
-    return {
-      offset: STEP_OFFSET,
-      borderRadius: 10,
-      centerX: midX + (i - (n - 1) / 2) * LANE_GAP,
+/**
+ * Build lane offsets once per frame.
+ * Corridor bucketing is O(E); per-corridor sort is O(E log E) total; assign is O(E).
+ */
+export const buildLaneRoutes = (
+  edges: RoutedEdge[],
+): Map<string, LaneRoute> => {
+  const result = new Map<string, LaneRoute>()
+  const opposite = new Map<string, RoutedEdge[]>()
+  const same = new Map<string, RoutedEdge[]>()
+
+  for (const edge of edges) {
+    if (isOppositeHorizontal(edge)) {
+      const midX = (edge.sourceX + edge.targetX) / 2
+      pushGroup(opposite, `opp:${Math.round(midX / MID_BUCKET)}`, edge)
+      continue
+    }
+    if (isSameHorizontal(edge)) {
+      const side = edge.sourcePosition
+      const anchorX =
+        side === Position.Right
+          ? Math.max(edge.sourceX, edge.targetX)
+          : Math.min(edge.sourceX, edge.targetX)
+      pushGroup(
+        same,
+        `same:${side}:${Math.round(anchorX / SAME_X_BUCKET)}`,
+        edge,
+      )
+      continue
+    }
+    result.set(edge.id, defaultRoute())
+  }
+
+  for (const group of opposite.values()) {
+    group.sort(sortByMidY)
+    const n = group.length
+    for (let i = 0; i < n; i += 1) {
+      const edge = group[i]!
+      const midX = (edge.sourceX + edge.targetX) / 2
+      result.set(edge.id, {
+        offset: STEP_OFFSET,
+        borderRadius: 10,
+        centerX: midX + (i - (n - 1) / 2) * LANE_GAP,
+      })
     }
   }
 
-  if (isSameHorizontal(edge)) {
-    const group = all.filter((other) => {
-      if (
-        other.sourcePosition !== edge.sourcePosition ||
-        other.targetPosition !== edge.targetPosition
-      ) {
-        return false
-      }
-      const closeX =
-        Math.abs(other.sourceX - edge.sourceX) < 48 ||
-        Math.abs(other.targetX - edge.targetX) < 48
-      return closeX && yOverlaps(edge, other)
-    })
-    const { i } = laneIndex(edge, group)
-    return {
-      offset: STEP_OFFSET + i * LANE_GAP,
-      borderRadius: 10,
+  for (const group of same.values()) {
+    group.sort(sortByMidY)
+    for (let i = 0; i < group.length; i += 1) {
+      result.set(group[i]!.id, {
+        offset: STEP_OFFSET + i * LANE_GAP,
+        borderRadius: 10,
+      })
     }
   }
 
-  return { offset: STEP_OFFSET, borderRadius: 10 }
+  return result
 }
+
+/** Solo / test helper — prefer `buildLaneRoutes` once per frame in the canvas. */
+export const smoothStepRoute = (
+  edge: RoutedEdge,
+  all: RoutedEdge[] = [edge],
+): LaneRoute =>
+  buildLaneRoutes(all).get(edge.id) ?? defaultRoute()

@@ -29,6 +29,19 @@
   --success: #059669;
   --secondary-hover: #ddd9d2;
   --pattern: #e4e2dc;
+  --editor-connected-bg: #e6f8ef;
+  --editor-connected-dot: #00c471;
+  --editor-connected-ring: rgb(0 196 113 / 0.22);
+  --editor-connected-fg: #0a8f5a;
+  --editor-connecting-dot: #8b95a1;
+  --editor-overlay: rgb(28 25 23 / 0.25);
+  --canvas-tip-bg: #1c1917;
+  --canvas-tip-fg: #ffffff;
+  --canvas-cycle-badge: #f59e0b;
+  --canvas-cycle-badge-fg: #ffffff;
+  --editor-presence-bg: #1c1917;
+  --editor-grip: #c9cdd2;
+  --editor-danger-hover: #fff1f1;
   --vv-chrome-gap: 0px;
   color-scheme: light;
 }
@@ -57,6 +70,19 @@
   --success: #34d399;
   --secondary-hover: #3f3f46;
   --pattern: #3f3f46;
+  --editor-connected-bg: #143028;
+  --editor-connected-dot: #34d399;
+  --editor-connected-ring: rgb(52 211 153 / 0.28);
+  --editor-connected-fg: #6ee7b7;
+  --editor-connecting-dot: #a8a29e;
+  --editor-overlay: rgb(0 0 0 / 0.45);
+  --canvas-tip-bg: #f5f5f4;
+  --canvas-tip-fg: #1c1917;
+  --canvas-cycle-badge: #fbbf24;
+  --canvas-cycle-badge-fg: #1c1917;
+  --editor-presence-bg: #f5f5f4;
+  --editor-grip: #78716c;
+  --editor-danger-hover: #3a1d22;
   color-scheme: dark;
 }
 
@@ -421,8 +447,8 @@ h3 {
   z-index: 40;
   padding: 6px 9px;
   border-radius: 8px;
-  background: #1c1917;
-  color: #fff;
+  background: var(--canvas-tip-bg);
+  color: var(--canvas-tip-fg);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -478,8 +504,8 @@ h3 {
 
 .dark .canvas-ctrl-tip,
 .dark .ui-tip {
-  background: #f5f5f4;
-  color: #1c1917;
+  background: var(--canvas-tip-bg);
+  color: var(--canvas-tip-fg);
 }
 
 .has-tip:hover > .ui-tip,

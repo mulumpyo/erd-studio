@@ -211,9 +211,26 @@ const ROW_Y = {
   item: { pk: rowCenterY(0), fk: rowCenterY(1) },
 } as const
 
-const tables = [
+type DemoColumn = {
+  id: string
+  logicalName: string
+  physicalName: string
+  type: string
+  length?: string
+  tone: string
+  pk: boolean
+  fk: boolean
+}
+
+const tables: Array<{
+  id: 'user' | 'order' | 'item'
+  logicalName: string
+  physicalName: string
+  color: string
+  columns: DemoColumn[]
+}> = [
   {
-    id: 'user' as const,
+    id: 'user',
     logicalName: '사용자',
     physicalName: 'users',
     color: '#3b82f6',
@@ -224,7 +241,7 @@ const tables = [
     ],
   },
   {
-    id: 'order' as const,
+    id: 'order',
     logicalName: '주문',
     physicalName: 'orders',
     color: '#10b981',
@@ -235,7 +252,7 @@ const tables = [
     ],
   },
   {
-    id: 'item' as const,
+    id: 'item',
     logicalName: '주문상품',
     physicalName: 'order_items',
     color: '#f59e0b',

@@ -32,7 +32,7 @@ const keyOf = (user: CollabUser, index: number) =>
       </div>
       <div
         v-if="hovered === keyOf(user, index)"
-        class="pointer-events-none absolute right-0 top-[calc(100%+8px)] z-40 min-w-36 rounded-2xl bg-[#1c1917] px-3.5 py-2.5 text-white shadow-[0_12px_32px_rgb(28_25_23_/_0.24)]"
+        class="pointer-events-none absolute right-0 top-[calc(100%+8px)] z-40 min-w-36 rounded-2xl bg-[var(--editor-presence-bg)] px-3.5 py-2.5 text-[var(--canvas-tip-fg)] shadow-[0_12px_32px_rgb(28_25_23_/_0.24)]"
       >
         <div class="text-[13px] font-bold tracking-[-0.01em]">
           {{ user.self ? `${user.name} (나)` : user.name }}

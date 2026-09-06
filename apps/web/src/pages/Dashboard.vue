@@ -701,10 +701,11 @@ onUnmounted(() => {
         :revision="revision"
         @changed="() => teamId && loadTeam(teamId)"
         @create="
-          (fromSample, name) => createInTeam(selectedTeam, fromSample, name)
+          (fromSample, name) =>
+            selectedTeam && createInTeam(selectedTeam, fromSample, name)
         "
-        @remove-team="removeTeam(selectedTeam)"
-        @leave-team="leaveTeam(selectedTeam.id)"
+        @remove-team="selectedTeam && removeTeam(selectedTeam)"
+        @leave-team="selectedTeam && leaveTeam(selectedTeam.id)"
         @remove-project="removeProject"
         @leave-project="leaveProject"
       />
