@@ -90,7 +90,7 @@ const patchTables = (
   if (!touchedTables.size && !touchedLayouts.size) return prev
 
   if (touchedTables.size) {
-    let tables = [...prev]
+    const tables = [...prev]
     for (const id of touchedTables) {
       const nextTable = getTable(doc, id)
       const idx = tables.findIndex((t) => t.id === id)
@@ -133,7 +133,7 @@ const patchRelations = (
   touched: Set<string>,
 ): ErdRelation[] | null => {
   if (!touched.size) return prev
-  let relations = [...prev]
+  const relations = [...prev]
   for (const id of touched) {
     const nextRel = getRelation(doc, id)
     const idx = relations.findIndex((r) => r.id === id)
@@ -158,7 +158,7 @@ const patchNotes = (
   draggingIds: Set<string>,
 ): ErdNote[] | null => {
   if (!touched.size) return prev
-  let notes = [...prev]
+  const notes = [...prev]
   for (const id of touched) {
     const nextNote = getNote(doc, id)
     const idx = notes.findIndex((n) => n.id === id)
