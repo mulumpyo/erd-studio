@@ -28,6 +28,7 @@ import Input from '@/components/ui/input/Input.vue'
 import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import NotificationInbox from '@/components/dashboard/NotificationInbox.vue'
+import { setDocumentTitle } from '@/lib/seo'
 import { confirm, notice } from '@/composables/useConfirm'
 import {
   inviteLocation,
@@ -78,6 +79,8 @@ const heading = computed(() => {
   if (tab.value === 'projects') return '프로젝트'
   return selectedTeam.value?.name ?? '팀'
 })
+
+watch(heading, (value) => setDocumentTitle(value), { immediate: true })
 const crumbKicker = computed(() => (teamId.value ? '팀' : '워크스페이스'))
 const crumbTo = computed(() =>
   teamId.value ? { name: 'teams' as const } : undefined,
