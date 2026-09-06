@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "pnpm --filter @erd-studio/shared --filter @erd-studio/sql --filter @erd-studio/yjs-erd build && vue-tsc --noEmit"
   },
   "dependencies": {
     "@erd-studio/shared": "workspace:*",

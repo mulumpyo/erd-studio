@@ -45,6 +45,10 @@ jobs:
       - name: 문법·코드 스타일 검사 (ESLint)
         run: pnpm lint
 
+      # shared/sql/yjs-erd types는 dist/*.d.ts라서 typecheck 전에 빌드가 필요해요.
+      - name: 워크스페이스 패키지 빌드
+        run: pnpm --filter @erd-studio/shared --filter @erd-studio/sql --filter @erd-studio/yjs-erd build
+
       - name: 웹 타입 검사 (vue-tsc)
         run: pnpm --filter @erd-studio/web typecheck
 
