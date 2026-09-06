@@ -11,12 +11,14 @@ import {
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger'
 import { Auth, OptionalAuth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
@@ -29,6 +31,21 @@ import {
   UpdateProjectDto,
   VersionDto,
 } from '../dto/projects.dto'
+import {
+  InviteCreatedResponseDto,
+  InviteResendResponseDto,
+  OkResponseDto,
+  ProjectDetailResponseDto,
+  ProjectListResponseDto,
+  ProjectMembersDirectKindDto,
+  ProjectMembersTeamKindDto,
+  ProjectMemberDto,
+  ProjectRecordResponseDto,
+  SharedProjectResponseDto,
+  VersionCreatedResponseDto,
+  VersionDetailResponseDto,
+  VersionListItemDto,
+} from '../dto/projects-response.dto'
 import { ProjectsService } from '../services/projects.service'
 
 const NOT_FOUND =
@@ -63,6 +80,7 @@ const MemberId = () =>
   })
 
 @ApiTags('projects')
+@ApiExtraModels(ProjectMembersTeamKindDto, ProjectMembersDirectKindDto)
 @Controller('projects')
 export class ProjectsController {
   constructor(private projects: ProjectsService) {}
@@ -78,7 +96,10 @@ export class ProjectsController {
     description: '프로젝트 설정에서 만든 공유 토큰이에요.',
     example: 'clz9k2p4x0002s601ijklmnop',
   })
-  @ApiOkResponse({ description: '읽기 전용 다이어그램이에요.' })
+  @ApiOkResponse({
+    description: '공개 프로젝트 요약이에요. 다이어그램 본문은 여기 없어요.',
+    type: SharedProjectResponseDto,
+  })
   @ApiNotFoundResponse({ description: '링크가 올바르지 않거나 공개된 다이어그램이 아니에요.' })
   @OptionalAuth()
   @Get('shared/:token')
@@ -93,6 +114,7 @@ export class ProjectsController {
   })
   @ApiOkResponse({
     description: '프로젝트 목록이에요. `items`와 함께 전체 개수, 페이지 정보를 줘요.',
+    type: ProjectListResponseDto,
   })
   @Auth()
   @Get()
@@ -106,7 +128,10 @@ export class ProjectsController {
       '새 프로젝트를 만들어요. 만든 사람이 소유자가 되고, 팀을 지정하면 팀 프로젝트가 돼요.\n\n' +
       '팀을 지정하지 않으면 나만의 팀을 하나 만들어서 담아 둬요.',
   })
-  @ApiCreatedResponse({ description: '프로젝트를 만들었어요.' })
+  @ApiCreatedResponse({
+    description: '프로젝트를 만들었어요.',
+    type: ProjectRecordResponseDto,
+  })
   @ApiForbiddenResponse({ description: '내가 속한 팀이 아니면 팀 프로젝트를 만들 수 없어요.' })
   @Auth()
   @Post()
@@ -120,7 +145,10 @@ export class ProjectsController {
       '다이어그램과 팀원을 함께 가져와요. 공개된 프로젝트는 로그인 없이도 볼 수 있어요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '프로젝트 상세 정보예요.' })
+  @ApiOkResponse({
+    description: '프로젝트 상세 정보예요.',
+    type: ProjectDetailResponseDto,
+  })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @OptionalAuth()
   @Get(':id')
@@ -135,7 +163,10 @@ export class ProjectsController {
       '공개 여부(`isPublic`)는 소유자만 바꿀 수 있어요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '수정한 프로젝트 정보예요.' })
+  @ApiOkResponse({
+    description: '수정한 프로젝트 정보예요.',
+    type: ProjectRecordResponseDto,
+  })
   @ApiForbiddenResponse({ description: '편집 권한이 없거나, 공개 설정은 소유자만 바꿀 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -154,7 +185,10 @@ export class ProjectsController {
       '지금 화면의 다이어그램을 서버에 저장해요. 실시간 편집 중에는 협업 서버가 알아서 저장하니, 혼자 편집할 때 주로 써요.',
   })
   @ProjectId()
-  @ApiCreatedResponse({ description: '저장했어요.' })
+  @ApiCreatedResponse({
+    description: '저장했어요.',
+    type: ProjectRecordResponseDto,
+  })
   @ApiForbiddenResponse({ description: '편집 권한이 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -174,7 +208,10 @@ export class ProjectsController {
       '팀을 통해 들어온 프로젝트라면 여기서 나갈 수 없어요. 팀에서 나가 주세요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '프로젝트에서 나왔어요.' })
+  @ApiOkResponse({
+    description: '프로젝트에서 나왔어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({
     description: '소유자이거나, 팀을 통해 들어와서 여기서는 나갈 수 없어요.',
   })
@@ -191,7 +228,10 @@ export class ProjectsController {
       '프로젝트를 지워요. 다이어그램, 버전, 대화가 함께 사라지고 되돌릴 수 없어요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '프로젝트를 지웠어요.' })
+  @ApiOkResponse({
+    description: '프로젝트를 지웠어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '삭제할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -205,7 +245,11 @@ export class ProjectsController {
     description: '저장해 둔 버전 목록을 최근 순으로 보여줘요. 다이어그램 내용은 빼고 요약만 줘요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '버전 목록이에요.' })
+  @ApiOkResponse({
+    description: '버전 목록이에요.',
+    type: VersionListItemDto,
+    isArray: true,
+  })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
   @Get(':id/versions')
@@ -219,7 +263,10 @@ export class ProjectsController {
       '되돌아올 수 있게 지금 다이어그램을 버전으로 저장해요. 이름을 붙여 두면 나중에 찾기 쉬워요.',
   })
   @ProjectId()
-  @ApiCreatedResponse({ description: '버전을 남겼어요.' })
+  @ApiCreatedResponse({
+    description: '버전을 남겼어요.',
+    type: VersionCreatedResponseDto,
+  })
   @ApiForbiddenResponse({ description: '편집 권한이 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -238,7 +285,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @VersionId()
-  @ApiOkResponse({ description: '그 시점의 다이어그램이에요.' })
+  @ApiOkResponse({
+    description: '그 시점의 다이어그램이에요.',
+    type: VersionDetailResponseDto,
+  })
   @ApiNotFoundResponse({ description: '버전을 찾을 수 없어요.' })
   @Auth()
   @Get(':id/versions/:versionId')
@@ -258,7 +308,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @VersionId()
-  @ApiCreatedResponse({ description: '되돌렸어요.' })
+  @ApiCreatedResponse({
+    description: '되돌렸어요.',
+    type: ProjectRecordResponseDto,
+  })
   @ApiForbiddenResponse({ description: '편집 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '버전을 찾을 수 없어요.' })
   @Auth()
@@ -278,7 +331,16 @@ export class ProjectsController {
       '팀 프로젝트라면 팀원이 그대로 들어가요.',
   })
   @ProjectId()
-  @ApiOkResponse({ description: '팀원과 대기 중인 초대 목록이에요.' })
+  @ApiOkResponse({
+    description:
+      '팀 프로젝트면 `kind: "team"`, 개인 프로젝트면 `kind: "project"`예요.',
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(ProjectMembersTeamKindDto) },
+        { $ref: getSchemaPath(ProjectMembersDirectKindDto) },
+      ],
+    },
+  })
   @ApiForbiddenResponse({ description: '이 프로젝트의 팀원만 볼 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -296,6 +358,7 @@ export class ProjectsController {
   @ProjectId()
   @ApiCreatedResponse({
     description: '초대 메일을 보내고 `status: "invited"`를 줘요.',
+    type: InviteCreatedResponseDto,
   })
   @ApiBadRequestResponse({ description: '자기 자신은 초대할 수 없어요.' })
   @ApiForbiddenResponse({
@@ -319,7 +382,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @InviteId()
-  @ApiCreatedResponse({ description: '초대 메일을 다시 보냈어요.' })
+  @ApiCreatedResponse({
+    description: '초대 메일을 다시 보냈어요.',
+    type: InviteResendResponseDto,
+  })
   @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Auth()
@@ -338,7 +404,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @InviteId()
-  @ApiOkResponse({ description: '초대를 취소했어요.' })
+  @ApiOkResponse({
+    description: '초대를 취소했어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '팀원을 관리할 권한이 없어요.' })
   @ApiNotFoundResponse({ description: '대기 중인 초대가 없어요.' })
   @Auth()
@@ -359,7 +428,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @MemberId()
-  @ApiOkResponse({ description: '권한을 바꿨어요.' })
+  @ApiOkResponse({
+    description: '권한을 바꿨어요.',
+    type: ProjectMemberDto,
+  })
   @ApiForbiddenResponse({ description: '권한을 바꿀 수 없거나, 소유자 역할이에요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()
@@ -380,7 +452,10 @@ export class ProjectsController {
   })
   @ProjectId()
   @MemberId()
-  @ApiOkResponse({ description: '팀원을 내보냈어요.' })
+  @ApiOkResponse({
+    description: '팀원을 내보냈어요.',
+    type: OkResponseDto,
+  })
   @ApiForbiddenResponse({ description: '권한이 없거나, 소유자는 내보낼 수 없어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @Auth()

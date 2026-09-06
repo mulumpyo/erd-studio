@@ -51,27 +51,27 @@ export const isRelationTool = (tool: Tool) =>
   tool === 'many-to-many'
 
 export const toolGuide = (tool: Tool, pendingSource = false) => {
-  if (tool === 'table') return '빈 캔버스를 클릭하면 테이블이 생겨요'
-  if (tool === 'note') return '빈 캔버스를 클릭하면 메모가 생겨요'
+  if (tool === 'table') return '빈 캔버스를 클릭하면 테이블이 생겨요 (단축키 T)'
+  if (tool === 'note') return '빈 캔버스를 클릭하면 메모가 생겨요 (단축키 N)'
   if (tool === 'identifying') {
     return pendingSource
       ? '이제 자식 테이블(N)을 클릭하세요. Esc로 취소할 수 있어요'
-      : '식별 1:N — 부모 테이블(1)을 먼저 클릭하세요'
+      : '식별 1:N — 부모 테이블(1)을 먼저 클릭하세요 (단축키 I)'
   }
   if (tool === 'non-identifying') {
     return pendingSource
       ? '이제 자식 테이블(N)을 클릭하세요. Esc로 취소할 수 있어요'
-      : '비식별 1:N — 부모 테이블(1)을 먼저 클릭하세요'
+      : '비식별 1:N — 부모 테이블(1)을 먼저 클릭하세요 (단축키 R)'
   }
   if (tool === 'one-to-one') {
     return pendingSource
       ? '연결할 다른 테이블을 클릭하세요. Esc로 취소할 수 있어요'
-      : '1:1 — 첫 번째 테이블을 클릭하세요'
+      : '1:1 — 첫 번째 테이블을 클릭하세요 (단축키 O)'
   }
   if (tool === 'many-to-many') {
     return pendingSource
       ? '연결할 다른 테이블을 클릭하세요. Esc로 취소할 수 있어요'
-      : 'N:M — 첫 번째 테이블을 클릭하세요. 중간 테이블이 자동으로 생겨요'
+      : 'N:M — 첫 번째 테이블을 클릭하세요. 중간 테이블이 자동으로 생겨요 (단축키 M)'
   }
   return ''
 }

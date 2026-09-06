@@ -253,6 +253,15 @@ onUnmounted(() => {
         <span class="h-1 w-10 rounded-full bg-border" />
       </button>
       <div :class="compact ? 'px-3 pb-2' : 'p-3'">
+        <div v-if="compact && snap !== 'peek'" class="mb-2 flex items-center justify-end">
+          <button
+            type="button"
+            class="inline-flex h-9 items-center rounded-xl px-3 text-[13px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            @click.stop="applySnap('peek')"
+          >
+            접기
+          </button>
+        </div>
         <SegmentedControl
           class="w-full min-w-0"
           :model-value="tab"

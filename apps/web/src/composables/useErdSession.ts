@@ -55,10 +55,15 @@ import {
 import { planForeignKeyLink } from '@/lib/erd-relations'
 import { relationHandles } from '@/lib/erd-edge-route'
 import { applyErdStructuralPatch } from '@/lib/erd-session-patch'
+import type {
+  CollabConnectionStatus,
+  CollabSyncStatus,
+} from '@/lib/collab-status'
 import { type Tool } from './erd-tools'
 
 export type { Tool } from './erd-tools'
 export { relationFromTool } from './erd-tools'
+export type { CollabConnectionStatus, CollabSyncStatus } from '@/lib/collab-status'
 
 export type CollabUser = {
   id?: string
@@ -112,11 +117,17 @@ export const useErdSession = (options: {
   const ydoc = shallowRef(new Y.Doc())
   const erd = shallowRef<ErdDocument>(options.initial ?? emptyDocument())
   const messages = ref<ChatLine[]>([])
-  const connected = ref(false)
+  const hasCollab = Boolean(options.projectId && options.collabUrl)
+  const connectionStatus = ref<CollabConnectionStatus>(
+    hasCollab ? 'connecting' : 'idle',
+  )
+  const syncStatus = ref<CollabSyncStatus>(hasCollab ? 'syncing' : 'local')
+  const connected = computed(() => connectionStatus.value === 'connected')
   const peers = ref<CollabUser[]>([])
   const tool = ref<Tool>('select')
   const myRole = ref('viewer')
   const draggingIds = new Set<string>()
+  let syncIdleTimer = 0
   const readOnly = computed(() => {
     const opt = options.readOnly
     if (isRef(opt)) return Boolean(opt.value)
@@ -128,6 +139,37 @@ export const useErdSession = (options: {
   let undoManager: Y.UndoManager | null = null
   const canEdit = () => !readOnly.value
 
+  const setConnectionStatus = (next: CollabConnectionStatus) => {
+    connectionStatus.value = next
+    if (next === 'connected') {
+      // synced event / local updates refine syncStatus
+      if (syncStatus.value === 'offline' || syncStatus.value === 'syncing') {
+        syncStatus.value = 'synced'
+      }
+      return
+    }
+    if (next === 'connecting') {
+      syncStatus.value = 'syncing'
+      return
+    }
+    if (next === 'disconnected' || next === 'auth_failed') {
+      syncStatus.value = 'offline'
+      return
+    }
+    syncStatus.value = 'local'
+  }
+
+  const noteLocalSync = () => {
+    if (connectionStatus.value !== 'connected') {
+      if (hasCollab) syncStatus.value = 'offline'
+      return
+    }
+    syncStatus.value = 'syncing'
+    window.clearTimeout(syncIdleTimer)
+    syncIdleTimer = window.setTimeout(() => {
+      if (connectionStatus.value === 'connected') syncStatus.value = 'synced'
+    }, 700)
+  }
   const tablePatchHandlers = new Map<
     string,
     (patch: Partial<ErdTable>) => void
@@ -278,11 +320,15 @@ export const useErdSession = (options: {
           (a, b) => Number(Boolean(b.self)) - Number(Boolean(a.self)),
         )
       }
-      const markDisconnected = () => {
-        connected.value = false
+      const onDocUpdate = (_update: Uint8Array, origin: unknown) => {
+        // Remote provider sync should not flash "동기화 중".
+        if (origin === provider) return
+        if (connectionStatus.value === 'connected') noteLocalSync()
       }
+      ydoc.value.on('update', onDocUpdate)
       provider.on('synced', () => {
-        connected.value = true
+        setConnectionStatus('connected')
+        syncStatus.value = 'synced'
         if (options.initial && isDocEmpty(ydoc.value))
           seedIfEmpty(ydoc.value, options.initial)
         syncRoleFromAcl()
@@ -291,16 +337,24 @@ export const useErdSession = (options: {
         resetUndo()
         syncPeers()
       })
-      provider.on('disconnect', markDisconnected)
-      provider.on('close', markDisconnected)
-      provider.on('authenticationFailed', markDisconnected)
+      provider.on('disconnect', () => setConnectionStatus('disconnected'))
+      provider.on('close', () => setConnectionStatus('disconnected'))
+      provider.on('authenticationFailed', () =>
+        setConnectionStatus('auth_failed'),
+      )
       provider.on('status', ({ status }: { status?: string }) => {
-        if (status === 'disconnected') markDisconnected()
+        if (status === 'connecting') setConnectionStatus('connecting')
+        if (status === 'disconnected') setConnectionStatus('disconnected')
+        if (status === 'connected') {
+          // Wait for synced before claiming full readiness.
+          if (connectionStatus.value !== 'connected') {
+            setConnectionStatus('connecting')
+          }
+        }
       })
-      // Transport / protocol errors should not leave UI stuck as "connected".
       ;(provider as { on: (event: string, fn: () => void) => void }).on(
         'error',
-        markDisconnected,
+        () => setConnectionStatus('disconnected'),
       )
       provider.on('awarenessUpdate', syncPeers)
       provider.awareness?.on('update', syncPeers)
@@ -316,6 +370,15 @@ export const useErdSession = (options: {
     }
   })
 
+  const reconnect = () => {
+    if (!provider) return
+    setConnectionStatus('connecting')
+    try {
+      provider.connect()
+    } catch {
+      setConnectionStatus('disconnected')
+    }
+  }
   onUnmounted(() => {
     const doc = ydoc.value
     tablesMap(doc).unobserveDeep(onErdMapsChange)
@@ -330,6 +393,7 @@ export const useErdSession = (options: {
     undoManager?.destroy()
     undoManager = null
     provider?.destroy()
+    window.clearTimeout(syncIdleTimer)
     doc.destroy()
   })
 
@@ -611,6 +675,9 @@ export const useErdSession = (options: {
     messages,
     tool,
     connected,
+    connectionStatus,
+    syncStatus,
+    reconnect,
     peers,
     addTable,
     addNote,

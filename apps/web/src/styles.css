@@ -34,6 +34,10 @@
   --editor-connected-ring: rgb(0 196 113 / 0.22);
   --editor-connected-fg: #0a8f5a;
   --editor-connecting-dot: #8b95a1;
+  --editor-syncing-bg: #eef2ff;
+  --editor-offline-bg: #fff1f1;
+  --editor-offline-dot: #e11d48;
+  --editor-offline-fg: #be123c;
   --editor-overlay: rgb(28 25 23 / 0.25);
   --canvas-tip-bg: #1c1917;
   --canvas-tip-fg: #ffffff;
@@ -75,6 +79,10 @@
   --editor-connected-ring: rgb(52 211 153 / 0.28);
   --editor-connected-fg: #6ee7b7;
   --editor-connecting-dot: #a8a29e;
+  --editor-syncing-bg: #1e1b4b;
+  --editor-offline-bg: #3a1d22;
+  --editor-offline-dot: #fb7185;
+  --editor-offline-fg: #fda4af;
   --editor-overlay: rgb(0 0 0 / 0.45);
   --canvas-tip-bg: #f5f5f4;
   --canvas-tip-fg: #1c1917;
@@ -324,6 +332,12 @@ h3 {
   pointer-events: none !important;
 }
 
+.erd-immersive .erd-status-sticky {
+  transform: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
 .erd-immersive .erd-chrome-left {
   transform: translateX(-110%);
   pointer-events: none !important;
@@ -403,6 +417,12 @@ h3 {
 
 .canvas-ctrl:last-child {
   border-radius: 0 0 16px 16px;
+}
+
+.canvas-ctrl:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(79 70 229 / 0.28);
+  z-index: 1;
 }
 
 .canvas-ctrl:hover:not(:disabled) {
@@ -674,12 +694,29 @@ h3 {
 }
 
 .table-head-logical {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
 
+@media (max-width: 639px) {
+  .table-head-logical {
+    font-size: 15px;
+  }
+  .table-head-physical {
+    font-size: 12px;
+  }
+}
+
 .table-head-physical {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11px;
   font-weight: 500;

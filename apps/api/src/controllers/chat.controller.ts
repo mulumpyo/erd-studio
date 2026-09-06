@@ -1,19 +1,33 @@
 import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common'
 import {
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiProduces,
+  ApiQuery,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger'
 import { SkipThrottle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 import { Auth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import { ChatDto } from '../dto/chat.dto'
+import {
+  ChatInboxItemDto,
+  ChatMessageDto,
+} from '../dto/chat-response.dto'
+import {
+  NotifyChatEventDto,
+  NotifyInviteEventDto,
+  NotifyProjectEventDto,
+  NotifyTeamEventDto,
+  NOTIFY_SSE_DESCRIPTION,
+} from '../dto/misc-response.dto'
 import { ChatService } from '../services/chat.service'
 import { NotifyService } from '../services/notify.service'
 
@@ -44,6 +58,12 @@ const ProjectId = () =>
   })
 
 @ApiTags('chat')
+@ApiExtraModels(
+  NotifyChatEventDto,
+  NotifyInviteEventDto,
+  NotifyTeamEventDto,
+  NotifyProjectEventDto,
+)
 @Controller()
 @Auth()
 export class ChatController {
@@ -57,8 +77,18 @@ export class ChatController {
     description:
       '내가 볼 수 있는 프로젝트의 마지막 메시지를 모아서 줘요. 프로젝트마다 내가 안 읽은 메시지 개수도 함께 줘요.',
   })
+  @ApiQuery({
+    name: 'seen',
+    required: false,
+    description:
+      '프로젝트별 마지막으로 본 시각(밀리초)을 JSON 문자열로 넣어요. 예: `{"clz...":1710000000000}`. 이 시각 이후 메시지만 안 읽은 개수에 세요.',
+    example: '{"clz9k2p4x0001s601abcdefgh":1710000000000}',
+    schema: { type: 'string' },
+  })
   @ApiOkResponse({
     description: '프로젝트별 마지막 메시지와 안 읽은 개수 목록이에요.',
+    type: ChatInboxItemDto,
+    isArray: true,
   })
   @Get('chat/inbox')
   inbox(
@@ -74,7 +104,15 @@ export class ChatController {
       '새 채팅·초대 알림을 받는 연결이에요. `GET /notify/stream`과 같아요.',
   })
   @ApiOkResponse({
-    description: 'SSE 연결이에요. `notify` 이벤트가 오면 알림 목록을 다시 받으면 돼요.',
+    description: NOTIFY_SSE_DESCRIPTION,
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(NotifyChatEventDto) },
+        { $ref: getSchemaPath(NotifyInviteEventDto) },
+        { $ref: getSchemaPath(NotifyTeamEventDto) },
+        { $ref: getSchemaPath(NotifyProjectEventDto) },
+      ],
+    },
   })
   @ApiProduces('text/event-stream')
   @SkipThrottle()
@@ -94,6 +132,8 @@ export class ChatController {
   })
   @ApiOkResponse({
     description: '메시지를 최대 200개까지 줘요. 보낸 사람 정보도 함께 담겨요.',
+    type: ChatMessageDto,
+    isArray: true,
   })
   @ApiForbiddenResponse({ description: '이 프로젝트의 팀원만 볼 수 있어요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
@@ -108,7 +148,10 @@ export class ChatController {
     description:
       '프로젝트 팀원에게 메시지를 남겨요. 편집 권한이 있어야 보낼 수 있고, 보기 전용 팀원은 읽기만 돼요.',
   })
-  @ApiCreatedResponse({ description: '보낸 메시지예요.' })
+  @ApiCreatedResponse({
+    description: '보낸 메시지예요.',
+    type: ChatMessageDto,
+  })
   @ApiForbiddenResponse({ description: '편집 권한이 없어요. 보기 전용 팀원은 읽기만 돼요.' })
   @ApiNotFoundResponse({ description: NOT_FOUND })
   @ProjectId()

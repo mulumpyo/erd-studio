@@ -41,6 +41,7 @@ const emit = defineEmits<{
   (e: 'update-domain', domain: ErdDomain): void
   (e: 'remove-domain', id: string): void
   (e: 'select-column', id: string): void
+  (e: 'create-table'): void
 }>()
 
 const dragIndex = ref<number | null>(null)
@@ -204,7 +205,23 @@ const onDragEnd = () => {
     v-else-if="!table"
     class="mb-4 rounded-2xl bg-muted px-4 py-8 text-center text-[14px] leading-6 text-muted-foreground"
   >
-    테이블이나 관계선을 선택하면 속성을 볼 수 있어요.
+    <template v-if="!readOnly && !(tables?.length)">
+      <p>아직 테이블이 없어요.</p>
+      <button
+        type="button"
+        class="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        @click="emit('create-table')"
+      >
+        첫 테이블 만들기
+      </button>
+    </template>
+    <template v-else-if="!readOnly">
+      캔버스에서 테이블이나 관계선을 선택하세요. 왼쪽 「테이블」 도구로 추가할
+      수도 있어요.
+    </template>
+    <template v-else>
+      테이블이나 관계선을 선택하면 속성을 볼 수 있어요.
+    </template>
   </div>
   <p v-else-if="readOnly" class="mb-3 text-[14px] text-muted-foreground">
     보기 권한이라 다이어그램을 수정할 수 없어요.

@@ -443,7 +443,7 @@ onUnmounted(() => {
           class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
-            <h1 class="text-[20px] font-bold tracking-[-0.015em]">프로젝트</h1>
+            <h1 class="text-[22px] font-bold tracking-[-0.02em] sm:text-[20px] sm:tracking-[-0.015em]">프로젝트</h1>
             <p class="mt-0.5 text-[13px] text-muted-foreground">
               속한 팀의 다이어그램을 한곳에서 봐요
             </p>
@@ -486,11 +486,19 @@ onUnmounted(() => {
             v-else-if="!projects.length"
             class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground"
           >
-            {{
-              search.trim()
-                ? '검색과 맞는 프로젝트가 없어요.'
-                : '아직 프로젝트가 없어요.'
-            }}
+            <template v-if="search.trim()">
+              검색과 맞는 프로젝트가 없어요.
+            </template>
+            <template v-else>
+              아직 프로젝트가 없어요.
+              <button
+                type="button"
+                class="mt-3 block w-full font-semibold text-primary"
+                @click="startCreateProject"
+              >
+                프로젝트 만들기
+              </button>
+            </template>
           </p>
           <div
             v-else
@@ -613,7 +621,7 @@ onUnmounted(() => {
           class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
-            <h1 class="text-[20px] font-bold tracking-[-0.015em]">팀</h1>
+            <h1 class="text-[22px] font-bold tracking-[-0.02em] sm:text-[20px] sm:tracking-[-0.015em]">팀</h1>
             <p class="mt-0.5 text-[13px] text-muted-foreground">
               같이 그리는 사람과 프로젝트를 팀으로 묶어요
             </p>

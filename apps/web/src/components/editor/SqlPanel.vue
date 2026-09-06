@@ -60,7 +60,7 @@ const download = () => {
   <div class="flex min-h-0 flex-1 flex-col gap-3">
     <div class="min-h-0 flex-1 space-y-3 overflow-auto">
       <Select v-model="dialect" :options="dialects" class="h-12" />
-      <Button class="h-12 w-full" @click="exportSql">내보내기</Button>
+      <Button class="h-12 w-full" @click="exportSql">SQL 생성</Button>
       <Textarea
         v-model="sql"
         class="min-h-32 font-mono text-xs"
@@ -75,7 +75,7 @@ const download = () => {
         >가져오기</Button
       >
       <Button class="h-12" variant="secondary" @click="download"
-        >파일로 저장</Button
+        >SQL 파일 다운로드</Button
       >
     </div>
     <p v-if="error" class="shrink-0 text-sm text-destructive">{{ error }}</p>

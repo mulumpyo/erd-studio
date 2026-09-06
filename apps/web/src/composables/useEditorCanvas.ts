@@ -84,9 +84,10 @@ export const useEditorCanvas = (opts: {
   })
 
   const canvasHint = computed(() => {
-    const guide = opts.readOnly.value
-      ? ''
-      : toolGuide(opts.tool.value, Boolean(opts.pendingLink.value))
+    if (opts.readOnly.value) {
+      return '보기 전용이에요. 다이어그램을 수정할 수 없어요'
+    }
+    const guide = toolGuide(opts.tool.value, Boolean(opts.pendingLink.value))
     if (guide) return guide
     if (!opts.showFlow.value) return ''
     return flowFocusId.value
@@ -272,20 +273,6 @@ export const useEditorCanvas = (opts: {
     })
   })
 
-  const hideChrome = () => {
-    window.clearTimeout(chromeShowTimer)
-    opts.chromeHidden.value = true
-  }
-
-  const showChromeSoon = () => {
-    window.clearTimeout(chromeShowTimer)
-    chromeShowTimer = window.setTimeout(() => {
-      if (!nodeDragging.value && !panePanning.value) {
-        opts.chromeHidden.value = false
-      }
-    }, 140)
-  }
-
   const clearChromeTimer = () => {
     window.clearTimeout(chromeShowTimer)
   }
@@ -306,7 +293,6 @@ export const useEditorCanvas = (opts: {
     opts.onIgnorePaneClick()
     nodeDragging.value = true
     opts.beginDrag(event.node.id)
-    hideChrome()
     persistNodeMove(event)
   }
 
@@ -314,18 +300,15 @@ export const useEditorCanvas = (opts: {
     persistNodeMove(event)
     opts.endDrag(event.node.id)
     nodeDragging.value = false
-    showChromeSoon()
     opts.onClearIgnorePaneClickSoon()
   }
 
   const onPanStart = () => {
     panePanning.value = true
-    hideChrome()
   }
 
   const onPanEnd = () => {
     panePanning.value = false
-    showChromeSoon()
   }
 
   const onEdgeClick = (event: EdgeMouseEvent) => {

@@ -1,17 +1,31 @@
 import { Controller, Get, Req, Res } from '@nestjs/common'
 import {
+  ApiExtraModels,
   ApiOkResponse,
   ApiOperation,
   ApiProduces,
   ApiTags,
+  getSchemaPath,
 } from '@nestjs/swagger'
 import { SkipThrottle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 import { Auth } from '../common/auth/decorators'
 import { CurrentUser, type AuthUser } from '../common/auth/current-user'
 import { NotifyService } from '../services/notify.service'
-
+import {
+  NotifyChatEventDto,
+  NotifyInviteEventDto,
+  NotifyProjectEventDto,
+  NotifyTeamEventDto,
+  NOTIFY_SSE_DESCRIPTION,
+} from '../dto/misc-response.dto'
 @ApiTags('notify')
+@ApiExtraModels(
+  NotifyChatEventDto,
+  NotifyInviteEventDto,
+  NotifyTeamEventDto,
+  NotifyProjectEventDto,
+)
 @Controller()
 @Auth()
 export class NotifyController {
@@ -20,11 +34,18 @@ export class NotifyController {
   @ApiOperation({
     summary: '알림 받기',
     description:
-      '새 채팅이나 프로젝트 초대가 생기면 바로 알려 주는 연결이에요. 워크스페이스가 열려 있는 동안만 붙여 두고, 알림이 오면 목록을 다시 받으면 돼요.',
+      '채팅·초대·팀·프로젝트 변경을 바로 알려 주는 연결이에요. 워크스페이스가 열려 있는 동안만 붙여 두세요.',
   })
   @ApiOkResponse({
-    description:
-      'SSE 연결이에요. `notify` 이벤트의 `type`이 `chat`이면 채팅, `invite`면 초대예요.',
+    description: NOTIFY_SSE_DESCRIPTION,
+    schema: {
+      oneOf: [
+        { $ref: getSchemaPath(NotifyChatEventDto) },
+        { $ref: getSchemaPath(NotifyInviteEventDto) },
+        { $ref: getSchemaPath(NotifyTeamEventDto) },
+        { $ref: getSchemaPath(NotifyProjectEventDto) },
+      ],
+    },
   })
   @ApiProduces('text/event-stream')
   @SkipThrottle()

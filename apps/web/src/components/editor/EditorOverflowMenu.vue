@@ -145,25 +145,25 @@ const run = (
         </template>
         <div class="my-1 h-px bg-border" />
         <button type="button" :class="itemClass" @click="pick('json')">
-          ERD JSON으로 저장
+          ERD JSON 내보내기
         </button>
         <button type="button" :class="itemClass" @click="pickImport">
           ERD JSON 가져오기
         </button>
         <button type="button" :class="itemClass" @click="pick('png')">
-          PNG로 저장
+          PNG 내보내기
         </button>
         <button type="button" :class="itemClass" @click="pick('svg')">
-          SVG로 저장
+          SVG 내보내기
         </button>
         <button type="button" :class="itemClass" @click="pick('html')">
-          HTML 명세서로 저장
+          HTML 명세서 내보내기
         </button>
         <button type="button" :class="itemClass" @click="pick('xls')">
-          Excel로 저장
+          Excel 내보내기
         </button>
         <button type="button" :class="itemClass" @click="pick('csv')">
-          CSV로 저장
+          CSV 내보내기
         </button>
         <template v-if="!signedIn || canDelete || canLeave">
           <div class="my-1 h-px bg-border" />
