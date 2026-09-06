@@ -32,6 +32,7 @@ import {
 import { ErdFlowKey } from '@/composables/useErdFlow'
 import { useErdSession } from '@/composables/useErdSession'
 import { clearCanvasInsets, syncCanvasInsets } from '@/composables/useCanvasInsets'
+import { setDocumentTitle } from '@/lib/seo'
 import ErdCanvas from '@/components/editor/ErdCanvas.vue'
 import Toolbar from '@/components/editor/Toolbar.vue'
 import Inspector from '@/components/editor/Inspector.vue'
@@ -237,12 +238,11 @@ watch(
   { immediate: true },
 )
 watch([unreadChatCount, projectName], () => {
-  const name =
+  const page =
     projectName.value && projectName.value !== '잠시만요'
       ? projectName.value
-      : 'ERD Studio'
-  const n = unreadChatCount.value
-  document.title = n > 0 ? `(${n}) ${name}` : name
+      : '다이어그램'
+  setDocumentTitle(page, unreadChatCount.value)
 })
 
 const viewSettings = computed(() =>
@@ -550,7 +550,6 @@ onUnmounted(() => {
   stopListNotify?.()
   setOpenChatProject(null)
   clearCanvasInsets()
-  document.title = 'ERD Studio'
 })
 
 const onPaneClick = (position: { x: number; y: number }) => {

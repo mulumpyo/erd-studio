@@ -19,10 +19,40 @@ export const canonicalForPath = (site: string, path: string) => {
 const indexedPath = (path: string) =>
   path === '/' || path === '/terms' || path === '/privacy'
 
+/** `페이지 — ERD Studio` 형식. 랜딩처럼 이미 브랜드가 있으면 그대로 둡니다. */
+export const formatAppTitle = (page?: string | null) => {
+  const part = (page || '').trim()
+  if (!part) return SITE_NAME
+  if (part === LANDING_TITLE || part === SITE_NAME) return part
+  if (part.endsWith(` — ${SITE_NAME}`) || part.endsWith(` - ${SITE_NAME}`))
+    return part
+  return `${part} — ${SITE_NAME}`
+}
+
+export const setDocumentTitle = (page?: string | null, unread = 0) => {
+  if (typeof document === 'undefined') return
+  const base = formatAppTitle(page)
+  document.title = unread > 0 ? `(${unread}) ${base}` : base
+}
+
 const pageTitle = (path: string) => {
   if (path === '/') return LANDING_TITLE
-  if (path === '/terms') return `이용약관 — ${SITE_NAME}`
-  if (path === '/privacy') return `개인정보처리방침 — ${SITE_NAME}`
+  if (path === '/terms') return formatAppTitle('이용약관')
+  if (path === '/privacy') return formatAppTitle('개인정보처리방침')
+  if (path === '/login') return formatAppTitle('로그인')
+  if (path === '/register') return formatAppTitle('회원가입')
+  if (path === '/check-email') return formatAppTitle('이메일 확인')
+  if (path.startsWith('/verify/')) return formatAppTitle('이메일 인증')
+  if (path === '/forgot-password') return formatAppTitle('비밀번호 찾기')
+  if (path.startsWith('/reset/')) return formatAppTitle('비밀번호 재설정')
+  if (path === '/account') return formatAppTitle('계정')
+  if (path === '/admin') return formatAppTitle('관리자')
+  if (path === '/app') return formatAppTitle('프로젝트')
+  if (path === '/app/teams') return formatAppTitle('팀')
+  if (path.startsWith('/app/teams/')) return formatAppTitle('팀')
+  if (path.startsWith('/invite/')) return formatAppTitle('초대')
+  if (path.startsWith('/s/')) return formatAppTitle('공유')
+  if (path.startsWith('/app/')) return formatAppTitle('다이어그램')
   return SITE_NAME
 }
 

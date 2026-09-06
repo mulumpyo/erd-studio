@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api'
 import { errorMessage, roleLabel } from '@/lib/format'
+import { setDocumentTitle } from '@/lib/seo'
 import { inviteLocation } from '@/composables/useNotifications'
 import { useAuthStore } from '@/stores/auth'
 import AuthShell from '@/components/auth/AuthShell.vue'
@@ -28,6 +29,16 @@ const router = useRouter()
 const token = computed(() => String(route.params.token ?? ''))
 const preview = ref<InvitePreview | null>(null)
 const error = ref('')
+
+watch(
+  preview,
+  (value) => {
+    setDocumentTitle(
+      value?.workspaceName ? `초대 · ${value.workspaceName}` : '초대',
+    )
+  },
+  { immediate: true },
+)
 const loading = ref(true)
 const accepting = ref(false)
 const declining = ref(false)

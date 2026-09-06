@@ -18,6 +18,7 @@ import PaginationBar from '@/components/ui/pagination/PaginationBar.vue'
 import { confirm, notice } from '@/composables/useConfirm'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useFitPageSize } from '@/composables/usePageSize'
+import { setDocumentTitle } from '@/lib/seo'
 import { toast } from '@/composables/useToast'
 
 type UsagePoint = { day: string; dau: number; wau: number; mau: number; withdrawn: number }
@@ -80,6 +81,12 @@ const pageSize = useFitPageSize(
 )
 
 const heading = computed(() => titles[tab.value])
+
+watch(
+  () => heading.value.title,
+  (title) => setDocumentTitle(`관리자 · ${title}`),
+  { immediate: true },
+)
 const maxDau = computed(() =>
   Math.max(1, ...(overview.value?.points.map((p) => p.dau) ?? [1])),
 )
