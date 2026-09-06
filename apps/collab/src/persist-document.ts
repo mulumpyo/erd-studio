@@ -7,8 +7,7 @@ export type PersistPrisma = {
     update: (args: {
       where: { id: string }
       data: { yjsState: Buffer; snapshot: object }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) => Promise<any>
+    }) => Promise<unknown>
   }
 }
 
