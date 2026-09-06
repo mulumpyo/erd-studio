@@ -16,7 +16,7 @@ defineProps<{ title: string; subtitle?: string }>()
         >
           E
         </div>
-        <h1 class="text-[28px] font-bold tracking-[-0.04em]">{{ title }}</h1>
+        <h1 class="text-[28px] font-bold tracking-[-0.01em]">{{ title }}</h1>
         <p
           v-if="subtitle"
           class="mt-2 text-[15px] leading-6 text-muted-foreground"
@@ -24,7 +24,7 @@ defineProps<{ title: string; subtitle?: string }>()
           {{ subtitle }}
         </p>
       </div>
-      <div class="rounded-[24px] bg-card p-6 shadow-[0_8px_24px_rgb(25_31_40_/_0.04)]">
+      <div class="rounded-[24px] bg-card p-6 shadow-[0_8px_24px_rgb(28_25_23_/_0.04)]">
         <slot />
       </div>
     </div>

@@ -387,7 +387,7 @@ const renameTeam = async (name: string) => {
       <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <div class="flex min-w-0 items-center gap-1.5">
-            <h1 class="truncate text-[20px] font-bold tracking-[-0.03em]">
+            <h1 class="truncate text-[20px] font-bold tracking-[-0.015em]">
               {{ team.name }}
             </h1>
             <button
@@ -463,12 +463,12 @@ const renameTeam = async (name: string) => {
         <div ref="projectViewport" class="min-h-0 flex-1 overflow-y-auto p-px">
           <Spinner
             v-if="loadingProjects && !projects.length"
-            class="rounded-2xl bg-card px-4 py-16 ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            class="rounded-2xl bg-card px-4 py-16 ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.06)]"
             label="프로젝트를 불러오고 있어요"
           />
           <p
             v-else-if="!projects.length"
-            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            class="rounded-2xl bg-card px-4 py-12 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.06)]"
           >
             {{
               search.trim()
@@ -478,7 +478,7 @@ const renameTeam = async (name: string) => {
           </p>
           <div
             v-else
-            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.06)]"
           >
             <div
               v-for="p in projects"
@@ -570,7 +570,7 @@ const renameTeam = async (name: string) => {
         <div ref="memberViewport" class="min-h-0 flex-1 overflow-y-auto p-px">
           <p
             v-if="!memberTotal"
-            class="rounded-2xl bg-card px-5 py-10 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            class="rounded-2xl bg-card px-5 py-10 text-center text-[15px] text-muted-foreground ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.06)]"
           >
             {{
               memberQuery.trim()
@@ -580,7 +580,7 @@ const renameTeam = async (name: string) => {
           </p>
           <div
             v-else
-            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(25_31_40_/_0.06)]"
+            class="divide-y divide-border overflow-hidden rounded-2xl bg-card ring-1 ring-border shadow-[0_2px_8px_rgb(28_25_23_/_0.06)]"
           >
             <template
               v-for="row in pagedMemberRows"

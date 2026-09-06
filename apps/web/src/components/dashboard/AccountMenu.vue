@@ -45,7 +45,7 @@ const sheetOpen = ref(false)
         cn(
           sidebar
             ? 'flex w-full items-center gap-2.5 rounded-[12px] px-2 py-2 text-left transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40'
-            : 'hidden sm:flex h-9 items-center gap-2 rounded-xl px-2.5 text-[15px] font-semibold tracking-[-0.02em] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
+            : 'hidden sm:flex h-9 items-center gap-2 rounded-xl px-2.5 text-[15px] font-semibold tracking-[-0.01em] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
         )
       "
     >
@@ -55,7 +55,7 @@ const sheetOpen = ref(false)
         {{ initial }}
       </div>
       <div v-if="sidebar" class="min-w-0 flex-1">
-        <p class="truncate text-[13px] font-semibold tracking-[-0.02em]">
+        <p class="truncate text-[13px] font-semibold tracking-[-0.01em]">
           {{ name }}
         </p>
         <p class="truncate text-[12px] text-muted-foreground">{{ email }}</p>
@@ -72,7 +72,7 @@ const sheetOpen = ref(false)
         :align="sidebar ? 'start' : 'end'"
         :side="sidebar ? 'top' : 'bottom'"
         :side-offset="6"
-        class="z-[60] min-w-[240px] overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_8px_32px_rgb(25_31_40_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        class="z-[60] min-w-[240px] overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_8px_32px_rgb(28_25_23_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
       >
         <div class="flex items-center gap-3 px-3 py-3">
           <div
@@ -138,7 +138,7 @@ const sheetOpen = ref(false)
         class="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
       />
       <DialogContent
-        class="fixed inset-x-0 bottom-[var(--vv-chrome-gap)] z-50 rounded-t-2xl border-0 bg-card p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_32px_rgb(25_31_40_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom focus:outline-none"
+        class="fixed inset-x-0 bottom-[var(--vv-chrome-gap)] z-50 rounded-t-2xl border-0 bg-card p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-4px_32px_rgb(28_25_23_/_0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom focus:outline-none"
       >
         <!-- 드래그 핸들 -->
         <div class="flex justify-center py-1.5">

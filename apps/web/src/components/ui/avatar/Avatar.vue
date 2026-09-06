@@ -9,7 +9,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
   <div
     :class="
       cn(
-        'flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-bold tracking-[-0.02em] text-accent-foreground',
+        'flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-xs font-bold tracking-[-0.01em] text-accent-foreground',
         props.class,
       )
     "

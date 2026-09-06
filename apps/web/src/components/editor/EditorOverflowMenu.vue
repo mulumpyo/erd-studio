@@ -98,7 +98,7 @@ const run = (
     />
     <div
       v-if="open"
-      class="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl bg-card py-2 text-card-foreground shadow-[0_12px_32px_rgb(25_31_40_/_0.12)]"
+      class="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl bg-card py-2 text-card-foreground shadow-[0_12px_32px_rgb(28_25_23_/_0.12)]"
     >
       <div
         class="max-h-[min(28rem,calc(100vh-5.5rem))] overflow-y-auto"

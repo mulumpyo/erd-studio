@@ -144,7 +144,7 @@ export const buildSpecHtml = (doc: ErdDocument, title: string) => {
   <meta charset="utf-8" />
   <title>${escapeHtml(title)} 테이블 명세서</title>
   <style>
-    body { font-family: Pretendard, sans-serif; margin: 32px; color: #0f172a; }
+    body { font-family: SUIT, 'Apple SD Gothic Neo', sans-serif; margin: 32px; color: #0f172a; }
     h1 { font-size: 22px; }
     h2 { font-size: 16px; margin-top: 28px; }
     h2 small { font-weight: 400; color: #64748b; }

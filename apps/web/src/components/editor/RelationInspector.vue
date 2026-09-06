@@ -60,7 +60,7 @@ const setAction = (
 
 <template>
   <div class="mb-4 space-y-3 rounded-2xl bg-muted p-4">
-    <p class="text-[13px] font-bold tracking-[-0.02em]">관계</p>
+    <p class="text-[13px] font-bold tracking-[-0.01em]">관계</p>
     <p class="text-[13px] leading-5 text-muted-foreground">
       {{ source()?.logicalName || '부모' }}
       →

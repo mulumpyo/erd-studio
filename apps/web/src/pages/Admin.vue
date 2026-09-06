@@ -113,7 +113,7 @@ const usageMetrics = computed(() => {
 const metricTone: Record<(typeof usageMetrics.value)[number]['tone'], string> = {
   signup: 'bg-[#e8f8f0] text-[#03b26c] dark:bg-[#1a3d32] dark:text-[#3dd68c]',
   leave: 'bg-[#fff1f1] text-[#d63a48] dark:bg-[#3a1d22] dark:text-[#f08890]',
-  activity: 'bg-[#e8f3ff] text-[#1b64da] dark:bg-[#1a2d4a] dark:text-[#7eb6ff]',
+  activity: 'bg-[#e8f3ff] text-primary dark:bg-[#1a2d4a] dark:text-[#7eb6ff]',
 }
 const peakDau = computed(() => {
   const points = overview.value?.points ?? []
@@ -355,7 +355,7 @@ onUnmounted(() => {
         />
         <template v-else>
           <div class="flex shrink-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <h1 class="text-[18px] font-bold tracking-[-0.03em] md:text-[20px]">
+            <h1 class="text-[18px] font-bold tracking-[-0.015em] md:text-[20px]">
               오늘 운영 현황
             </h1>
             <p class="text-[12px] text-muted-foreground md:text-[13px]">

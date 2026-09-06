@@ -36,12 +36,12 @@ onUnmounted(() => {
           class="flex min-h-12 min-w-0 items-center gap-2 rounded-2xl pr-1 sm:gap-2.5"
         >
           <div
-            class="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-[#1b64da] text-[15px] font-bold text-white"
+            class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-[15px] font-bold text-primary-foreground"
             aria-hidden="true"
           >
             E
           </div>
-          <span class="truncate text-[17px] font-bold tracking-[-0.03em]"
+          <span class="truncate text-[17px] font-bold tracking-[-0.015em]"
             >ERD Studio</span
           >
         </RouterLink>
@@ -60,7 +60,7 @@ onUnmounted(() => {
             >로그인</RouterLink
           >
           <RouterLink
-            :class="[buttonVariants(), '!bg-[#1b64da] hover:!bg-[#174fb3]']"
+            :class="[buttonVariants(), 'bg-primary hover:bg-primary-hover']"
             to="/register"
             >무료로 시작</RouterLink
           >
@@ -87,17 +87,17 @@ onUnmounted(() => {
             >베타</span
           >
           <p
-            class="mt-3 text-[15px] font-semibold text-[#1b64da] dark:text-[#8ab4f8]"
+            class="mt-3 text-[15px] font-semibold text-primary dark:text-accent-foreground"
           >
             팀과 함께 그리는 ERD
           </p>
           <h1
-            class="mt-3 text-[44px] font-bold leading-[1.2] tracking-[-0.05em] sm:text-[56px]"
+            class="mt-3 text-[44px] font-bold leading-[1.2] tracking-[-0.01em] sm:text-[56px]"
           >
             데이터베이스 설계,<br />더 쉽고 빠르게
           </h1>
           <p
-            class="mt-5 max-w-lg text-[17px] leading-7 text-[#4e5968] dark:text-[#c2c8d0]"
+            class="mt-5 max-w-lg text-[17px] leading-7 text-muted-foreground"
           >
             브라우저에서 테이블을 그리고, SQL로 주고받고, 팀원과 바로 같이
             수정해요. 지금은 베타라 기능과 데이터가 바뀔 수 있어요.
@@ -106,7 +106,7 @@ onUnmounted(() => {
             <RouterLink
               :class="[
                 buttonVariants({ size: 'lg' }),
-                '!bg-[#1b64da] hover:!bg-[#174fb3]',
+                'bg-primary hover:bg-primary-hover',
               ]"
               to="/register"
               >무료로 시작</RouterLink

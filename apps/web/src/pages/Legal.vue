@@ -42,14 +42,14 @@ const goBack = () => {
         >
           E
         </div>
-        <span class="text-[17px] font-bold tracking-[-0.03em]">{{ SITE_NAME }}</span>
+        <span class="text-[17px] font-bold tracking-[-0.015em]">{{ SITE_NAME }}</span>
       </RouterLink>
       <ThemeToggle />
     </header>
 
     <article class="mx-auto w-full max-w-3xl flex-1 px-6 pb-16">
       <p class="text-[15px] font-semibold text-primary">베타 서비스</p>
-      <h1 class="mt-1 text-[32px] font-bold tracking-[-0.04em]">{{ title }}</h1>
+      <h1 class="mt-1 text-[32px] font-bold tracking-[-0.01em]">{{ title }}</h1>
       <p class="mt-2 text-[14px] text-muted-foreground">시행일 {{ updated }}</p>
 
       <div class="mt-10 space-y-8 text-[15px] leading-7 text-foreground">

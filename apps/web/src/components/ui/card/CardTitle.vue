@@ -8,7 +8,7 @@ const props = defineProps<{ class?: HTMLAttributes['class'] }>()
 <template>
   <h3
     :class="
-      cn('text-[17px] font-bold leading-none tracking-[-0.03em]', props.class)
+      cn('text-[17px] font-bold leading-none tracking-[-0.015em]', props.class)
     "
   >
     <slot />

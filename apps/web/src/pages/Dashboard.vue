@@ -443,7 +443,7 @@ onUnmounted(() => {
           class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
-            <h1 class="text-[20px] font-bold tracking-[-0.03em]">프로젝트</h1>
+            <h1 class="text-[20px] font-bold tracking-[-0.015em]">프로젝트</h1>
             <p class="mt-0.5 text-[13px] text-muted-foreground">
               속한 팀의 다이어그램을 한곳에서 봐요
             </p>
@@ -613,7 +613,7 @@ onUnmounted(() => {
           class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
         >
           <div>
-            <h1 class="text-[20px] font-bold tracking-[-0.03em]">팀</h1>
+            <h1 class="text-[20px] font-bold tracking-[-0.015em]">팀</h1>
             <p class="mt-0.5 text-[13px] text-muted-foreground">
               같이 그리는 사람과 프로젝트를 팀으로 묶어요
             </p>

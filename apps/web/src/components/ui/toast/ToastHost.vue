@@ -19,7 +19,7 @@ const { message, kind, visible } = useToast()
       <Transition name="toast">
         <div
           v-if="visible"
-          class="pointer-events-auto flex max-w-[90vw] items-center gap-2 rounded-full bg-[#191f28] px-5 py-3 text-[14px] font-semibold tracking-[-0.02em] text-white shadow-[0_12px_32px_rgb(25_31_40_/_0.24)]"
+          class="pointer-events-auto flex max-w-[90vw] items-center gap-2 rounded-full bg-[#1c1917] px-5 py-3 text-[14px] font-semibold tracking-[-0.01em] text-white shadow-[0_12px_32px_rgb(28_25_23_/_0.24)]"
         >
           <span
             v-if="kind === 'success'"

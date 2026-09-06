@@ -56,7 +56,7 @@ const groups: {
         E
       </div>
       <div class="min-w-0 leading-tight">
-        <p class="truncate text-[15px] font-semibold tracking-[-0.02em]">
+        <p class="truncate text-[15px] font-semibold tracking-[-0.01em]">
           ERD Studio
         </p>
         <p class="text-[12px] text-muted-foreground">관리자</p>
@@ -65,7 +65,7 @@ const groups: {
 
     <nav class="mt-3 flex-1 space-y-4 overflow-y-auto px-1 pb-2">
       <div v-for="group in groups" :key="group.title">
-        <p class="px-2 py-1.5 text-[13px] font-semibold tracking-[-0.02em]">
+        <p class="px-2 py-1.5 text-[13px] font-semibold tracking-[-0.01em]">
           {{ group.title }}
         </p>
         <div
@@ -77,7 +77,7 @@ const groups: {
             type="button"
             :class="
               cn(
-                'flex h-8 items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px] font-medium tracking-[-0.02em] transition-colors',
+                'flex h-8 items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px] font-medium tracking-[-0.01em] transition-colors',
                 tab === item.id
                   ? 'bg-muted font-semibold text-foreground'
                   : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
@@ -95,7 +95,7 @@ const groups: {
     <div class="mt-auto shrink-0 space-y-1 pt-2">
       <button
         type="button"
-        class="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-medium tracking-[-0.02em] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+        class="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
         @click="emit('back')"
       >
         <ArrowLeft class="size-4 shrink-0" />

@@ -119,11 +119,11 @@ const decline = async (invite: ReceivedInvite) => {
         <article
           v-for="invite in toasts"
           :key="invite.id"
-          class="pointer-events-auto rounded-2xl bg-card p-4 shadow-[0_16px_48px_rgb(25_31_40_/_0.18)]"
+          class="pointer-events-auto rounded-2xl bg-card p-4 shadow-[0_16px_48px_rgb(28_25_23_/_0.18)]"
         >
           <div class="flex items-start gap-2">
             <div class="min-w-0 flex-1">
-              <p class="truncate text-[15px] font-semibold tracking-[-0.02em]">
+              <p class="truncate text-[15px] font-semibold tracking-[-0.01em]">
                 {{ invite.workspaceName }}
               </p>
               <p class="mt-0.5 truncate text-[13px] text-muted-foreground">

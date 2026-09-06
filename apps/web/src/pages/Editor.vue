@@ -1036,7 +1036,7 @@ const removeProject = async () => {
     v-if="loadError"
     class="flex h-full flex-col items-center justify-center gap-4 bg-background px-6"
   >
-    <p class="text-center text-[17px] font-semibold tracking-[-0.02em] text-foreground">
+    <p class="text-center text-[17px] font-semibold tracking-[-0.01em] text-foreground">
       {{ loadError }}
     </p>
     <div class="flex gap-2">
@@ -1232,7 +1232,7 @@ const removeProject = async () => {
       </div>
     </header>
     <div class="relative min-h-0 flex-1">
-      <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(25_31_40_/_0.06)]">
+      <div class="erd-chrome erd-chrome-left pointer-events-auto absolute inset-y-0 left-0 z-20 flex shadow-[8px_0_24px_rgb(28_25_23_/_0.06)]">
       <Toolbar
         class="w-16"
         :current="nodeDragging ? 'select' : tool"
@@ -1264,7 +1264,7 @@ const removeProject = async () => {
         :class="
           compactLayout
             ? 'erd-chrome erd-chrome-bottom pointer-events-none absolute inset-y-0 left-16 right-0 z-20 flex flex-col justify-end'
-            : 'erd-chrome erd-chrome-right pointer-events-auto absolute inset-y-0 right-0 z-20 w-[340px] border-l border-border/80 shadow-[-8px_0_24px_rgb(25_31_40_/_0.06)]'
+            : 'erd-chrome erd-chrome-right pointer-events-auto absolute inset-y-0 right-0 z-20 w-[340px] border-l border-border/80 shadow-[-8px_0_24px_rgb(28_25_23_/_0.06)]'
         "
       >
       <EditorSidePanel
@@ -1324,13 +1324,13 @@ const removeProject = async () => {
       >
         <button
           type="button"
-          class="absolute inset-0 bg-[#191f28]/25"
+          class="absolute inset-0 bg-[#1c1917]/25"
           aria-label="엔티티 목록 닫기"
           @click="entitiesOpen = false"
         />
         <EntityList
           overlay
-          class="absolute inset-y-0 left-0 w-60 shadow-[8px_0_32px_rgb(25_31_40_/_0.16)]"
+          class="absolute inset-y-0 left-0 w-60 shadow-[8px_0_32px_rgb(28_25_23_/_0.16)]"
           :tables="erd.tables"
           :selected-id="selectedId"
           :name-mode="viewSettings.nameMode"

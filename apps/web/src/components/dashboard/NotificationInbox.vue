@@ -213,10 +213,10 @@ onUnmounted(() => {
       />
       <DialogContent
         data-invite-inbox
-        class="fixed left-1/2 top-1/2 z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[min(22rem,calc(100vw-2rem))] max-h-[min(70dvh,28rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_16px_48px_rgb(25_31_40_/_0.18)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        class="fixed left-1/2 top-1/2 z-[70] w-[min(22rem,calc(100vw-2rem))] min-w-[min(22rem,calc(100vw-2rem))] max-h-[min(70dvh,28rem)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_16px_48px_rgb(28_25_23_/_0.18)] focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
       >
         <DialogTitle
-          class="px-3 py-2 text-[15px] font-semibold tracking-[-0.02em]"
+          class="px-3 py-2 text-[15px] font-semibold tracking-[-0.01em]"
         >
           알림
         </DialogTitle>
@@ -331,9 +331,9 @@ onUnmounted(() => {
         data-invite-inbox
         align="end"
         :side-offset="6"
-        class="z-[60] w-[min(22rem,calc(100vw-2rem))] min-w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_12px_32px_rgb(25_31_40_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+        class="z-[60] w-[min(22rem,calc(100vw-2rem))] min-w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border-0 bg-card p-1.5 shadow-[0_12px_32px_rgb(28_25_23_/_0.14)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
       >
-        <p class="px-3 py-2 text-[13px] font-semibold tracking-[-0.02em]">
+        <p class="px-3 py-2 text-[13px] font-semibold tracking-[-0.01em]">
           알림
         </p>
         <p

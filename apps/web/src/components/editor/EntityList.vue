@@ -44,7 +44,7 @@ const modes: Array<{ id: NameMode; label: string }> = [
   <aside class="flex h-full min-h-0 flex-col border-r border-border/80 bg-card">
     <div class="p-4">
       <div class="flex items-center justify-between gap-2">
-        <div class="text-[13px] font-bold tracking-[-0.02em]">엔티티</div>
+        <div class="text-[13px] font-bold tracking-[-0.01em]">엔티티</div>
         <button
           v-if="overlay"
           type="button"
@@ -84,7 +84,7 @@ const modes: Array<{ id: NameMode; label: string }> = [
           :style="{ background: safeCssColor(table.color) }"
         />
         <span class="min-w-0">
-          <span class="block truncate text-[14px] font-semibold tracking-[-0.02em]">
+          <span class="block truncate text-[14px] font-semibold tracking-[-0.01em]">
             {{
               displayNames(table.logicalName, table.physicalName, nameMode)
                 .primary
