@@ -60,7 +60,7 @@ export const useEditorCanvas = (opts: {
   const nodeSizes = ref(new Map<string, NodeSize>())
   const nodeDragging = ref(false)
   const panePanning = ref(false)
-  let chromeShowTimer = 0
+  const chromeShowTimer = 0
 
   const flowFocusId = computed(() => {
     if (!opts.showFlow.value) return null
