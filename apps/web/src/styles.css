@@ -34,7 +34,9 @@
   --editor-connected-ring: rgb(0 196 113 / 0.22);
   --editor-connected-fg: #0a8f5a;
   --editor-connecting-dot: #8b95a1;
-  --editor-syncing-bg: #eef2ff;
+  --editor-syncing-bg: #fff8e8;
+  --editor-syncing-dot: #f59e0b;
+  --editor-syncing-fg: #b45309;
   --editor-offline-bg: #fff1f1;
   --editor-offline-dot: #e11d48;
   --editor-offline-fg: #be123c;
@@ -79,7 +81,9 @@
   --editor-connected-ring: rgb(52 211 153 / 0.28);
   --editor-connected-fg: #6ee7b7;
   --editor-connecting-dot: #a8a29e;
-  --editor-syncing-bg: #1e1b4b;
+  --editor-syncing-bg: #3b2f14;
+  --editor-syncing-dot: #fbbf24;
+  --editor-syncing-fg: #fcd34d;
   --editor-offline-bg: #3a1d22;
   --editor-offline-dot: #fb7185;
   --editor-offline-fg: #fda4af;

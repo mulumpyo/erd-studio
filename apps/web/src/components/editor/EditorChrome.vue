@@ -120,7 +120,9 @@ const statusText = computed(() => {
             'bg-[var(--editor-connected-dot)] shadow-[0_0_0_3px_var(--editor-connected-ring)]':
               statusTone === 'ok',
             'animate-pulse bg-[var(--editor-connecting-dot)]':
-              statusTone === 'pending' || statusTone === 'syncing',
+              statusTone === 'pending',
+            'animate-pulse bg-[var(--editor-syncing-dot)]':
+              statusTone === 'syncing',
             'bg-muted-foreground': statusTone === 'muted',
             'bg-[var(--editor-offline-dot)]': statusTone === 'bad',
           }"
@@ -131,9 +133,8 @@ const statusText = computed(() => {
           :class="{
             'text-[var(--editor-connected-fg)]': statusTone === 'ok',
             'text-muted-foreground':
-              statusTone === 'pending' ||
-              statusTone === 'muted' ||
-              statusTone === 'syncing',
+              statusTone === 'pending' || statusTone === 'muted',
+            'text-[var(--editor-syncing-fg)]': statusTone === 'syncing',
             'text-[var(--editor-offline-fg)]': statusTone === 'bad',
           }"
           >{{ statusText }}</span
