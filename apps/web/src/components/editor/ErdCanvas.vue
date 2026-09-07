@@ -53,6 +53,7 @@ const emit = defineEmits<{
   panStart: []
   panEnd: []
   createTable: []
+  openAi: []
 }>()
 
 const { resolved: theme } = useTheme()
@@ -411,14 +412,24 @@ defineExpose({ focusNode, capture, viewportEl })
         </p>
         <p class="mt-2 text-[14px] leading-6 text-muted-foreground">
           버튼을 누르거나, 왼쪽에서 「테이블」을 고른 뒤 빈 곳을 클릭하세요.
+          설명만 적어도 AI가 초안을 그려 줄 수 있어요.
         </p>
-        <button
-          type="button"
-          class="mt-5 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-          @click="emit('createTable')"
-        >
-          테이블 추가
-        </button>
+        <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-5 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            @click="emit('createTable')"
+          >
+            테이블 추가
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-11 items-center justify-center rounded-2xl bg-secondary px-5 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            @click="emit('openAi')"
+          >
+            AI로 스키마 만들기
+          </button>
+        </div>
       </div>
     </div>
   </div>

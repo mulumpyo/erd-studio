@@ -61,7 +61,6 @@ const dismissNotice = async (invite: ReceivedInvite) => {
   }
   dismissInviteToast(invite.id)
   refreshInbox()
-  if (invite.type === 'accepted') await router.push(inviteLocation(invite))
 }
 
 const accept = async (invite: ReceivedInvite) => {

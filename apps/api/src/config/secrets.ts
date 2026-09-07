@@ -28,3 +28,4 @@ export const allowDevMagicLinks = () =>
 
 export const enableApiDocs = () =>
   !isProduction() || process.env.ENABLE_API_DOCS === 'true'
+

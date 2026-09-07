@@ -39,7 +39,7 @@ export const useEditorCanvas = (opts: {
   selectedId: Ref<string | null>
   selectedColumnId: Ref<string | null>
   selectedEdgeId: Ref<string | null>
-  tab: Ref<'props' | 'sql' | 'chat' | 'history'>
+  tab: Ref<'props' | 'sql' | 'ai' | 'chat' | 'history'>
   showFlow: Ref<boolean>
   compactLayout: Reactive<boolean>
   inspectorExpanded: Ref<boolean>

@@ -1,0 +1,45 @@
+# PR·main 푸시마다 lint / 타입 / 단위 테스트를 돌려요.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 코드 검사
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 코드 내려받기
+        uses: actions/checkout@v5
+
+      - name: pnpm 설치
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.5.2
+
+      - name: Node.js 22 설치
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 패키지 설치 (lockfile 일치 확인)
+        run: pnpm install --frozen-lockfile
+
+      - name: 문법·코드 스타일 검사 (ESLint)
+        run: pnpm lint
+
+      - name: 워크스페이스 패키지 빌드
+        run: pnpm --filter @erd-studio/shared --filter @erd-studio/sql --filter @erd-studio/yjs-erd build
+
+      - name: 웹 타입 검사 (vue-tsc)
+        run: pnpm --filter @erd-studio/web typecheck
+
+      - name: 단위 테스트 실행
+        run: pnpm test

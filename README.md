@@ -6,6 +6,7 @@
 
 * 까마귀발 표기법 ERD 작성
 * SQL 가져오기 / 내보내기 (MySQL, PostgreSQL, MSSQL, Oracle)
+* AI 스키마 초안·대화 수정 (ChatGPT / Gemini / OpenAI 호환 BYOK)
 * 팀·프로젝트 단위 권한 관리
 * 여러 명이 같은 다이어그램을 동시에 편집
 
@@ -262,6 +263,7 @@ Web과 협업 서버가 같은 오리진이면 HttpOnly 쿠키를 그대로 읽�
 
 `deploy` 브랜치에 푸시하거나 PR을 머지하면 배포가 시작돼요.
 
+`.github/workflows/ci.yml`이 `pull_request`와 `main` 푸시마다 lint / 타입검사 / 단위 테스트를 돌려요.  
 `.github/workflows/deploy.yml`이 `linux/arm64` 이미지를 GHCR에 올리고, SSH로 서버에서 다시 띄워요. `main`은 배포와 분리해서 개발용으로 사용해요.
 
 * `Dockerfile` — `web` / `api` / `collab` 멀티 스테이지 빌드. web 스테이지의 nginx 설정도 이 안에 있어요.

@@ -85,10 +85,6 @@ const dismiss = async (invite: ReceivedInvite) => {
     await api(`/api/invites/sent/${invite.id}/dismiss`, { method: 'POST' }, auth.token)
     dismissInviteToast(invite.id)
     emit('changed')
-    if (invite.type === 'accepted') {
-      open.value = false
-      emit('accepted', invite)
-    }
   } catch (e) {
     error.value = errorMessage(e, '알림을 닫지 못했어요')
   } finally {

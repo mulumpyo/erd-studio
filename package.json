@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "turbo dev",
+    "dev:apps": "pnpm -r --parallel --filter \"./apps/*\" run dev",
     "build": "turbo build",
     "lint": "eslint .",
     "test": "turbo test",

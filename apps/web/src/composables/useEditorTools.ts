@@ -34,7 +34,7 @@ export const useEditorTools = (opts: {
   selectedId: Ref<string | null>
   selectedColumnId: Ref<string | null>
   selectedEdgeId: Ref<string | null>
-  tab: Ref<'props' | 'sql' | 'chat' | 'history'>
+  tab: Ref<'props' | 'sql' | 'ai' | 'chat' | 'history'>
   compactLayout: Reactive<boolean>
   inspectorExpanded: Ref<boolean>
   readOnly: Reactive<boolean>
