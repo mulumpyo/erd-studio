@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma.module'
 import { ProjectsModule } from './projects.module'
 import { TeamsModule } from './teams.module'
 import { SqlModule } from './sql.module'
+import { AiModule } from './ai.module'
 import { ChatModule } from './chat.module'
 import { InvitationsModule } from './invitations.module'
 import { RedisModule } from './redis.module'
@@ -42,6 +43,7 @@ import { UsageInterceptor } from '../common/usage.interceptor'
     ProjectsModule,
     TeamsModule,
     SqlModule,
+    AiModule,
     ChatModule,
     UsageModule,
     AdminModule,

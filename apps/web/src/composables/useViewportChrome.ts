@@ -2,11 +2,12 @@ import { onMounted, onUnmounted } from 'vue'
 
 const VAR = '--vv-chrome-gap'
 const JITTER = 8
-const CHROME_MAX = 96
 
-const clampChrome = (delta: number) => {
-  if (delta < JITTER || delta > CHROME_MAX) return 0
-  return Math.round(delta)
+/** Map visualViewport shrinkage to a bottom gap (browser chrome + soft keyboard). */
+export const clampViewportChromeGap = (delta: number, layoutHeight: number) => {
+  if (delta < JITTER) return 0
+  const max = Math.max(120, Math.round(layoutHeight * 0.75))
+  return Math.min(Math.round(delta), max)
 }
 
 export const useViewportChrome = () => {
@@ -23,7 +24,7 @@ export const useViewportChrome = () => {
       const svh = probe.getBoundingClientRect().height || window.innerHeight
       document.documentElement.style.setProperty(
         VAR,
-        `${clampChrome(svh - visible)}px`,
+        `${clampViewportChromeGap(svh - visible, svh)}px`,
       )
     }
 

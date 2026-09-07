@@ -121,7 +121,7 @@ const choose = (value: string) => {
       :class="
         cn(
           'flex h-12 w-full items-center justify-between gap-2 rounded-xl border-0 bg-muted px-4 text-left text-base font-medium tracking-[-0.01em] text-foreground shadow-none outline-none transition-colors',
-          'hover:bg-muted/80 focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-ring/30',
+          'hover:bg-muted/80 focus-visible:bg-card focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/30',
           'disabled:cursor-not-allowed disabled:opacity-50',
           '[&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground [&>svg]:transition-transform data-[state=open]:[&>svg]:rotate-180',
           props.class,

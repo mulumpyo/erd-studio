@@ -5,6 +5,8 @@ import {
   erdToY,
   patchPosition,
   patchTable,
+  patchViewSettings,
+  upsertDomain,
   upsertNote,
   upsertRelation,
   yToErd,
@@ -107,5 +109,51 @@ describe('erd-session-patch (useErdSession core)', () => {
     erdToY(doc, sampleDocument())
     const prev = yToErd(doc)
     expect(applyErdStructuralPatch(doc, prev, [])).toBeNull()
+  })
+
+  it('patches domains/settings meta without full rematerialize of tables', () => {
+    const doc = new Y.Doc()
+    const source = sampleDocument()
+    erdToY(doc, source)
+    const prev = yToErd(doc)
+    const tableRef = prev.tables[0]
+
+    const events = captureEvents(doc, () => {
+      upsertDomain(doc, {
+        id: 'dom_new',
+        name: '금액',
+        type: 'decimal',
+        nn: false,
+      })
+      patchViewSettings(doc, { nameMode: 'physical' })
+    })
+    const next = applyErdStructuralPatch(doc, prev, events)
+    expect(next).not.toBeNull()
+    expect(next!.tables[0]).toBe(tableRef)
+    expect(next!.domains.some((d) => d.id === 'dom_new')).toBe(true)
+    expect(next!.settings.nameMode).toBe('physical')
+  })
+
+  it('heals table size mismatch by rebuilding from Y maps', () => {
+    const doc = new Y.Doc()
+    erdToY(doc, sampleDocument())
+    const prev = yToErd(doc)
+    const tableRef = prev.tables[1]
+    // Simulate prev missing a remote-added table id while Y already has it.
+    const stale = {
+      ...prev,
+      tables: prev.tables.slice(0, 1),
+    }
+    const events = captureEvents(doc, () => {
+      patchTable(doc, prev.tables[0].id, { logicalName: 'patched' })
+    })
+    // Force size mismatch path: prev has 1 table, Y has more; touch includes existing.
+    const next = applyErdStructuralPatch(doc, stale, events)
+    expect(next).not.toBeNull()
+    expect(next!.tables.length).toBe(prev.tables.length)
+    expect(next!.tables.find((t) => t.id === tableRef.id)?.id).toBe(tableRef.id)
+    expect(next!.tables.find((t) => t.id === prev.tables[0].id)?.logicalName).toBe(
+      'patched',
+    )
   })
 })

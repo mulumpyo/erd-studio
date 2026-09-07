@@ -218,6 +218,34 @@ export const erdToY = (doc: Y.Doc, erd: ErdDocument) => {
   })
 }
 
+const yToViewSettings = (doc: Y.Doc): ErdViewSettings => {
+  const map = settingsMap(doc)
+  return normalizeViewSettings({
+    nameMode: map.get('nameMode') as ErdViewSettings['nameMode'],
+    show: map.get('show') as ErdViewSettings['show'],
+  })
+}
+
+/** Domains / schemas / view settings only — for incremental session patches. */
+export const readErdMeta = (doc: Y.Doc) => {
+  const domains: ErdDomain[] = []
+  const schemas: { id: string; name: string }[] = []
+  domainsMap(doc).forEach((value) => {
+    if (value instanceof Y.Map)
+      domains.push(yMapToObj(value) as unknown as ErdDomain)
+  })
+  schemasMap(doc).forEach((value) => {
+    if (value instanceof Y.Map) {
+      const raw = yMapToObj(value)
+      schemas.push({
+        id: String(raw.id ?? ''),
+        name: String(raw.name ?? ''),
+      })
+    }
+  })
+  return { domains, schemas, settings: yToViewSettings(doc) }
+}
+
 export const yToErd = (doc: Y.Doc): ErdDocument => {
   const erd = emptyDocument()
   const layouts = layoutsMap(doc)
@@ -248,29 +276,11 @@ export const yToErd = (doc: Y.Doc): ErdDocument => {
       })
     }
   })
-  domainsMap(doc).forEach((value) => {
-    if (value instanceof Y.Map)
-      erd.domains.push(yMapToObj(value) as unknown as ErdDomain)
-  })
-  schemasMap(doc).forEach((value) => {
-    if (value instanceof Y.Map) {
-      const raw = yMapToObj(value)
-      erd.schemas.push({
-        id: String(raw.id ?? ''),
-        name: String(raw.name ?? ''),
-      })
-    }
-  })
-  erd.settings = yToViewSettings(doc)
+  const meta = readErdMeta(doc)
+  erd.domains = meta.domains
+  erd.schemas = meta.schemas
+  erd.settings = meta.settings
   return ensureDocumentIds(erd)
-}
-
-const yToViewSettings = (doc: Y.Doc): ErdViewSettings => {
-  const map = settingsMap(doc)
-  return normalizeViewSettings({
-    nameMode: map.get('nameMode') as ErdViewSettings['nameMode'],
-    show: map.get('show') as ErdViewSettings['show'],
-  })
 }
 
 export const patchViewSettings = (

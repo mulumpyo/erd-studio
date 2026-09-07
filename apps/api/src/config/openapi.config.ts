@@ -52,6 +52,11 @@ export const openApiTags = [
     description: '팀을 만들고 팀원을 초대해요. 팀 프로젝트의 권한은 팀을 따라가요.',
   },
   { name: 'sql', description: '다이어그램을 SQL로 내보내거나, SQL을 읽어 들여요.' },
+  {
+    name: 'ai',
+    description:
+      '설명 문장으로 ERD 초안을 만들어요. API 키가 있으면 LLM, 없으면 로컬 휴리스틱을 써요.',
+  },
   { name: 'chat', description: '프로젝트 안에서 팀원과 메시지를 주고받아요.' },
   {
     name: 'notify',

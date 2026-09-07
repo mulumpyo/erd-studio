@@ -324,7 +324,7 @@ const bindDrag = (
       </button>
 
       <label
-        class="ml-0.5 inline-flex h-8 min-w-[5.25rem] items-center gap-0.5 rounded-[10px] bg-muted px-2.5 font-mono text-[12px] font-medium tracking-[-0.02em] text-muted-foreground tabular-nums focus-within:bg-card focus-within:ring-2 focus-within:ring-ring/30"
+        class="ml-0.5 inline-flex h-8 min-w-[5.25rem] items-center gap-0.5 rounded-[10px] bg-muted px-2.5 font-mono text-[12px] font-medium tracking-[-0.02em] text-muted-foreground tabular-nums focus-within:bg-card focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring/30"
         title="색상 코드"
       >
         <span class="select-none">#</span>

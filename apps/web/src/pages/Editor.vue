@@ -6,6 +6,7 @@ import {
   mergeViewSettings,
   parseErdFile,
   stringifyErdFile,
+  type ErdDocument,
   type ErdRelation,
   type ErdTable,
   type ErdViewPatch,
@@ -32,6 +33,7 @@ import EditorChrome from '@/components/editor/EditorChrome.vue'
 import Toolbar from '@/components/editor/Toolbar.vue'
 import Inspector from '@/components/editor/Inspector.vue'
 import SqlPanel from '@/components/editor/SqlPanel.vue'
+import AiPanel from '@/components/editor/AiPanel.vue'
 import ChatPanel from '@/components/editor/ChatPanel.vue'
 import HistoryPanel from '@/components/editor/HistoryPanel.vue'
 import MembersDialog from '@/components/editor/MembersDialog.vue'
@@ -72,7 +74,8 @@ const canLeave = ref(false)
 const canDelete = ref(false)
 const isParticipant = ref(false)
 const isPublic = ref(false)
-const tab = ref<'props' | 'sql' | 'chat' | 'history'>('props')
+const tab = ref<'props' | 'sql' | 'ai' | 'chat' | 'history'>('props')
+const aiSeedPrompt = ref('')
 const selectedId = ref<string | null>(null)
 const selectedColumnId = ref<string | null>(null)
 const selectedEdgeId = ref<string | null>(null)
@@ -207,6 +210,7 @@ const unreadChatCount = computed(() => {
 const panelTabs = computed(() => [
   { value: 'props', label: '속성' },
   { value: 'sql', label: 'SQL' },
+  { value: 'ai', label: 'AI' },
   {
     value: 'chat',
     label: '채팅',
@@ -555,6 +559,24 @@ const createFirstTable = async () => {
   inspectorExpanded.value = true
   entitiesOpen.value = false
   canvasRef.value?.focusNode(created.id)
+}
+
+const openAiPanel = (seed = '') => {
+  if (readOnly.value) return
+  aiSeedPrompt.value = seed
+  tab.value = 'ai'
+  inspectorExpanded.value = true
+  entitiesOpen.value = false
+}
+
+const applyAiDocument = async (doc: ErdDocument) => {
+  if (readOnly.value) return
+  replaceDocument(doc)
+  await nextTick()
+  selectedId.value = doc.tables[0]?.id ?? selectedId.value
+  selectedColumnId.value = null
+  selectedEdgeId.value = null
+  if (selectedId.value) canvasRef.value?.focusNode(selectedId.value)
 }
 
 const rename = async () => {
@@ -918,6 +940,7 @@ const removeProject = async () => {
         @node-click="onNodeClick"
         @edge-click="onEdgeClick"
         @create-table="createFirstTable"
+        @open-ai="openAiPanel()"
       />
     </div>
     <div
@@ -968,34 +991,21 @@ const removeProject = async () => {
       @import-json="importJsonFile"
     />
     <div
-      v-if="
-        isConnectionUnhealthy(connectionStatus) ||
-        (focusMode && connectionStatus !== 'idle')
-      "
-      class="erd-status-sticky pointer-events-auto relative z-40 flex items-center justify-between gap-3 border-b px-3 py-2 text-[13px] sm:px-4"
-      :class="
-        isConnectionUnhealthy(connectionStatus)
-          ? 'border-[var(--editor-offline-dot)]/30 bg-[var(--editor-offline-bg)] text-[var(--editor-offline-fg)]'
-          : 'border-border/80 bg-card/95 text-muted-foreground'
-      "
-      :role="isConnectionUnhealthy(connectionStatus) ? 'alert' : 'status'"
+      v-if="isConnectionUnhealthy(connectionStatus)"
+      class="erd-status-sticky pointer-events-auto relative z-40 flex items-center justify-between gap-3 border-b border-[var(--editor-offline-dot)]/30 bg-[var(--editor-offline-bg)] px-3 py-2 text-[13px] text-[var(--editor-offline-fg)] sm:px-4"
+      role="alert"
     >
       <p class="min-w-0 leading-5">
         <span class="font-semibold">{{ connectionStatusLabel(connectionStatus) }}</span>
-        <template v-if="isConnectionUnhealthy(connectionStatus)">
-          —
-          {{
-            connectionStatus === 'auth_failed'
-              ? '다시 로그인한 뒤 재연결해 주세요. 편집이 서버에 반영되지 않을 수 있어요.'
-              : '편집이 서버에 반영되지 않을 수 있어요. 연결을 다시 시도해 주세요.'
-          }}
-        </template>
-        <span class="opacity-80">
-          · {{ syncStatusLabel(syncStatus) }}
-        </span>
+        —
+        {{
+          connectionStatus === 'auth_failed'
+            ? '다시 로그인한 뒤 재연결해 주세요. 편집이 서버에 반영되지 않을 수 있어요.'
+            : '편집이 서버에 반영되지 않을 수 있어요. 연결을 다시 시도해 주세요.'
+        }}
+        <span class="opacity-80"> · {{ syncStatusLabel(syncStatus) }}</span>
       </p>
       <Button
-        v-if="isConnectionUnhealthy(connectionStatus)"
         size="sm"
         variant="secondary"
         class="h-9 shrink-0"
@@ -1046,7 +1056,7 @@ const removeProject = async () => {
         :tabs="panelTabs"
         :compact="compactLayout"
         :expanded="inspectorExpanded"
-        @update:tab="tab = $event as 'props' | 'sql' | 'chat' | 'history'"
+        @update:tab="tab = $event as 'props' | 'sql' | 'ai' | 'chat' | 'history'"
         @toggle="inspectorExpanded = !inspectorExpanded"
       >
           <Inspector
@@ -1067,6 +1077,7 @@ const removeProject = async () => {
             @update-domain="updateDomain"
             @remove-domain="onRemoveDomain"
             @create-table="createFirstTable"
+            @open-ai="openAiPanel()"
           />
           <SqlPanel
             v-else-if="tab === 'sql'"
@@ -1074,6 +1085,14 @@ const removeProject = async () => {
             :document="erd"
             :read-only="readOnly"
             @import="replaceDocument"
+          />
+          <AiPanel
+            v-else-if="tab === 'ai'"
+            :key="`ai-${aiSeedPrompt}`"
+            :document="erd"
+            :read-only="readOnly"
+            :initial-prompt="aiSeedPrompt"
+            @apply="applyAiDocument"
           />
           <ChatPanel
             v-else-if="tab === 'chat'"

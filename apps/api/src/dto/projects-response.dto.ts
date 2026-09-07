@@ -338,7 +338,12 @@ export class ProjectMembersDirectKindDto {
   @ApiProperty({ example: 'project' })
   kind: 'project'
 
-  @ApiProperty({ nullable: true, example: null })
+  @ApiProperty({
+    description: '개인 프로젝트면 항상 null이에요.',
+    nullable: true,
+    type: 'null',
+    example: null,
+  })
   team: null
 
   @ApiProperty({ type: [ProjectMemberDto] })

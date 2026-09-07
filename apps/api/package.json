@@ -7,7 +7,7 @@
     "build": "nest build",
     "start": "node dist/main.js",
     "lint": "eslint src",
-    "test": "tsx --test src/config/secrets.test.ts src/common/access.assert.test.ts src/common/paging.test.ts src/common/token-hash.test.ts src/common/urls.test.ts src/common/auth/cookies.test.ts src/services/invite-status.test.ts",
+    "test": "tsx --test src/config/secrets.test.ts src/common/access.assert.test.ts src/common/paging.test.ts src/common/token-hash.test.ts src/common/urls.test.ts src/common/auth/cookies.test.ts src/services/invite-status.test.ts src/services/ai-local.test.ts src/services/ai.service.url.test.ts src/services/ai-chat-context.test.ts src/services/ai.service.chat.test.ts",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

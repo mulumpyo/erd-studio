@@ -99,6 +99,9 @@ const publishPeek = () => {
   setSheetVisible(props.compact ? visibleHeight.value : 0)
 }
 
+const preferFullForTab = (value: string) =>
+  value === 'ai' || value === 'chat'
+
 const applySnap = (next: SheetSnap, notify = true) => {
   snap.value = next
   dragOffset.value = offsetFor(next)
@@ -110,7 +113,9 @@ const applySnap = (next: SheetSnap, notify = true) => {
 const syncOffset = () => {
   if (!props.compact || dragging.value) return
   if (!props.expanded) snap.value = 'peek'
-  else if (snap.value === 'peek') snap.value = 'mid'
+  else if (snap.value === 'peek') {
+    snap.value = preferFullForTab(props.tab) ? 'full' : 'mid'
+  }
   dragOffset.value = offsetFor(snap.value)
   publishPeek()
 }
@@ -119,6 +124,18 @@ const onTab = (value: string) => {
   emit('update:tab', value)
   if (props.compact && !props.expanded) emit('toggle')
 }
+
+watch(
+  () => props.tab,
+  async (value) => {
+    if (!props.compact || !preferFullForTab(value)) return
+    await nextTick()
+    if (!props.expanded) return
+    snap.value = 'full'
+    dragOffset.value = offsetFor('full')
+    publishPeek()
+  },
+)
 
 const onSheetPointerDown = (event: PointerEvent) => {
   if (!props.compact) return
@@ -274,7 +291,7 @@ onUnmounted(() => {
       data-inspector-scroll
       class="min-h-0 flex-1 px-4 pb-4"
       :class="
-        tab === 'chat' || tab === 'sql'
+        tab === 'chat' || tab === 'sql' || tab === 'ai'
           ? 'flex flex-col overflow-hidden'
           : 'overflow-auto'
       "

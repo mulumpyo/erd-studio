@@ -42,6 +42,7 @@ const emit = defineEmits<{
   (e: 'remove-domain', id: string): void
   (e: 'select-column', id: string): void
   (e: 'create-table'): void
+  (e: 'open-ai'): void
 }>()
 
 const dragIndex = ref<number | null>(null)
@@ -207,13 +208,22 @@ const onDragEnd = () => {
   >
     <template v-if="!readOnly && !(tables?.length)">
       <p>아직 테이블이 없어요.</p>
-      <button
-        type="button"
-        class="mt-4 inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-        @click="emit('create-table')"
-      >
-        첫 테이블 만들기
-      </button>
+      <div class="mt-4 flex flex-col items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-[14px] font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          @click="emit('create-table')"
+        >
+          첫 테이블 만들기
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-11 items-center justify-center rounded-2xl bg-secondary px-4 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          @click="emit('open-ai')"
+        >
+          AI로 스키마 만들기
+        </button>
+      </div>
     </template>
     <template v-else-if="!readOnly">
       캔버스에서 테이블이나 관계선을 선택하세요. 왼쪽 「테이블」 도구로 추가할
