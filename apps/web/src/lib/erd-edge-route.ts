@@ -413,8 +413,13 @@ export const routeAvoidingObstacles = (
     }
   }
 
+  // Prefer the ideal mid corridor before enumerating alternate lanes.
+  const midHit = candidateForLane(edge, mid, obstacles, 0)
+  if (midHit) return midHit
+
   const candidates: RouteCandidate[] = []
   for (const laneX of collectLaneXs(edge, obstacles)) {
+    if (laneX === mid) continue
     const hit = candidateForLane(edge, laneX, obstacles, 0)
     if (hit) candidates.push(hit)
   }
@@ -443,29 +448,64 @@ const rangesOverlap = (a0: number, a1: number, b0: number, b1: number) => {
   return !(aHi < bLo || bHi < aLo)
 }
 
-const conflictsVerticalLane = (
-  x: number,
-  y0: number,
-  y1: number,
-  used: VerticalLaneUse[],
-) =>
-  used.some(
-    (lane) =>
-      Math.abs(lane.x - x) < LANE_GAP &&
-      rangesOverlap(y0, y1, lane.y0, lane.y1),
-  )
+/** Bucketed occupancy so conflict checks stay near-constant as edge count grows. */
+const laneBucket = (coord: number) => Math.floor(coord / LANE_GAP)
 
-const conflictsHorizontalLane = (
-  y: number,
-  x0: number,
-  x1: number,
-  used: HorizontalLaneUse[],
-) =>
-  used.some(
-    (lane) =>
-      Math.abs(lane.y - y) < LANE_GAP &&
-      rangesOverlap(x0, x1, lane.x0, lane.x1),
-  )
+const createVerticalIndex = () => {
+  const buckets = new Map<number, VerticalLaneUse[]>()
+  return {
+    conflicts(x: number, y0: number, y1: number) {
+      const k = laneBucket(x)
+      for (let b = k - 1; b <= k + 1; b += 1) {
+        const list = buckets.get(b)
+        if (!list) continue
+        for (const lane of list) {
+          if (
+            Math.abs(lane.x - x) < LANE_GAP &&
+            rangesOverlap(y0, y1, lane.y0, lane.y1)
+          ) {
+            return true
+          }
+        }
+      }
+      return false
+    },
+    add(lane: VerticalLaneUse) {
+      const k = laneBucket(lane.x)
+      const list = buckets.get(k)
+      if (list) list.push(lane)
+      else buckets.set(k, [lane])
+    },
+  }
+}
+
+const createHorizontalIndex = () => {
+  const buckets = new Map<number, HorizontalLaneUse[]>()
+  return {
+    conflicts(y: number, x0: number, x1: number) {
+      const k = laneBucket(y)
+      for (let b = k - 1; b <= k + 1; b += 1) {
+        const list = buckets.get(b)
+        if (!list) continue
+        for (const lane of list) {
+          if (
+            Math.abs(lane.y - y) < LANE_GAP &&
+            rangesOverlap(x0, x1, lane.x0, lane.x1)
+          ) {
+            return true
+          }
+        }
+      }
+      return false
+    },
+    add(lane: HorizontalLaneUse) {
+      const k = laneBucket(lane.y)
+      const list = buckets.get(k)
+      if (list) list.push(lane)
+      else buckets.set(k, [lane])
+    },
+  }
+}
 
 const stubX = (edge: RoutedEdge, which: 'source' | 'target') => {
   const x = which === 'source' ? edge.sourceX : edge.targetX
@@ -475,13 +515,16 @@ const stubX = (edge: RoutedEdge, which: 'source' | 'target') => {
   return x
 }
 
-const laneSearchOffsets = () => {
+/** Static offset ladder — rebuilt once (was per assignOppositeRoutes call). */
+const LANE_SEARCH_OFFSETS: readonly number[] = (() => {
   const offsets = [0]
   for (let step = 1; step <= MAX_LANE_TRIES; step += 1) {
     offsets.push(step * LANE_GAP, -step * LANE_GAP)
   }
   return offsets
-}
+})()
+
+const EMPTY_BOXES: NodeBox[] = []
 
 const toLaneRoute = (candidate: RouteCandidate): LaneRoute => ({
   offset: candidate.offset,
@@ -499,15 +542,30 @@ const preferWithoutObstacles = (edge: RoutedEdge): RouteCandidate => {
     offset: STEP_OFFSET,
     borderRadius: 10,
     centerX: mid,
-    path: orthoPath(
-      edge.sourceX,
-      edge.sourceY,
-      edge.targetX,
-      edge.targetY,
-      mid,
-    ),
+    // Path filled when the lane is finalized — avoids double string work.
     labelX: mid,
     labelY: (edge.sourceY + edge.targetY) / 2,
+  }
+}
+
+const laneCandidate = (
+  edge: RoutedEdge,
+  laneX: number,
+  obstacles: NodeBox[],
+  baseCost: number,
+): RouteCandidate | null => {
+  if (obstacles.length) {
+    return candidateForLane(edge, laneX, obstacles, baseCost)
+  }
+  const { sourceX: sx, sourceY: sy, targetX: tx, targetY: ty } = edge
+  return {
+    cost: baseCost,
+    offset: STEP_OFFSET,
+    borderRadius: 10,
+    centerX: laneX,
+    path: orthoPath(sx, sy, tx, ty, laneX),
+    labelX: laneX,
+    labelY: (sy + ty) / 2,
   }
 }
 
@@ -519,9 +577,10 @@ const assignOppositeRoutes = (
   const result = new Map<string, LaneRoute>()
   if (!edges.length) return result
 
+  const hasBoxes = boxes.length > 0
   const prepared = edges.map((edge) => ({
     edge,
-    pref: boxes.length
+    pref: hasBoxes
       ? routeAvoidingObstacles(edge, boxes)
       : preferWithoutObstacles(edge),
   }))
@@ -536,12 +595,12 @@ const assignOppositeRoutes = (
         a.pref.labelY - b.pref.labelY || sortByMidY(a.edge, b.edge),
     )
 
-  const usedV: VerticalLaneUse[] = []
-  const usedH: HorizontalLaneUse[] = []
-  const offsets = laneSearchOffsets()
+  const usedV = createVerticalIndex()
+  const usedH = createHorizontalIndex()
+  const offsets = LANE_SEARCH_OFFSETS
 
   for (const { edge, pref } of vertical) {
-    const obstacles = boxesForEdge(edge, boxes)
+    const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
     const y0 = edge.sourceY
     const y1 = edge.targetY
     const base = pref.centerX ?? pref.labelX
@@ -549,12 +608,12 @@ const assignOppositeRoutes = (
 
     for (const delta of offsets) {
       const x = base + delta
-      if (conflictsVerticalLane(x, y0, y1, usedV)) continue
-      const hit = candidateForLane(edge, x, obstacles, Math.abs(delta))
-      if (!hit) continue
+      if (usedV.conflicts(x, y0, y1)) continue
       // Horizontal legs should also stay off other edges' horizontals.
-      if (conflictsHorizontalLane(y0, edge.sourceX, x, usedH)) continue
-      if (conflictsHorizontalLane(y1, x, edge.targetX, usedH)) continue
+      if (usedH.conflicts(y0, edge.sourceX, x)) continue
+      if (usedH.conflicts(y1, x, edge.targetX)) continue
+      const hit = laneCandidate(edge, x, obstacles, Math.abs(delta))
+      if (!hit) continue
       chosen = hit
       break
     }
@@ -562,36 +621,31 @@ const assignOppositeRoutes = (
     if (!chosen) {
       for (const delta of offsets) {
         const x = base + delta
-        if (conflictsVerticalLane(x, y0, y1, usedV)) continue
-        chosen = {
-          cost: Math.abs(delta),
-          offset: STEP_OFFSET,
-          borderRadius: 10,
-          centerX: x,
-          path: orthoPath(
-            edge.sourceX,
-            edge.sourceY,
-            edge.targetX,
-            edge.targetY,
-            x,
-          ),
-          labelX: x,
-          labelY: (y0 + y1) / 2,
-        }
+        if (usedV.conflicts(x, y0, y1)) continue
+        chosen = laneCandidate(edge, x, EMPTY_BOXES, Math.abs(delta))
         break
       }
     }
 
     const route = toLaneRoute(chosen ?? pref)
+    if (!route.path && route.centerX != null) {
+      route.path = orthoPath(
+        edge.sourceX,
+        edge.sourceY,
+        edge.targetX,
+        edge.targetY,
+        route.centerX,
+      )
+    }
     const laneX = route.centerX ?? route.labelX ?? base
     result.set(edge.id, route)
-    usedV.push({ x: laneX, y0, y1 })
-    usedH.push({ y: y0, x0: edge.sourceX, x1: laneX })
-    usedH.push({ y: y1, x0: laneX, x1: edge.targetX })
+    usedV.add({ x: laneX, y0, y1 })
+    usedH.add({ y: y0, x0: edge.sourceX, x1: laneX })
+    usedH.add({ y: y1, x0: laneX, x1: edge.targetX })
   }
 
   for (const { edge, pref } of detours) {
-    const obstacles = boxesForEdge(edge, boxes)
+    const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
     const sExit = stubX(edge, 'source')
     const tExit = stubX(edge, 'target')
     const x0 = Math.min(sExit, tExit)
@@ -600,10 +654,17 @@ const assignOppositeRoutes = (
 
     for (const delta of offsets) {
       const y = pref.labelY + delta
-      if (conflictsHorizontalLane(y, x0, x1, usedH)) continue
-      if (conflictsVerticalLane(sExit, edge.sourceY, y, usedV)) continue
-      if (conflictsVerticalLane(tExit, y, edge.targetY, usedV)) continue
-      const hit = candidateForDetour(edge, y, obstacles, Math.abs(delta))
+      if (usedH.conflicts(y, x0, x1)) continue
+      if (usedV.conflicts(sExit, edge.sourceY, y)) continue
+      if (usedV.conflicts(tExit, y, edge.targetY)) continue
+      const hit = obstacles.length
+        ? candidateForDetour(edge, y, obstacles, Math.abs(delta))
+        : {
+            cost: Math.abs(delta),
+            offset: STEP_OFFSET,
+            borderRadius: 10,
+            ...detourPath(edge, y),
+          }
       if (!hit) continue
       chosen = hit
       break
@@ -612,9 +673,9 @@ const assignOppositeRoutes = (
     const route = toLaneRoute(chosen ?? pref)
     const labelY = route.labelY ?? pref.labelY
     result.set(edge.id, route)
-    usedH.push({ y: labelY, x0, x1 })
-    usedV.push({ x: sExit, y0: edge.sourceY, y1: labelY })
-    usedV.push({ x: tExit, y0: labelY, y1: edge.targetY })
+    usedH.add({ y: labelY, x0, x1 })
+    usedV.add({ x: sExit, y0: edge.sourceY, y1: labelY })
+    usedV.add({ x: tExit, y0: labelY, y1: edge.targetY })
   }
 
   return result
@@ -673,7 +734,7 @@ export const buildLaneRoutes = (
   }
 
   // Same-side edges: stack outer lanes, then nudge if another edge already owns that X.
-  const usedSameV: VerticalLaneUse[] = []
+  const usedSameV = createVerticalIndex()
   for (const group of same.values()) {
     group.sort(sortByMidY)
     for (let i = 0; i < group.length; i += 1) {
@@ -688,14 +749,7 @@ export const buildLaneRoutes = (
       let laneX = base + dir * i * LANE_GAP
       for (let t = 0; t < MAX_LANE_TRIES; t += 1) {
         const trial = laneX + dir * t * LANE_GAP
-        if (
-          !conflictsVerticalLane(
-            trial,
-            edge.sourceY,
-            edge.targetY,
-            usedSameV,
-          )
-        ) {
+        if (!usedSameV.conflicts(trial, edge.sourceY, edge.targetY)) {
           laneX = trial
           break
         }
@@ -714,7 +768,7 @@ export const buildLaneRoutes = (
         labelX: laneX,
         labelY: (edge.sourceY + edge.targetY) / 2,
       })
-      usedSameV.push({
+      usedSameV.add({
         x: laneX,
         y0: edge.sourceY,
         y1: edge.targetY,
