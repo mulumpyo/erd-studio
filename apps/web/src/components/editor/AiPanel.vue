@@ -18,8 +18,6 @@ import { toast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { ChevronDown, Ellipsis, RefreshCw, SendHorizontal } from 'lucide-vue-next'
 
-const NVIDIA_BASE = 'https://integrate.api.nvidia.com/v1'
-
 type AiProvider = 'openai' | 'gemini' | 'other'
 
 type AiSettings = {
@@ -186,11 +184,13 @@ const scrollToEnd = async () => {
 
 const revealComposer = async () => {
   await nextTick()
-  composer.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  // Re-publish after keyboard animation on mobile.
-  window.setTimeout(() => {
-    composer.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, 300)
+  // Prefer scrolling the message list, not the page — scrollIntoView(center)
+  // fights visualViewport pinning and leaves a blank band above the keyboard.
+  if (scroller.value) {
+    scroller.value.scrollTop = scroller.value.scrollHeight
+    return
+  }
+  composer.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 }
 
 const loadModels = async (opts?: { force?: boolean }) => {
@@ -369,10 +369,6 @@ const setProvider = (next: AiProvider) => {
   settingsOpen.value = true
 }
 
-const useNvidiaPreset = () => {
-  baseUrl.value = NVIDIA_BASE
-}
-
 const onKeyPaste = (event: ClipboardEvent) => {
   const text = event.clipboardData?.getData('text') ?? ''
   if (!text) return
@@ -430,10 +426,13 @@ const send = async () => {
     if (!keyReady.value || !model.value.trim()) settingsOpen.value = true
     return
   }
-  const history = messages.value.slice(-6).map((item) => ({
-    role: item.role,
-    content: item.content,
-  }))
+  const history = messages.value
+    .filter((item) => item.content.trim().length > 0)
+    .slice(-6)
+    .map((item) => ({
+      role: item.role,
+      content: item.content.trim(),
+    }))
   const userMsg: ChatMsg = {
     id: `u-${++msgSeq}`,
     role: 'user',
@@ -462,12 +461,13 @@ const send = async () => {
       method: 'POST',
       body: JSON.stringify(payload),
     })
+    const reply = (result.message || '').trim() || '반영했어요.'
     messages.value = [
       ...messages.value,
       {
         id: `a-${++msgSeq}`,
         role: 'assistant',
-        content: result.message || '반영했어요.',
+        content: reply,
         applied: result.applied,
       },
     ]
@@ -476,7 +476,9 @@ const send = async () => {
       toast('다이어그램에 반영했어요')
     }
   } catch (e) {
-    const msg = errorMessage(e, '답변을 받지 못했어요')
+    const msg =
+      (errorMessage(e, '답변을 받지 못했어요') || '').trim() ||
+      '답변을 받지 못했어요'
     messages.value = [
       ...messages.value,
       {
@@ -564,25 +566,15 @@ const onDraftKeydown = (event: KeyboardEvent) => {
           </button>
         </div>
         <template v-if="isOther">
-          <div class="flex items-center justify-between gap-2">
-            <label class="text-[12px] font-semibold text-muted-foreground" for="ai-base-url">
-              베이스 URL
-            </label>
-            <button
-              type="button"
-              class="min-h-9 px-1 text-[12px] font-semibold text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-              :disabled="readOnly || busy"
-              @click="useNvidiaPreset"
-            >
-              NVIDIA 예시
-            </button>
-          </div>
+          <label class="text-[12px] font-semibold text-muted-foreground" for="ai-base-url">
+            베이스 URL
+          </label>
           <Input
             id="ai-base-url"
             v-model="baseUrl"
             class="h-11 text-base"
             :disabled="readOnly || busy"
-            placeholder="https://integrate.api.nvidia.com/v1"
+            placeholder="https://api.example.com/v1"
             aria-label="OpenAI 호환 베이스 URL"
           />
         </template>

@@ -40,9 +40,18 @@ const path = computed(() => {
     targetY: props.targetY,
     sourcePosition: props.sourcePosition,
     targetPosition: props.targetPosition,
+    sourceId: props.source,
+    targetId: props.target,
   }
   const route =
     laneRoutes?.value.get(props.id) ?? smoothStepRoute(self, [self])
+  if (route.path) {
+    return [
+      route.path,
+      route.labelX ?? (props.sourceX + props.targetX) / 2,
+      route.labelY ?? (props.sourceY + props.targetY) / 2,
+    ] as [string, number, number]
+  }
   return getSmoothStepPath({
     sourceX: props.sourceX,
     sourceY: props.sourceY,
@@ -50,7 +59,9 @@ const path = computed(() => {
     targetY: props.targetY,
     sourcePosition: props.sourcePosition,
     targetPosition: props.targetPosition,
-    ...route,
+    offset: route.offset,
+    borderRadius: route.borderRadius,
+    centerX: route.centerX,
   })
 })
 

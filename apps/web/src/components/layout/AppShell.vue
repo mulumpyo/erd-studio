@@ -40,8 +40,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="flex h-[calc(100dvh-var(--vv-chrome-gap))] w-full overflow-hidden bg-background">
-    <button
+  <div
+    class="flex w-full overflow-hidden bg-background"
+    style="height: var(--vv-height, 100dvh)"
+  >    <button
       v-if="navOpen"
       type="button"
       class="fixed inset-x-0 bottom-[var(--vv-chrome-gap)] z-40 bg-black/40 md:hidden top-[calc(4rem+env(safe-area-inset-top))]"

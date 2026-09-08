@@ -215,6 +215,8 @@ onMounted(async () => {
   measureArea()
   syncOffset()
   window.addEventListener('resize', onResize)
+  window.visualViewport?.addEventListener('resize', onResize)
+  window.visualViewport?.addEventListener('scroll', onResize)
 })
 
 watch(visibleHeight, () => {
@@ -223,6 +225,8 @@ watch(visibleHeight, () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', onResize)
+  window.visualViewport?.removeEventListener('resize', onResize)
+  window.visualViewport?.removeEventListener('scroll', onResize)
   document.documentElement.style.removeProperty('--erd-sheet-peek')
   setSheetVisible(0)
 })
