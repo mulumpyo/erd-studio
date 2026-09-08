@@ -38,7 +38,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -60,7 +60,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -72,7 +72,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: '주문자',
             physicalName: 'user_id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: false,
             fk: true,
             nn: true,
@@ -94,7 +94,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -116,7 +116,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -138,7 +138,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -160,7 +160,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -182,7 +182,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -339,7 +339,7 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('honors unchanged and preserves document on resolve', () => {
     const current = sampleDoc()
     const next = resolveChatDocument(current, {
-      message: '질문만 답함',
+      message: '질문만 답변함',
       unchanged: true,
     })
     assert.equal(next.mode, 'unchanged')
@@ -406,13 +406,13 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('matches deixis using history table names', () => {
     const ids = selectRelatedTableIds(
       sampleDoc(),
-      '주문에 컬럼을 추가했어요\n그거에 배송일도 넣어 줘',
+      '주문에 컬럼을 추가해 줘\n그거랑 배송지도 넣어 줘',
     )
     assert.ok(ids.includes('tbl_orders'))
   })
 
   it('tolerates one-character typos in table names', () => {
-    const ids = selectRelatedTableIds(sampleDoc(), '주먼 테이블 수정')
+    const ids = selectRelatedTableIds(sampleDoc(), '주멀 테이블 수정')
     assert.ok(ids.includes('tbl_orders'))
   })
 })

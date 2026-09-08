@@ -30,7 +30,7 @@ const baseDoc = {
           logicalName: 'ID',
           physicalName: 'id',
           type: 'int',
-          length: null,
+          length: undefined,
           pk: true,
           fk: false,
           nn: true,
