@@ -18,3 +18,4 @@ uploads
 .pnpm-store
 *.pem
 *.key
+tmp-*.js
