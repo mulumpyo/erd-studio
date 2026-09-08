@@ -610,10 +610,11 @@ const assignOppositeRoutes = (
     }
 
     const route = toLaneRoute(chosen ?? pref)
+    const labelY = route.labelY ?? pref.labelY
     result.set(edge.id, route)
-    usedH.push({ y: route.labelY, x0, x1 })
-    usedV.push({ x: sExit, y0: edge.sourceY, y1: route.labelY })
-    usedV.push({ x: tExit, y0: route.labelY, y1: edge.targetY })
+    usedH.push({ y: labelY, x0, x1 })
+    usedV.push({ x: sExit, y0: edge.sourceY, y1: labelY })
+    usedV.push({ x: tExit, y0: labelY, y1: edge.targetY })
   }
 
   return result
