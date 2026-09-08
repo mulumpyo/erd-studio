@@ -24,6 +24,7 @@ import { visibleFitPadding } from '@/composables/useCanvasInsets'
 import { useTheme } from '@/composables/useTheme'
 import {
   buildLaneRoutes,
+  type NodeBox,
   type RoutedEdge,
 } from '@/lib/erd-edge-route'
 import { ErdLaneRoutesKey } from '@/composables/useErdLaneRoutes'
@@ -89,6 +90,8 @@ const rootRef = ref<HTMLElement | null>(null)
 
 const asRouted = (edge: {
   id: string
+  source?: string
+  target?: string
   sourceX?: number
   sourceY?: number
   targetX?: number
@@ -114,6 +117,27 @@ const asRouted = (edge: {
     targetY: edge.targetY,
     sourcePosition: edge.sourcePosition,
     targetPosition: edge.targetPosition,
+    sourceId: edge.source,
+    targetId: edge.target,
+  }
+}
+
+const asTableBox = (node: {
+  id: string
+  type?: string
+  position: { x: number; y: number }
+  dimensions?: { width?: number; height?: number }
+}): NodeBox | null => {
+  if (node.type && node.type !== 'table') return null
+  const w = node.dimensions?.width
+  const h = node.dimensions?.height
+  if (!w || !h) return null
+  return {
+    id: node.id,
+    x: node.position.x,
+    y: node.position.y,
+    w,
+    h,
   }
 }
 
@@ -121,18 +145,21 @@ const asRouted = (edge: {
 const laneRoutes = computed(() => {
   // Touch node geometry so drag/resize invalidates the shared lane cache.
   const nodes = toValue(getNodes)
+  const boxes: NodeBox[] = []
   for (const node of nodes) {
     void node.position.x
     void node.position.y
     void node.dimensions?.width
     void node.dimensions?.height
+    const box = asTableBox(node)
+    if (box) boxes.push(box)
   }
   const routed: RoutedEdge[] = []
   for (const edge of toValue(getEdges)) {
     const item = asRouted(edge)
     if (item) routed.push(item)
   }
-  return buildLaneRoutes(routed)
+  return buildLaneRoutes(routed, boxes)
 })
 provide(ErdLaneRoutesKey, laneRoutes)
 const onlyVisible = ref(true)

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import {
   IsArray,
   IsIn,
@@ -48,8 +48,8 @@ export class GenerateErdDto {
 
   @ApiPropertyOptional({
     description:
-      '`other`일 때 **필수**. OpenAI 호환 https 베이스 URL. 사설망·localhost·메타데이터 호스트는 막아요. 예: `https://integrate.api.nvidia.com/v1`',
-    example: 'https://integrate.api.nvidia.com/v1',
+      '`other`일 때 **필수**. OpenAI 호환 https 베이스 URL. 사설망·localhost·메타데이터 호스트는 막아요. 예: `https://api.example.com/v1`',
+    example: 'https://api.example.com/v1',
     maxLength: 500,
   })
   @IsOptional()
@@ -142,7 +142,7 @@ export class ListAiModelsDto {
   @ApiPropertyOptional({
     description:
       '`other`일 때 **필수**. OpenAI 호환 https 베이스 URL.',
-    example: 'https://integrate.api.nvidia.com/v1',
+    example: 'https://api.example.com/v1',
     maxLength: 500,
   })
   @IsOptional()
@@ -212,7 +212,7 @@ export class ChatErdDto {
   @ApiPropertyOptional({
     description:
       '`other`일 때 **필수**. OpenAI 호환 https 베이스 URL.',
-    example: 'https://integrate.api.nvidia.com/v1',
+    example: 'https://api.example.com/v1',
     maxLength: 500,
   })
   @IsOptional()
@@ -235,6 +235,16 @@ export class ChatErdDto {
   })
   @IsOptional()
   @IsArray()
+  @Transform(({ value }) => {
+    if (!Array.isArray(value)) return value
+    return value.filter(
+      (item) =>
+        item &&
+        typeof item === 'object' &&
+        typeof (item as { content?: unknown }).content === 'string' &&
+        (item as { content: string }).content.trim().length > 0,
+    )
+  })
   @ValidateNested({ each: true })
   @Type(() => AiChatMessageDto)
   history?: AiChatMessageDto[]

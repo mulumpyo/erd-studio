@@ -907,11 +907,12 @@ const removeProject = async () => {
   </div>
   <div
     v-else
-    class="relative h-[calc(100svh-var(--vv-chrome-gap))] overflow-hidden bg-background"
+    class="fixed inset-x-0 overflow-hidden bg-background"
     :class="{
       'erd-immersive': chromeHidden || focusMode,
       'erd-focus': focusMode,
     }"
+    style="top: var(--vv-offset-top, 0px); height: var(--vv-height, 100svh)"
   >
     <div class="absolute inset-0">
       <Spinner

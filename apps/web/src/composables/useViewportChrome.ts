@@ -1,14 +1,38 @@
 import { onMounted, onUnmounted } from 'vue'
 
-const VAR = '--vv-chrome-gap'
+const GAP_VAR = '--vv-chrome-gap'
+const HEIGHT_VAR = '--vv-height'
+const OFFSET_VAR = '--vv-offset-top'
 const JITTER = 8
 
-/** Map visualViewport shrinkage to a bottom gap (browser chrome + soft keyboard). */
-export const clampViewportChromeGap = (delta: number, layoutHeight: number) => {
-  if (delta < JITTER) return 0
-  const max = Math.max(120, Math.round(layoutHeight * 0.75))
-  return Math.min(Math.round(delta), max)
+export type ViewportChromeMetrics = {
+  layoutHeight: number
+  innerHeight: number
+  visualHeight: number
+  offsetTop: number
 }
+
+/** Bottom inset for fixed UI (toasts / sheets) — never double-count VV scroll. */
+export const measureChromeGap = ({
+  layoutHeight,
+  innerHeight,
+  visualHeight,
+  offsetTop,
+}: ViewportChromeMetrics) => {
+  const bottom = Math.max(0, innerHeight - visualHeight - offsetTop)
+  if (bottom < JITTER) return 0
+  const max = Math.max(120, Math.round(layoutHeight * 0.75))
+  return Math.min(Math.round(bottom), max)
+}
+
+/** @deprecated use measureChromeGap — kept for existing tests naming */
+export const clampViewportChromeGap = (delta: number, layoutHeight: number) =>
+  measureChromeGap({
+    layoutHeight,
+    innerHeight: layoutHeight,
+    visualHeight: Math.max(0, layoutHeight - delta),
+    offsetTop: 0,
+  })
 
 export const useViewportChrome = () => {
   onMounted(() => {
@@ -20,12 +44,22 @@ export const useViewportChrome = () => {
 
     let frame = 0
     const publish = () => {
-      const visible = window.visualViewport?.height ?? window.innerHeight
-      const svh = probe.getBoundingClientRect().height || window.innerHeight
-      document.documentElement.style.setProperty(
-        VAR,
-        `${clampViewportChromeGap(svh - visible, svh)}px`,
-      )
+      const vv = window.visualViewport
+      const layoutHeight =
+        probe.getBoundingClientRect().height || window.innerHeight
+      const visualHeight = vv?.height ?? window.innerHeight
+      const offsetTop = vv?.offsetTop ?? 0
+      const gap = measureChromeGap({
+        layoutHeight,
+        innerHeight: window.innerHeight,
+        visualHeight,
+        offsetTop,
+      })
+      const root = document.documentElement.style
+      root.setProperty(GAP_VAR, `${gap}px`)
+      // Pin fullscreen shells to the visual viewport (avoids keyboard + gap stacking).
+      root.setProperty(HEIGHT_VAR, `${Math.round(visualHeight)}px`)
+      root.setProperty(OFFSET_VAR, `${Math.round(offsetTop)}px`)
     }
 
     const schedule = () => {
@@ -47,7 +81,10 @@ export const useViewportChrome = () => {
       window.visualViewport?.removeEventListener('resize', schedule)
       window.visualViewport?.removeEventListener('scroll', schedule)
       probe.remove()
-      document.documentElement.style.removeProperty(VAR)
+      const root = document.documentElement.style
+      root.removeProperty(GAP_VAR)
+      root.removeProperty(HEIGHT_VAR)
+      root.removeProperty(OFFSET_VAR)
     })
   })
 }

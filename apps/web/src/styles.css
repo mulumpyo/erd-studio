@@ -49,6 +49,8 @@
   --editor-grip: #c9cdd2;
   --editor-danger-hover: #fff1f1;
   --vv-chrome-gap: 0px;
+  --vv-height: 100svh;
+  --vv-offset-top: 0px;
   color-scheme: light;
 }
 

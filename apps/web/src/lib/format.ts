@@ -1,5 +1,8 @@
-export const errorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error ? error.message : fallback
+export const errorMessage = (error: unknown, fallback: string) => {
+  const raw = error instanceof Error ? error.message : ''
+  const trimmed = raw.trim()
+  return trimmed || fallback
+}
 
 export const initialOf = (name: string) =>
   name.trim().slice(0, 1).toUpperCase() || '?'
