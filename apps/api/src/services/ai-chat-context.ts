@@ -315,7 +315,7 @@ const mergeColumns = (
     const before = map.get(id)
     map.set(id, {
       ...(before || {
-        length: null,
+        length: undefined,
         pk: false,
         fk: false,
         nn: false,

@@ -28,7 +28,7 @@ const sampleDoc = (): ErdDocument => {
       {
         id: 'tbl_users',
         schemaId: '',
-        logicalName: '사용자',
+        logicalName: '?�용??,
         physicalName: 'users',
         color: '#3b82f6',
         position: { x: 80, y: 80 },
@@ -38,7 +38,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -60,7 +60,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -69,10 +69,10 @@ const sampleDoc = (): ErdDocument => {
           },
           {
             id: 'col_orders_user',
-            logicalName: '주문자',
+            logicalName: '주문??,
             physicalName: 'user_id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: false,
             fk: true,
             nn: true,
@@ -84,7 +84,7 @@ const sampleDoc = (): ErdDocument => {
       {
         id: 'tbl_products',
         schemaId: '',
-        logicalName: '상품',
+        logicalName: '?�품',
         physicalName: 'products',
         color: '#a855f7',
         position: { x: 640, y: 80 },
@@ -94,7 +94,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -116,7 +116,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -128,7 +128,7 @@ const sampleDoc = (): ErdDocument => {
       {
         id: 'tbl_b',
         schemaId: '',
-        logicalName: '재고',
+        logicalName: '?�고',
         physicalName: 'stocks',
         color: '#ef4444',
         position: { x: 360, y: 300 },
@@ -138,7 +138,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -160,7 +160,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -182,7 +182,7 @@ const sampleDoc = (): ErdDocument => {
             logicalName: 'ID',
             physicalName: 'id',
             type: 'int',
-            length: null,
+            length: undefined,
             pk: true,
             fk: false,
             nn: true,
@@ -211,25 +211,25 @@ describe('selectRelatedTableIds', () => {
   it('returns all ids for small documents', () => {
     const doc = sampleDoc()
     doc.tables = doc.tables.slice(0, 3)
-    assert.equal(selectRelatedTableIds(doc, '아무거나').length, 3)
+    assert.equal(selectRelatedTableIds(doc, '?�무거나').length, 3)
   })
 
   it('matches mentioned tables and relation neighbors', () => {
-    const ids = selectRelatedTableIds(sampleDoc(), '주문 테이블에 배송지 추가')
+    const ids = selectRelatedTableIds(sampleDoc(), '주문 ?�이블에 배송지 추�?')
     assert.ok(ids.includes('tbl_orders'))
     assert.ok(ids.includes('tbl_users'))
     assert.ok(!ids.includes('tbl_d'))
   })
 
   it('matches Korean particles on table names', () => {
-    const ids = selectRelatedTableIds(sampleDoc(), '상품에 가격을 추가해 줘')
+    const ids = selectRelatedTableIds(sampleDoc(), '?�품??가격을 추�???�?)
     assert.ok(ids.includes('tbl_products'))
   })
 })
 
 describe('buildChatContext', () => {
   it('omits notes/settings and can truncate detail tables', () => {
-    const ctx = buildChatContext(sampleDoc(), '상품 가격 컬럼')
+    const ctx = buildChatContext(sampleDoc(), '?�품 가�?컬럼')
     assert.ok(ctx.tableIndex.length === 7)
     assert.ok(ctx.tables.some((t) => t.id === 'tbl_products'))
     assert.equal(
@@ -262,7 +262,7 @@ describe('applyAiPatch / resolveChatDocument', () => {
             },
             {
               id: 'col_orders_user',
-              logicalName: '주문자',
+              logicalName: '주문??,
               physicalName: 'user_id',
               type: 'int',
               fk: true,
@@ -339,7 +339,7 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('honors unchanged and preserves document on resolve', () => {
     const current = sampleDoc()
     const next = resolveChatDocument(current, {
-      message: '질문만 답함',
+      message: '질문�??�함',
       unchanged: true,
     })
     assert.equal(next.mode, 'unchanged')
@@ -350,12 +350,12 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('falls back to full document replace while keeping notes', () => {
     const current = sampleDoc()
     const next = resolveChatDocument(current, {
-      message: '전체 교체',
+      message: '?�체 교체',
       document: {
         tables: [
           {
             id: 'tbl_brand_new',
-            logicalName: '단독',
+            logicalName: '?�독',
             physicalName: 'only',
             color: '#3b82f6',
             position: { x: 0, y: 0 },
@@ -373,7 +373,7 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('merges partial full-document payloads that reuse existing ids', () => {
     const current = sampleDoc()
     const next = resolveChatDocument(current, {
-      message: '주문만 고침',
+      message: '주문�?고침',
       document: {
         tables: [
           {
@@ -406,13 +406,13 @@ describe('applyAiPatch / resolveChatDocument', () => {
   it('matches deixis using history table names', () => {
     const ids = selectRelatedTableIds(
       sampleDoc(),
-      '주문에 컬럼을 추가했어요\n그거에 배송일도 넣어 줘',
+      '주문??컬럼??추�??�어??n그거??배송?�도 ?�어 �?,
     )
     assert.ok(ids.includes('tbl_orders'))
   })
 
   it('tolerates one-character typos in table names', () => {
-    const ids = selectRelatedTableIds(sampleDoc(), '주먼 테이블 수정')
+    const ids = selectRelatedTableIds(sampleDoc(), '주먼 ?�이�??�정')
     assert.ok(ids.includes('tbl_orders'))
   })
 })

@@ -30,7 +30,7 @@ const baseDoc = {
           logicalName: 'ID',
           physicalName: 'id',
           type: 'int',
-          length: null,
+          length: undefined,
           pk: true,
           fk: false,
           nn: true,
@@ -80,10 +80,10 @@ describe('AiService with mocked fetch', () => {
 
   it('chat omits document when unchanged', async () => {
     globalThis.fetch = async () =>
-      chatCompletion({ message: '질문만 답했어요', unchanged: true })
+      chatCompletion({ message: '질문�??�했?�요', unchanged: true })
     const ai = new AiService()
     const result = await ai.chat({
-      message: '이 다이어그램이 뭐야?',
+      message: '???�이?�그?�이 뭐야?',
       apiKey: 'sk-test-key-123456',
       provider: 'openai',
       model: 'gpt-4o-mini',
@@ -97,7 +97,7 @@ describe('AiService with mocked fetch', () => {
   it('chat applies upsertColumns and returns document', async () => {
     globalThis.fetch = async () =>
       chatCompletion({
-        message: '배송지 컬럼을 추가했어요',
+        message: '배송지 컬럼??추�??�어??,
         patch: {
           upsertColumns: [
             {
@@ -118,7 +118,7 @@ describe('AiService with mocked fetch', () => {
       })
     const ai = new AiService()
     const result = await ai.chat({
-      message: '주문에 배송지 추가',
+      message: '주문??배송지 추�?',
       apiKey: 'sk-test-key-123456',
       provider: 'openai',
       model: 'gpt-4o-mini',
@@ -147,7 +147,7 @@ describe('AiService with mocked fetch', () => {
     await assert.rejects(
       () =>
         ai.chat({
-          message: '테이블 추가',
+          message: '?�이�?추�?',
           apiKey: 'sk-test-key-123456',
           provider: 'openai',
           model: 'gpt-4o-mini',
@@ -155,7 +155,7 @@ describe('AiService with mocked fetch', () => {
         }),
       (err: unknown) => {
         assert.ok(err instanceof Error)
-        assert.match(err.message, /크레딧/)
+        assert.match(err.message, /?�레??)
         return true
       },
     )
