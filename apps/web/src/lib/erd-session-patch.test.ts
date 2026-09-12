@@ -139,7 +139,7 @@ describe('erd-session-patch (useErdSession core)', () => {
     erdToY(doc, sampleDocument())
     const prev = yToErd(doc)
     const tableRef = prev.tables[1]
-    // Simulate prev missing a remote-added table id while Y already has it.
+    // Y에는 이미 있는데 prev에는 없는 원격 추가 테이블 id를 흉내 내요.
     const stale = {
       ...prev,
       tables: prev.tables.slice(0, 1),
@@ -147,7 +147,7 @@ describe('erd-session-patch (useErdSession core)', () => {
     const events = captureEvents(doc, () => {
       patchTable(doc, prev.tables[0].id, { logicalName: 'patched' })
     })
-    // Force size mismatch path: prev has 1 table, Y has more; touch includes existing.
+    // 크기 불일치 경로: prev 테이블 1개, Y는 더 많고, touch에 기존 id가 들어가요.
     const next = applyErdStructuralPatch(doc, stale, events)
     expect(next).not.toBeNull()
     expect(next!.tables.length).toBe(prev.tables.length)

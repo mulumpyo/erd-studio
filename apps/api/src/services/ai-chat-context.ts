@@ -107,7 +107,7 @@ export const compactRelation = (rel: ErdRelation): CompactRelation => ({
     : {}),
 })
 
-/** Slim ERD for chat/generate request bodies (keeps notes for server preserve). */
+/** chat/generate 요청용으로 가볍게 만든 ERD예요 (서버가 notes를 보존하려고 남겨 둬요). */
 export const compactDocumentForWire = (doc: ErdDocument) => ({
   schemas: doc.schemas,
   tables: doc.tables.map((table) => ({
@@ -154,7 +154,7 @@ const requestTokens = (text: string) => {
 const nameMatchesToken = (name: string, tokens: string[], haystack: string) => {
   if (tokens.includes(name)) return true
   if (/^[a-z][a-z0-9]*$/.test(name) && haystack.includes(name)) return true
-  // One-edit typo tolerance for same-length names (주문/주먼).
+  // 길이가 같은 이름에서 한 글자 오타도 봐해요 (주문/주먼).
   if (
     name.length >= 2 &&
     tokens.some(
@@ -213,7 +213,7 @@ const collectNameHits = (doc: ErdDocument, text: string) => {
   return matched
 }
 
-/** Pick table ids mentioned in the request text (and expand via relations). */
+/** 요청 글에 나온 테이블 id를 고르고, 관계로 이웃까지 넓혀요. */
 export const selectRelatedTableIds = (
   doc: ErdDocument,
   text: string,
@@ -223,7 +223,7 @@ export const selectRelatedTableIds = (
     return doc.tables.map((t) => t.id)
   }
   const matched = collectNameHits(doc, text)
-  // Pronouns / deixis → fall back to names found in earlier history lines.
+  // 대명사·지시어면 앞선 대화에 나온 이름을 참고해요.
   if (!matched.size && DEIXIS_RE.test(text)) {
     const parts = text.split('\n')
     for (let i = parts.length - 1; i >= 0 && matched.size === 0; i -= 1) {
@@ -253,7 +253,7 @@ export const buildChatContext = (
 ) => {
   const combined = `${historyText}\n${requestText}`.trim()
   const detailIds = new Set(selectRelatedTableIds(doc, combined))
-  // If the latest request is deictic, prefer history hits then current request.
+  // 마지막 말이 지시어면 대화 기록을 먼저, 그다음 지금 요청을 봐요.
   if (DEIXIS_RE.test(requestText)) {
     for (const id of selectRelatedTableIds(doc, historyText || requestText)) {
       detailIds.add(id)
@@ -332,7 +332,7 @@ const mergeColumns = (
   return [...map.values()]
 }
 
-/** Merge AI patch onto current doc; always keep notes/domains/settings. */
+/** AI 패치를 현재 문서에 합쳐요. notes·domains·settings는 항상 남겨 둬요. */
 export const applyAiPatch = (
   current: ErdDocument,
   patch: AiChatPatch,
@@ -438,7 +438,7 @@ export const applyAiPatch = (
   })
 }
 
-/** Resolve chat model JSON into a full document. */
+/** 채팅 모델 JSON을 온전한 문서로 풀어요. */
 export const resolveChatDocument = (
   current: ErdDocument,
   parsed: unknown,
@@ -464,7 +464,7 @@ export const resolveChatDocument = (
   const next = sanitizeAiDocument(rawDoc)
   const existingIds = new Set(current.tables.map((t) => t.id))
   const overlap = next.tables.filter((t) => existingIds.has(t.id)).length
-  // Partial "full" payloads that mostly reference existing ids → merge, don't wipe.
+  // 기존 id를 많이 가리키는 부분 "full"이면 통째로 지우지 말고 합쳐요.
   if (
     current.tables.length > 2 &&
     next.tables.length > 0 &&

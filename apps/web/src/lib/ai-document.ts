@@ -16,7 +16,7 @@ const slimColumn = (col: ErdTable['columns'][number]) => {
   return out
 }
 
-/** Slim ERD payload for /api/ai/chat (notes kept so server can preserve them). */
+/** /api/ai/chat용으로 가볍게 만든 ERD예요 (서버가 notes를 보존하려고 남겨 둬요). */
 export const toAiRequestDocument = (doc: ErdDocument) => ({
   schemas: doc.schemas,
   tables: doc.tables.map((table) => ({

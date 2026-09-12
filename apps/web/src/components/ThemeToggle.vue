@@ -15,6 +15,8 @@ const label = computed(() =>
 )
 
 const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
+
+const isLight = computed(() => mode.value === 'light')
 </script>
 
 <template>
@@ -27,7 +29,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     class="flex h-11 w-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-muted-foreground hover:bg-muted"
     @click="cycle"
   >
-    <Sun v-if="mode === 'light'" class="size-4" />
+    <Sun v-if="isLight" class="size-4" />
     <Moon v-else class="size-4" />
     <span class="text-[9px] font-semibold leading-none tracking-[-0.01em]"
       >화면</span
@@ -44,7 +46,7 @@ const hint = computed(() => `${label.value} — 눌러서 바꾸기`)
     :aria-label="hint"
     @click="cycle"
   >
-    <Sun v-if="mode === 'light'" aria-hidden="true" />
+    <Sun v-if="isLight" aria-hidden="true" />
     <Moon v-else aria-hidden="true" />
   </Button>
 </template>

@@ -38,18 +38,26 @@ export const refreshExpiresSeconds = () =>
 const cookieSecure = () => {
   if (process.env.COOKIE_SECURE === 'true') return true
   if (process.env.COOKIE_SECURE === 'false') return false
+  // 운영은 기본 Secure. TLS를 nginx에서 끊어도 브라우저→사이트는 https예요.
+  if (isProduction()) return true
   try {
-    return isProduction() && webOrigin().startsWith('https:')
+    return webOrigin().startsWith('https:')
   } catch {
-    return isProduction()
+    return false
   }
 }
+
+/** 테스트·점검용으로 쿠키 Secure 여부를 공개해요. */
+export const isAuthCookieSecure = () => cookieSecure()
 
 const cookieSameSite = (): CookieOptions['sameSite'] => {
   const value = process.env.COOKIE_SAMESITE?.toLowerCase()
   if (value === 'none' || value === 'lax' || value === 'strict') return value
   return 'lax'
 }
+
+/** 테스트·점검용으로 SameSite 값을 공개해요. */
+export const authCookieSameSite = () => cookieSameSite()
 
 const baseCookie = (maxAgeSeconds: number): CookieOptions => ({
   httpOnly: true,

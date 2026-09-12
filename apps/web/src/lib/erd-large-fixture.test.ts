@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 import { Position } from '@vue-flow/core'
 import { erdToY, patchTable, yToErd } from '@erd-studio/yjs-erd'
-import { buildLaneRoutes, type RoutedEdge } from './erd-edge-route'
+import {
+  buildLaneRoutes,
+  tableBox,
+  type RoutedEdge,
+} from './erd-edge-route'
 import { generateLargeErd } from './erd-large-fixture'
 import { applyErdStructuralPatch } from './erd-session-patch'
 
-/** 60fps frame budget with CI headroom (ms). */
+/** 60fps 한 프레임 예산(ms). CI 여유를 조금 넣었어요. */
 export const FRAME_BUDGET_MS = 16
 
 const toRouted = (count: number): RoutedEdge[] =>
@@ -79,5 +83,40 @@ describe('large-schema canvas perf', () => {
       'perf-rename',
     )
     expect(next?.tables[1]).toBe(prev.tables[1])
+  })
+
+  it('buildLaneRoutes with table obstacles stays under 4 frames for 200×400', () => {
+    const doc = generateLargeErd()
+    const byId = new Map(doc.tables.map((t) => [t.id, t]))
+    const boxes = doc.tables.map((t) => ({ id: t.id, ...tableBox(t) }))
+    const edges: RoutedEdge[] = doc.relations.map((rel) => {
+      const source = byId.get(rel.sourceTableId)!
+      const target = byId.get(rel.targetTableId)!
+      const sb = tableBox(source)
+      const tb = tableBox(target)
+      return {
+        id: rel.id,
+        sourceId: source.id,
+        targetId: target.id,
+        sourceX: sb.x + sb.w,
+        sourceY: sb.y + sb.h / 2,
+        targetX: tb.x,
+        targetY: tb.y + tb.h / 2,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      }
+    })
+    const ms = avgMs(8, () => {
+      buildLaneRoutes(edges, boxes)
+    })
+    expect(ms).toBeLessThan(FRAME_BUDGET_MS * 3)
+    const routed = buildLaneRoutes(edges, boxes)
+    expect(routed.size).toBe(edges.length)
+    // 가운데 레인이 시작·끝 테이블 몸통을 뚫지 않게 경로가 잡혀 있어요.
+    let withPath = 0
+    for (const route of routed.values()) {
+      if (route.path) withPath += 1
+    }
+    expect(withPath).toBeGreaterThan(edges.length * 0.5)
   })
 })

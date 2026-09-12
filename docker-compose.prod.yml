@@ -1,12 +1,6 @@
 name: erd-studio
 
 services:
-  web:
-    image: ${WEB_IMAGE:-ghcr.io/mulumpyo/erd-studio-web:latest}
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${WEB_HOST_PORT:-8082}:80"
-
   api:
     image: ${API_IMAGE:-ghcr.io/mulumpyo/erd-studio-api:latest}
     restart: unless-stopped
@@ -21,12 +15,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
-  # Multi-instance collab: @hocuspocus/extension-redis syncs docs via REDIS_URL.
-  # WebSocket clients still need sticky sessions (ip_hash / sticky cookie) at the
-  # load balancer / nginx upstream when scaling `collab` horizontally — Redis
-  # keeps Yjs state in sync, but a single WS connection must stay on one instance.
-  # Optional: set COLLAB_INSTANCE_NAME per replica (defaults to a random UUID).
+  # collab을 여러 대 띄울 때: @hocuspocus/extension-redis가 REDIS_URL로 문서를 맞춰 줘요.
+  # 그래도 WebSocket은 sticky session이 필요해요 (ip_hash / sticky cookie).
+  # Redis는 인스턴스 사이 Yjs만 맞추고, 한 연결은 같은 collab에 머물러야 해요.
+  # 선택: 복제본마다 COLLAB_INSTANCE_NAME을 주세요 (기본은 랜덤 UUID).
   collab:
     image: ${COLLAB_IMAGE:-ghcr.io/mulumpyo/erd-studio-collab:latest}
     restart: unless-stopped
@@ -41,6 +44,28 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3030/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/mulumpyo/erd-studio-web:latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_HOST_PORT:-8082}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres:
     image: postgres:16-alpine

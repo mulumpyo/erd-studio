@@ -19,3 +19,7 @@ uploads
 *.pem
 *.key
 tmp-*.js
+deploy/
+docs/
+scripts/
+marketing/

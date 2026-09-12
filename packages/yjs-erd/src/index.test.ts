@@ -33,7 +33,7 @@ test('dragging a table updates layouts without changing the table map name', () 
   assert.equal(layout?.get('x'), 440)
   assert.equal(layout?.get('y'), 280)
   assert.equal(tablesMap(doc).get(tableId)?.get('physicalName'), nameBefore)
-  // Position lives only in layouts; table map must not get legacy x/y writes.
+  // 위치는 layouts에만 두고, 테이블 맵에는 예전 x/y를 쓰지 않아요.
   assert.equal(tablesMap(doc).get(tableId)?.get('x'), undefined)
   const moved = yToErd(doc)
   assert.deepEqual(moved.tables[0].position, { x: 440, y: 280 })

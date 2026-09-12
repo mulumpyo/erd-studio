@@ -85,12 +85,12 @@ describe('buildLaneRoutes', () => {
       sourceId: 'left',
       targetId: 'right',
     })
-    // Midpoint 300 sits inside blocker [200,360].
+    // 중간점 300은 장애물 [200,360] 안에 있어요.
     expect(verticalLaneHitsBox(300, 80, 80, blocker)).toBe(true)
 
     const route = routeAvoidingObstacles(link, [blocker])
     expect(route.path).toBeTruthy()
-    // Direct H-V-H through the body is rejected; detour leaves the Y band.
+    // 몸통을 가로지르는 직선 H-V-H는 거절하고, 우회는 Y 띠를 벗어나요.
     if (route.centerX != null) {
       expect(verticalLaneHitsBox(route.centerX, 80, 80, blocker)).toBe(false)
     } else {
@@ -158,10 +158,50 @@ describe('buildLaneRoutes', () => {
     const routes = buildLaneRoutes(edges)
     const centers = ['a', 'b', 'c'].map((id) => routes.get(id)?.centerX ?? 0)
     expect(new Set(centers.map((x) => Math.round(x))).size).toBe(3)
-    // Any pair with overlapping Y must be at least LANE_GAP apart.
+    // Y가 겹치는 쌍은 적어도 LANE_GAP만큼 떨어져야 해요.
     for (let i = 0; i < centers.length; i += 1) {
       for (let j = i + 1; j < centers.length; j += 1) {
-        expect(Math.abs(centers[i]! - centers[j]!)).toBeGreaterThanOrEqual(20)
+        expect(Math.abs(centers[i]! - centers[j]!)).toBeGreaterThanOrEqual(24)
+      }
+    }
+  })
+
+  it('keeps distinct vertical lanes even when Y ranges do not overlap', () => {
+    // 예전에 Y가 안 겹치면 같은 mid X를 공유해 중간에 한 줄로 붙었어요.
+    const edges = [
+      edge('top', {
+        sourceX: 0,
+        sourceY: 20,
+        targetX: 400,
+        targetY: 40,
+        sourceId: 'a',
+        targetId: 'b',
+      }),
+      edge('mid', {
+        sourceX: 0,
+        sourceY: 200,
+        targetX: 400,
+        targetY: 220,
+        sourceId: 'c',
+        targetId: 'd',
+      }),
+      edge('bot', {
+        sourceX: 0,
+        sourceY: 400,
+        targetX: 400,
+        targetY: 420,
+        sourceId: 'e',
+        targetId: 'f',
+      }),
+    ]
+    const routes = buildLaneRoutes(edges)
+    const centers = ['top', 'mid', 'bot'].map(
+      (id) => routes.get(id)?.centerX ?? 0,
+    )
+    expect(new Set(centers.map((x) => Math.round(x))).size).toBe(3)
+    for (let i = 0; i < centers.length; i += 1) {
+      for (let j = i + 1; j < centers.length; j += 1) {
+        expect(Math.abs(centers[i]! - centers[j]!)).toBeGreaterThanOrEqual(24)
       }
     }
   })

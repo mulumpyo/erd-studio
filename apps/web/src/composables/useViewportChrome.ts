@@ -12,7 +12,7 @@ export type ViewportChromeMetrics = {
   offsetTop: number
 }
 
-/** Bottom inset for fixed UI (toasts / sheets) — never double-count VV scroll. */
+/** 고정 UI(토스트·시트)용 아래 여백이에요. VV 스크롤을 두 번 세지 않아요. */
 export const measureChromeGap = ({
   layoutHeight,
   innerHeight,
@@ -25,7 +25,7 @@ export const measureChromeGap = ({
   return Math.min(Math.round(bottom), max)
 }
 
-/** @deprecated use measureChromeGap — kept for existing tests naming */
+/** @deprecated `measureChromeGap`을 쓰세요. 예전 테스트 이름 때문에 남겨 뒀어요. */
 export const clampViewportChromeGap = (delta: number, layoutHeight: number) =>
   measureChromeGap({
     layoutHeight,
@@ -57,7 +57,7 @@ export const useViewportChrome = () => {
       })
       const root = document.documentElement.style
       root.setProperty(GAP_VAR, `${gap}px`)
-      // Pin fullscreen shells to the visual viewport (avoids keyboard + gap stacking).
+      // 전체화면 껍질을 시각 뷰포트에 맞춰 키보드·갭이 겹치지 않게 해요.
       root.setProperty(HEIGHT_VAR, `${Math.round(visualHeight)}px`)
       root.setProperty(OFFSET_VAR, `${Math.round(offsetTop)}px`)
     }

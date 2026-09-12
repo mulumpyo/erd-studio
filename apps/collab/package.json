@@ -8,7 +8,7 @@
     "build": "tsup src/index.ts --format esm --clean",
     "start": "node dist/index.js",
     "lint": "echo ok",
-    "test": "tsx --test src/jwt-token.test.ts src/origin.test.ts src/cookies.test.ts src/hardening.test.ts"
+    "test": "tsx --test src/jwt-token.test.ts src/origin.test.ts src/cookies.test.ts src/hardening.test.ts src/health.test.ts"
   },
   "dependencies": {
     "@erd-studio/shared": "workspace:*",

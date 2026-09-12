@@ -1,6 +1,6 @@
 export const apiOrigin = () => import.meta.env.VITE_API_URL || ''
 
-/** Same-origin path only. Blocks protocol-relative and external URLs. */
+/** 같은 오리진 경로만 받아요. 프로토콜 상대·외부 URL은 막아요. */
 export const safeInternalPath = (value: unknown): string | null => {
   if (typeof value !== 'string') return null
   if (!value.startsWith('/') || value.startsWith('//')) return null

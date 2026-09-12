@@ -26,7 +26,7 @@ const mulberry32 = (seed: number) => {
 }
 
 /**
- * Deterministic large ERD for perf / Vitest fixtures (default 200 tables, 400 edges).
+ * 성능·Vitest용으로 같은 결과가 나오게 만든 큰 ERD예요 (기본 테이블 200 · 관계 400).
  */
 export const generateLargeErd = (
   options: LargeErdFixtureOptions = {},

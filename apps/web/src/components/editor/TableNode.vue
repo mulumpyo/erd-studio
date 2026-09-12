@@ -86,7 +86,7 @@ const showFlags = computed(
 const editable = computed(() => !props.data.readOnly)
 
 const gridTemplate = computed(() => {
-  const cols = ['28px', '56px', 'minmax(8.25rem, 1.4fr)']
+  const cols = ['48px', '56px', 'minmax(8.25rem, 1.4fr)']
   if (show.value.columnDomain) cols.push('minmax(5.25rem, 0.85fr)')
   if (show.value.columnType) cols.push('minmax(8.25rem, 1fr)')
   if (show.value.columnNotNull) cols.push('2.5rem')
@@ -350,7 +350,7 @@ onUnmounted(() => {
         @dragstart.stop="onDragStart(col.id, $event)"
         @dragend="onDragEnd"
       >
-        <GripVertical class="size-3.5" />
+        <GripVertical class="size-4" />
       </button>
       <div v-else class="col-drag-spacer" />
       <div class="col-keys">

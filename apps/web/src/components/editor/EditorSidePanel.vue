@@ -5,7 +5,7 @@ import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl
 
 const props = defineProps<{
   tab: string
-  tabs: Array<{ value: string; label: string; badge?: number }>
+  tabs: Array<{ value: string; label: string; badge?: number; tag?: string }>
   compact?: boolean
   expanded?: boolean
 }>()

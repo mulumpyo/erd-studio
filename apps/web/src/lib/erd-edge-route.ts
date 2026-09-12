@@ -5,7 +5,7 @@ const TABLE_WIDTH = 320
 const TABLE_HEAD = 52
 const COL_H = 38
 const TABLE_FOOTER = 34
-const LANE_GAP = 20
+const LANE_GAP = 24
 const STEP_OFFSET = 28
 const STACK_BIAS = 48
 const SAME_X_BUCKET = 48
@@ -13,6 +13,9 @@ const OBSTACLE_PAD = 14
 const CLEAR_MARGIN = 48
 const STUB = 24
 const MAX_LANE_TRIES = 28
+
+/** 세로 레인이 이보다 가까우면 같은 복도로 보고 무조건 갈라요. */
+const corridorKey = (x: number) => Math.round(x / SAME_X_BUCKET)
 
 type HandleSide = 'left' | 'right'
 
@@ -35,7 +38,7 @@ export type RoutedEdge = {
   targetY: number
   sourcePosition: Position
   targetPosition: Position
-  /** Table / node ids — used to skip self when avoiding obstacles. */
+  /** 장애물을 피할 때 자기 테이블은 건너뛰려고 쓰는 노드 id예요. */
   sourceId?: string
   targetId?: string
 }
@@ -44,7 +47,7 @@ export type LaneRoute = {
   offset: number
   borderRadius: number
   centerX?: number
-  /** Custom orthogonal SVG path (obstacle-aware). */
+  /** 장애물을 피한 직교 SVG 경로예요. */
   path?: string
   labelX?: number
   labelY?: number
@@ -198,7 +201,7 @@ const overlapsY = (box: NodeBox, y0: number, y1: number, pad: number) => {
   return !(bot < box.y - pad || top > box.y + box.h + pad)
 }
 
-/** Vertical lane at x crosses a table body between y0..y1. */
+/** x에 세운 세로 레인(y0~y1)이 테이블 몸통을 지나가는지 봐요. */
 export const verticalLaneHitsBox = (
   laneX: number,
   y0: number,
@@ -210,7 +213,7 @@ export const verticalLaneHitsBox = (
   return laneX >= box.x - pad && laneX <= box.x + box.w + pad
 }
 
-/** Horizontal segment at y crosses a table body between x0..x1. */
+/** y에 깐 가로 구간(x0~x1)이 테이블 몸통을 지나가는지 봐요. */
 export const horizontalSegHitsBox = (
   x0: number,
   x1: number,
@@ -259,7 +262,7 @@ const orthoPath = (
   laneX: number,
 ) => `M ${sx} ${sy} H ${laneX} V ${ty} H ${tx}`
 
-/** Exit stubs then route above/below obstacles so horizontals never cross table bodies. */
+/** 짧은 출구 스텁을 낸 뒤, 위·아래로 돌아가 가로선이 테이블을 뚫지 않게 해요. */
 const detourPath = (
   edge: RoutedEdge,
   detourY: number,
@@ -326,7 +329,7 @@ const candidateForDetour = (
       : edge.targetPosition === Position.Left
         ? tx - STUB
         : tx
-  // Stubs stay local; long horizontal must clear every obstacle at detourY.
+  // 스텁은 짧게, 긴 가로는 detourY에서 장애물을 모두 피해야 해요.
   if (!hClear(sx, sExit, sy, boxes)) return null
   if (!hClear(tExit, tx, ty, boxes)) return null
   if (!laneClear(sExit, sy, detourY, boxes)) return null
@@ -380,8 +383,8 @@ const collectLaneXs = (edge: RoutedEdge, boxes: NodeBox[]): number[] => {
 }
 
 /**
- * Pick an orthogonal corridor that does not run through other tables.
- * Prefers a short mid lane; falls back to above/below detours.
+ * 다른 테이블을 뚫지 않는 직교 복도를 골라요.
+ * 짧은 가운데 레인을 먼저 쓰고, 안 되면 위·아래 우회로를 써요.
  */
 export const routeAvoidingObstacles = (
   edge: RoutedEdge,
@@ -413,7 +416,7 @@ export const routeAvoidingObstacles = (
     }
   }
 
-  // Prefer the ideal mid corridor before enumerating alternate lanes.
+  // 이상적인 가운데 복도를 먼저 써 보고, 안 되면 다른 레인을 골라요.
   const midHit = candidateForLane(edge, mid, obstacles, 0)
   if (midHit) return midHit
 
@@ -448,7 +451,7 @@ const rangesOverlap = (a0: number, a1: number, b0: number, b1: number) => {
   return !(aHi < bLo || bHi < aLo)
 }
 
-/** Bucketed occupancy so conflict checks stay near-constant as edge count grows. */
+/** 버킷으로 나눠 두어, 엣지가 늘어도 충돌 검사가 거의 일정한 비용에 머물게 해요. */
 const laneBucket = (coord: number) => Math.floor(coord / LANE_GAP)
 
 const createVerticalIndex = () => {
@@ -515,7 +518,7 @@ const stubX = (edge: RoutedEdge, which: 'source' | 'target') => {
   return x
 }
 
-/** Static offset ladder — rebuilt once (was per assignOppositeRoutes call). */
+/** 오프셋 사다리예요. 한 번만 만들어 두고 재사용해요 (예전엔 호출마다 만들었었어요). */
 const LANE_SEARCH_OFFSETS: readonly number[] = (() => {
   const offsets = [0]
   for (let step = 1; step <= MAX_LANE_TRIES; step += 1) {
@@ -542,7 +545,7 @@ const preferWithoutObstacles = (edge: RoutedEdge): RouteCandidate => {
     offset: STEP_OFFSET,
     borderRadius: 10,
     centerX: mid,
-    // Path filled when the lane is finalized — avoids double string work.
+    // 레인이 확정될 때 경로를 채워요. 문자열 작업을 두 번 하지 않으려고요.
     labelX: mid,
     labelY: (edge.sourceY + edge.targetY) / 2,
   }
@@ -569,7 +572,7 @@ const laneCandidate = (
   }
 }
 
-/** Separate opposite-direction edges so vertical/detour corridors do not share a lane. */
+/** 서로 반대 방향 엣지가 세로·우회 복도를 같이 쓰지 않게 떨어뜨려 줘요. */
 const assignOppositeRoutes = (
   edges: RoutedEdge[],
   boxes: NodeBox[],
@@ -599,91 +602,159 @@ const assignOppositeRoutes = (
   const usedH = createHorizontalIndex()
   const offsets = LANE_SEARCH_OFFSETS
 
-  for (const { edge, pref } of vertical) {
-    const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
-    const y0 = edge.sourceY
-    const y1 = edge.targetY
-    const base = pref.centerX ?? pref.labelX
-    let chosen: RouteCandidate | null = null
-
-    for (const delta of offsets) {
-      const x = base + delta
-      if (usedV.conflicts(x, y0, y1)) continue
-      // Horizontal legs should also stay off other edges' horizontals.
-      if (usedH.conflicts(y0, edge.sourceX, x)) continue
-      if (usedH.conflicts(y1, x, edge.targetX)) continue
-      const hit = laneCandidate(edge, x, obstacles, Math.abs(delta))
-      if (!hit) continue
-      chosen = hit
-      break
-    }
-
-    if (!chosen) {
-      for (const delta of offsets) {
-        const x = base + delta
-        if (usedV.conflicts(x, y0, y1)) continue
-        chosen = laneCandidate(edge, x, EMPTY_BOXES, Math.abs(delta))
-        break
-      }
-    }
-
-    const route = toLaneRoute(chosen ?? pref)
-    if (!route.path && route.centerX != null) {
-      route.path = orthoPath(
-        edge.sourceX,
-        edge.sourceY,
-        edge.targetX,
-        edge.targetY,
-        route.centerX,
-      )
-    }
-    const laneX = route.centerX ?? route.labelX ?? base
-    result.set(edge.id, route)
-    usedV.add({ x: laneX, y0, y1 })
-    usedH.add({ y: y0, x0: edge.sourceX, x1: laneX })
-    usedH.add({ y: y1, x0: laneX, x1: edge.targetX })
+  // 비슷한 가운데 X끼리 묶고, Y가 안 겹쳐도 세로 레인을 하나씩 나눠 줘요.
+  // (안 그러면 중간에 한 줄로 붙었다가 갈라져 관계를 읽기 어려워요.)
+  const verticalGroups = new Map<number, typeof vertical>()
+  for (const item of vertical) {
+    const mid = item.pref.centerX ?? item.pref.labelX
+    const key = corridorKey(mid)
+    const list = verticalGroups.get(key)
+    if (list) list.push(item)
+    else verticalGroups.set(key, [item])
   }
 
-  for (const { edge, pref } of detours) {
-    const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
-    const sExit = stubX(edge, 'source')
-    const tExit = stubX(edge, 'target')
-    const x0 = Math.min(sExit, tExit)
-    const x1 = Math.max(sExit, tExit)
-    let chosen: RouteCandidate | null = null
+  for (const group of verticalGroups.values()) {
+    group.sort((a, b) => sortByMidY(a.edge, b.edge))
+    const n = group.length
+    const takenX: number[] = []
+    const xTaken = (x: number) =>
+      takenX.some((tx) => Math.abs(tx - x) < LANE_GAP)
 
-    for (const delta of offsets) {
-      const y = pref.labelY + delta
-      if (usedH.conflicts(y, x0, x1)) continue
-      if (usedV.conflicts(sExit, edge.sourceY, y)) continue
-      if (usedV.conflicts(tExit, y, edge.targetY)) continue
-      const hit = obstacles.length
-        ? candidateForDetour(edge, y, obstacles, Math.abs(delta))
-        : {
-            cost: Math.abs(delta),
-            offset: STEP_OFFSET,
-            borderRadius: 10,
-            ...detourPath(edge, y),
+    for (let i = 0; i < n; i += 1) {
+      const { edge, pref } = group[i]!
+      const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
+      const y0 = edge.sourceY
+      const y1 = edge.targetY
+      const base = pref.centerX ?? pref.labelX
+      const fan = (i - (n - 1) / 2) * LANE_GAP
+      let chosen: RouteCandidate | null = null
+
+      for (const delta of offsets) {
+        const x = base + fan + delta
+        if (xTaken(x)) continue
+        if (usedV.conflicts(x, y0, y1)) continue
+        // 가로 다리도 다른 엣지의 가로와 겹치지 않게 봐요.
+        if (usedH.conflicts(y0, edge.sourceX, x)) continue
+        if (usedH.conflicts(y1, x, edge.targetX)) continue
+        const hit = laneCandidate(edge, x, obstacles, Math.abs(fan) + Math.abs(delta))
+        if (!hit) continue
+        chosen = hit
+        break
+      }
+
+      if (!chosen) {
+        for (const delta of offsets) {
+          const x = base + fan + delta
+          if (xTaken(x)) continue
+          if (usedV.conflicts(x, y0, y1)) continue
+          chosen = laneCandidate(edge, x, EMPTY_BOXES, Math.abs(fan) + Math.abs(delta))
+          if (chosen) break
+        }
+      }
+
+      const route = toLaneRoute(chosen ?? pref)
+      if (!route.path && route.centerX != null) {
+        route.path = orthoPath(
+          edge.sourceX,
+          edge.sourceY,
+          edge.targetX,
+          edge.targetY,
+          route.centerX,
+        )
+      }
+      const laneX = route.centerX ?? route.labelX ?? base + fan
+      // 같은 복도에서 고른 X가 겹치면 강제로 한 칸 밀어요.
+      let finalX = laneX
+      if (xTaken(finalX)) {
+        for (const delta of offsets) {
+          const trial = base + fan + delta
+          if (!xTaken(trial)) {
+            finalX = trial
+            route.centerX = trial
+            route.labelX = trial
+            route.path = orthoPath(
+              edge.sourceX,
+              edge.sourceY,
+              edge.targetX,
+              edge.targetY,
+              trial,
+            )
+            break
           }
-      if (!hit) continue
-      chosen = hit
-      break
+        }
+      }
+      result.set(edge.id, route)
+      takenX.push(finalX)
+      usedV.add({ x: finalX, y0, y1 })
+      usedH.add({ y: y0, x0: edge.sourceX, x1: finalX })
+      usedH.add({ y: y1, x0: finalX, x1: edge.targetX })
     }
+  }
 
-    const route = toLaneRoute(chosen ?? pref)
-    const labelY = route.labelY ?? pref.labelY
-    result.set(edge.id, route)
-    usedH.add({ y: labelY, x0, x1 })
-    usedV.add({ x: sExit, y0: edge.sourceY, y1: labelY })
-    usedV.add({ x: tExit, y0: labelY, y1: edge.targetY })
+  // 우회(가로 긴 구간)도 Y가 안 겹쳐도 비슷한 높이면 한 줄로 붙지 않게 갈라요.
+  const detourGroups = new Map<number, typeof detours>()
+  for (const item of detours) {
+    const key = Math.round(item.pref.labelY / SAME_X_BUCKET)
+    const list = detourGroups.get(key)
+    if (list) list.push(item)
+    else detourGroups.set(key, [item])
+  }
+
+  for (const group of detourGroups.values()) {
+    group.sort(
+      (a, b) =>
+        a.pref.labelY - b.pref.labelY || sortByMidY(a.edge, b.edge),
+    )
+    const n = group.length
+    const takenY: number[] = []
+    const yTaken = (y: number) =>
+      takenY.some((ty) => Math.abs(ty - y) < LANE_GAP)
+
+    for (let i = 0; i < n; i += 1) {
+      const { edge, pref } = group[i]!
+      const obstacles = hasBoxes ? boxesForEdge(edge, boxes) : EMPTY_BOXES
+      const sExit = stubX(edge, 'source')
+      const tExit = stubX(edge, 'target')
+      const x0 = Math.min(sExit, tExit)
+      const x1 = Math.max(sExit, tExit)
+      const fan = (i - (n - 1) / 2) * LANE_GAP
+      let chosen: RouteCandidate | null = null
+
+      for (const delta of offsets) {
+        const y = pref.labelY + fan + delta
+        if (yTaken(y)) continue
+        if (usedH.conflicts(y, x0, x1)) continue
+        if (usedV.conflicts(sExit, edge.sourceY, y)) continue
+        if (usedV.conflicts(tExit, y, edge.targetY)) continue
+        const hit = obstacles.length
+          ? candidateForDetour(edge, y, obstacles, Math.abs(fan) + Math.abs(delta))
+          : {
+              cost: Math.abs(fan) + Math.abs(delta),
+              offset: STEP_OFFSET,
+              borderRadius: 10,
+              ...detourPath(edge, y),
+            }
+        if (!hit) continue
+        chosen = hit
+        break
+      }
+
+      const route = toLaneRoute(chosen ?? pref)
+      const labelY = route.labelY ?? pref.labelY + fan
+      result.set(edge.id, route)
+      takenY.push(labelY)
+      usedH.add({ y: labelY, x0, x1 })
+      usedV.add({ x: sExit, y0: edge.sourceY, y1: labelY })
+      usedV.add({ x: tExit, y0: labelY, y1: edge.targetY })
+    }
   }
 
   return result
 }
 
 /**
- * Build lane offsets once per frame.
- * When `boxes` is provided, corridors avoid tables; all edges also separate from each other.
+ * 프레임마다 레인 오프셋을 한 번 만들어요.
+ * `boxes`가 있으면 테이블을 피하고, 엣지끼리도 서로 떨어지게 해요.
  */
 export const buildLaneRoutes = (
   edges: RoutedEdge[],
@@ -733,7 +804,7 @@ export const buildLaneRoutes = (
     result.set(id, route)
   }
 
-  // Same-side edges: stack outer lanes, then nudge if another edge already owns that X.
+  // 같은 쪽 엣지: 바깥 레인부터 쌓고, 그 X를 이미 쓰는 엣지가 있으면 살짝 밀어요.
   const usedSameV = createVerticalIndex()
   for (const group of same.values()) {
     group.sort(sortByMidY)
@@ -780,7 +851,7 @@ export const buildLaneRoutes = (
   return result
 }
 
-/** Solo / test helper — prefer `buildLaneRoutes` once per frame in the canvas. */
+/** 혼자 쓸 때·테스트용이에요. 캔버스에서는 프레임마다 `buildLaneRoutes` 한 번이 좋아요. */
 export const smoothStepRoute = (
   edge: RoutedEdge,
   all: RoutedEdge[] = [edge],

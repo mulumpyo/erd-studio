@@ -3,7 +3,7 @@ import { yToErd } from '@erd-studio/yjs-erd'
 
 export type PersistPrisma = {
   project: {
-    // Prisma's Buffer typing differs across TS/Node; keep this seam narrow for tests.
+    // Prisma Buffer 타입이 TS/Node마다 달라서, 테스트용으로 이 경계만 좁게 둬요.
     update: (args: {
       where: { id: string }
       data: { yjsState: Buffer; snapshot: object }

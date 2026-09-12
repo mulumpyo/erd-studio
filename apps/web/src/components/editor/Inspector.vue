@@ -23,6 +23,9 @@ import DomainPanel from '@/components/editor/DomainPanel.vue'
 import RelationInspector from '@/components/editor/RelationInspector.vue'
 import HoverTip from '@/components/ui/hover-tip/HoverTip.vue'
 import { confirm } from '@/composables/useConfirm'
+import { AI_FEATURES_ENABLED } from '@/lib/feature-flags'
+
+const aiEnabled = AI_FEATURES_ENABLED
 
 const props = defineProps<{
   table: ErdTable | null
@@ -218,10 +221,18 @@ const onDragEnd = () => {
         </button>
         <button
           type="button"
-          class="inline-flex h-11 items-center justify-center rounded-2xl bg-secondary px-4 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-secondary px-4 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="!aiEnabled"
+          :title="aiEnabled ? undefined : 'AI 기능 준비 중'"
           @click="emit('open-ai')"
         >
           AI로 스키마 만들기
+          <span
+            v-if="!aiEnabled"
+            class="inline-flex items-center rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-bold leading-none text-muted-foreground"
+          >
+            준비 중
+          </span>
         </button>
       </div>
     </template>

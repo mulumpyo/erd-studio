@@ -74,6 +74,13 @@ const focused = computed(() => {
 const dimmed = computed(
   () => flowing.value && Boolean(flowView?.focusTableId.value) && !focused.value,
 )
+/** 흐름선이 보일 때는 밑의 일반 관계선은 숨겨요. */
+const showFlow = computed(() => flowing.value && !dimmed.value)
+const lineOpacity = computed(() => {
+  if (showFlow.value) return 0
+  if (dimmed.value) return 0.22
+  return 1
+})
 const cycleWarning = computed(
   () =>
     Boolean(props.data?.cycleWarning) ||
@@ -121,12 +128,12 @@ const barPath = computed(() => {
     :style="{
       ...stroke,
       strokeDasharray: dashed ? '6 4' : undefined,
-      opacity: dimmed ? 0.22 : 1,
+      opacity: lineOpacity,
     }"
     :interaction-width="32"
   />
   <path
-    v-if="flowing && !dimmed"
+    v-if="showFlow"
     class="erd-flow-line"
     :class="{ 'erd-flow-line-focus': focused }"
     fill="none"
@@ -136,12 +143,12 @@ const barPath = computed(() => {
   <path
     fill="none"
     :d="barPath"
-    :style="{ ...stroke, opacity: dimmed ? 0.22 : 1 }"
+    :style="{ ...stroke, opacity: lineOpacity }"
   />
   <path
     fill="none"
     :d="crowPath"
-    :style="{ ...stroke, opacity: dimmed ? 0.22 : 1 }"
+    :style="{ ...stroke, opacity: lineOpacity }"
   />
   <EdgeLabelRenderer>
     <div

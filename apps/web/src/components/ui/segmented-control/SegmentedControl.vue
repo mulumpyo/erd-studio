@@ -6,7 +6,13 @@ defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
   modelValue: string
-  options: Array<{ value: string; label: string; badge?: number }>
+  options: Array<{
+    value: string
+    label: string
+    badge?: number
+    /** 라벨 옆에 붙는 작은 상태 칩이에요 (예: 준비 중) */
+    tag?: string
+  }>
   disabled?: boolean
   class?: string
 }>()
@@ -21,6 +27,9 @@ const selectedIndex = computed(() => {
 })
 
 const count = computed(() => Math.max(props.options.length, 1))
+
+/** 옵션이 2개(공개/비공개)면 넓게, 탭이 많으면 줄이고 말줄임해요. */
+const roomy = computed(() => count.value <= 2)
 </script>
 
 <template>
@@ -41,22 +50,31 @@ const count = computed(() => Math.max(props.options.length, 1))
       :key="opt.value"
       type="button"
       :disabled="disabled"
-      class="relative z-10 flex h-full min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap px-2 text-[13px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-40"
-      :class="
+      class="relative z-10 flex h-full flex-1 items-center justify-center gap-1 whitespace-nowrap text-[13px] font-semibold transition-colors disabled:pointer-events-none disabled:opacity-40"
+      :class="[
+        roomy ? 'min-w-[4.75rem] px-2.5' : 'min-w-0 px-1.5 sm:px-2',
         modelValue === opt.value
           ? 'text-foreground'
           : opt.badge
             ? 'text-primary hover:text-primary'
-            : 'text-muted-foreground hover:text-foreground'
-      "
+            : 'text-muted-foreground hover:text-foreground',
+      ]"
       :aria-label="
         opt.badge
           ? `${opt.label}, 읽지 않은 메시지 ${opt.badge}개`
-          : undefined
+          : opt.tag
+            ? `${opt.label}, ${opt.tag}`
+            : undefined
       "
       @click="emit('update:modelValue', opt.value)"
     >
-      {{ opt.label }}
+      <span :class="roomy ? undefined : 'truncate'">{{ opt.label }}</span>
+      <span
+        v-if="opt.tag"
+        class="inline-flex shrink-0 items-center rounded-full bg-muted-foreground/15 px-1.5 py-0.5 text-[10px] font-bold leading-none tracking-[-0.01em] text-muted-foreground"
+      >
+        {{ opt.tag }}
+      </span>
       <span
         v-if="opt.badge"
         class="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground"

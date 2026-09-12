@@ -321,7 +321,7 @@ export const useErdSession = (options: {
         )
       }
       const onDocUpdate = (_update: Uint8Array, origin: unknown) => {
-        // Remote provider sync should not flash "동기화 중".
+        // 원격 provider sync 중엔 「동기화 중」이 깜빡이지 않게 해요.
         if (origin === provider) return
         if (connectionStatus.value === 'connected') noteLocalSync()
       }
@@ -346,7 +346,7 @@ export const useErdSession = (options: {
         if (status === 'connecting') setConnectionStatus('connecting')
         if (status === 'disconnected') setConnectionStatus('disconnected')
         if (status === 'connected') {
-          // Wait for synced before claiming full readiness.
+          // synced가 오기 전에는 준비 완료라고 말하지 않아요.
           if (connectionStatus.value !== 'connected') {
             setConnectionStatus('connecting')
           }
@@ -504,7 +504,7 @@ export const useErdSession = (options: {
       if (table) table.position = payload.position
       const note = notes.find((item) => item.id === payload.id)
       if (note) note.position = payload.position
-      // Trigger shallow consumers that read erd.value identity for positions via nodes computed
+      // 위치는 nodes computed가 erd.value 참조로 읽으니, shallow 구독자를 깨워 줘요.
       erd.value = {
         ...erd.value,
         tables: [...tables],
