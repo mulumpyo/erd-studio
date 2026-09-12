@@ -508,7 +508,7 @@ onUnmounted(() => {
               v-for="project in projects"
               :key="project.id"
               data-fit-row
-              class="relative flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+              class="relative flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted"
             >
               <RouterLink
                 class="absolute inset-0"
@@ -666,7 +666,7 @@ onUnmounted(() => {
               :key="team.id"
               type="button"
               data-fit-row
-              class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+              class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
               @click="router.push({ name: 'team', params: { teamId: team.id } })"
             >
               <div class="flex min-w-0 items-center gap-3">

@@ -1,0 +1,1384 @@
+{
+  "kind": "erd-studio",
+  "version": 1,
+  "name": "ERD Studio App DB",
+  "document": {
+    "schemas": [
+      {
+        "id": "sch_public",
+        "name": "public"
+      }
+    ],
+    "tables": [
+      {
+        "id": "tbl_user",
+        "schemaId": "sch_public",
+        "logicalName": "사용자",
+        "physicalName": "User",
+        "comment": "계정·인증·관리자 플래그",
+        "color": "#3b82f6",
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "columns": [
+          {
+            "id": "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_574661bb-b733-4d26-9a10-578170160609",
+            "logicalName": "이메일",
+            "physicalName": "email",
+            "type": "varchar",
+            "length": "255",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": true,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_e765dea1-cdbf-40b4-8888-ab4abfc13da0",
+            "logicalName": "비밀번호해시",
+            "physicalName": "passwordHash",
+            "type": "varchar",
+            "length": "255",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_347d59de-38d7-463f-9e55-3433af6e98b4",
+            "logicalName": "이름",
+            "physicalName": "name",
+            "type": "varchar",
+            "length": "100",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_55137f93-b9b1-49d3-b407-88053bc063d4",
+            "logicalName": "이메일인증시각",
+            "physicalName": "emailVerifiedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_a5257de4-9c6e-4a07-8f16-9c689954a509",
+            "logicalName": "토큰폐기시각",
+            "physicalName": "tokenRevokedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_45aa7db3-2f20-4b18-8443-2097989048af",
+            "logicalName": "정지시각",
+            "physicalName": "suspendedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_60294abc-ed04-4afd-9d79-85066126e1ec",
+            "logicalName": "삭제시각",
+            "physicalName": "deletedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_22f4bf85-aec9-4673-9b7a-329cc30a29a5",
+            "logicalName": "관리자",
+            "physicalName": "isAdmin",
+            "type": "boolean",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "false"
+          },
+          {
+            "id": "col_9934557a-2c65-4834-b767-557bd94cd6bc",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_email_verification",
+        "schemaId": "sch_public",
+        "logicalName": "이메일인증",
+        "physicalName": "EmailVerification",
+        "color": "#6366f1",
+        "position": {
+          "x": 420,
+          "y": 40
+        },
+        "columns": [
+          {
+            "id": "col_d1c49f02-9db9-4844-a948-d92ce08271ee",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_488b042f-75a5-4725-8714-47f80776e203",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_04ce2822-27b5-4ef9-993f-8e85eaa1dc18",
+            "logicalName": "토큰",
+            "physicalName": "token",
+            "type": "varchar",
+            "length": "128",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": true,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_e07eee11-a23a-411b-a0d5-07a720ba7c5d",
+            "logicalName": "다음경로",
+            "physicalName": "nextPath",
+            "type": "varchar",
+            "length": "500",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_6da74761-61d3-4799-9444-31a0c1b3add9",
+            "logicalName": "만료시각",
+            "physicalName": "expiresAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_b84cfe7b-bd34-4bfc-bd0b-6bf18a6a5b37",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_password_reset",
+        "schemaId": "sch_public",
+        "logicalName": "비밀번호재설정",
+        "physicalName": "PasswordReset",
+        "color": "#8b5cf6",
+        "position": {
+          "x": 800,
+          "y": 40
+        },
+        "columns": [
+          {
+            "id": "col_f3419777-4808-4e14-bbf2-6426f58ccc0c",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_ef1df6da-b2c4-451a-9078-388c13a9c3a7",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_149aa732-aa81-4480-b815-e4d04eea3faf",
+            "logicalName": "토큰",
+            "physicalName": "token",
+            "type": "varchar",
+            "length": "128",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": true,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_edfec077-cded-4c83-a726-b7d2a0f6d550",
+            "logicalName": "만료시각",
+            "physicalName": "expiresAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_04d63237-ab36-41e4-89ea-2f27713bb103",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_team",
+        "schemaId": "sch_public",
+        "logicalName": "팀",
+        "physicalName": "Team",
+        "color": "#10b981",
+        "position": {
+          "x": 40,
+          "y": 420
+        },
+        "columns": [
+          {
+            "id": "col_d312ac83-6cc6-4cb0-bf7a-af0a19ab0927",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_b8b5f4dd-27e0-4337-9240-0a5fa205f046",
+            "logicalName": "소유자ID",
+            "physicalName": "ownerId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_bb5fd174-83a0-4ca6-97ab-ab95dcd016e7",
+            "logicalName": "이름",
+            "physicalName": "name",
+            "type": "varchar",
+            "length": "120",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_f021e639-87a4-4b41-a9a9-af277230450b",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_team_member",
+        "schemaId": "sch_public",
+        "logicalName": "팀원",
+        "physicalName": "TeamMember",
+        "comment": "복합 PK (teamId, userId)",
+        "color": "#14b8a6",
+        "position": {
+          "x": 420,
+          "y": 420
+        },
+        "columns": [
+          {
+            "id": "col_775d53c8-7e6d-4123-bd82-fb4f277e49d2",
+            "logicalName": "팀ID",
+            "physicalName": "teamId",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_970f797c-0a84-41ec-93a0-3a02c232c775",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_77913b3b-a62f-454b-bf02-5805f6509f76",
+            "logicalName": "역할",
+            "physicalName": "role",
+            "type": "varchar",
+            "length": "32",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "editor",
+            "domainId": "dom_3d0e0374-34a5-4fd3-a1b6-ef4d3d5184ab"
+          },
+          {
+            "id": "col_7190d5c0-a3d9-4783-b548-21c8cf880a13",
+            "logicalName": "가입일",
+            "physicalName": "joinedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_project",
+        "schemaId": "sch_public",
+        "logicalName": "프로젝트",
+        "physicalName": "Project",
+        "comment": "yjsState(Bytes)·snapshot(Json) 포함",
+        "color": "#f59e0b",
+        "position": {
+          "x": 40,
+          "y": 780
+        },
+        "columns": [
+          {
+            "id": "col_3133e24a-445f-4b9f-8b33-069a020db7e6",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_7b4823a0-1a0c-4d32-bf83-9d5e546b4080",
+            "logicalName": "소유자ID",
+            "physicalName": "ownerId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_419c7731-6638-4bc1-8c0d-fcbcf0ae2847",
+            "logicalName": "팀ID",
+            "physicalName": "teamId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_5b5ea3a2-fef1-45ef-af68-4e261b269684",
+            "logicalName": "이름",
+            "physicalName": "name",
+            "type": "varchar",
+            "length": "200",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_a94ba39e-a747-4723-a022-c3d7fa6d6f80",
+            "logicalName": "공개",
+            "physicalName": "isPublic",
+            "type": "boolean",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "false"
+          },
+          {
+            "id": "col_6a5395b7-d961-4a52-ae66-232c11af61f9",
+            "logicalName": "공유토큰",
+            "physicalName": "shareToken",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": true,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_98c3a380-26cb-4178-a49b-7d8e49322a4e",
+            "logicalName": "설명",
+            "physicalName": "description",
+            "type": "text",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_c4e1cc3e-4fa8-426e-8fe1-6deccd031c41",
+            "logicalName": "태그",
+            "physicalName": "tags",
+            "type": "text",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false,
+            "comment": "PostgreSQL text[]"
+          },
+          {
+            "id": "col_0a04e443-e35f-426d-87e8-b85cbb77e4bf",
+            "logicalName": "Yjs상태",
+            "physicalName": "yjsState",
+            "type": "bytea",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_7b0d19ec-e97b-49e8-acad-b0aaaae167cb",
+            "logicalName": "스냅샷",
+            "physicalName": "snapshot",
+            "type": "json",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_4b36b7ff-765c-4f74-ab5c-73439021562a",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          },
+          {
+            "id": "col_d2989d8f-95cd-4432-a3c3-c54ae548aa2e",
+            "logicalName": "수정일",
+            "physicalName": "updatedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ]
+      },
+      {
+        "id": "tbl_project_member",
+        "schemaId": "sch_public",
+        "logicalName": "프로젝트멤버",
+        "physicalName": "ProjectMember",
+        "comment": "복합 PK (projectId, userId)",
+        "color": "#f97316",
+        "position": {
+          "x": 420,
+          "y": 780
+        },
+        "columns": [
+          {
+            "id": "col_336b0460-43aa-48e9-bd20-56867e7e02be",
+            "logicalName": "프로젝트ID",
+            "physicalName": "projectId",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_b2d2fb78-b899-404b-bd67-49030139a417",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_d7a9604c-7a21-412c-baba-3c74bb93b977",
+            "logicalName": "역할",
+            "physicalName": "role",
+            "type": "varchar",
+            "length": "32",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "editor",
+            "domainId": "dom_3d0e0374-34a5-4fd3-a1b6-ef4d3d5184ab"
+          },
+          {
+            "id": "col_ea64e5f5-6bd7-400b-9c6a-87cb07db7d93",
+            "logicalName": "가입일",
+            "physicalName": "joinedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_project_version",
+        "schemaId": "sch_public",
+        "logicalName": "프로젝트버전",
+        "physicalName": "ProjectVersion",
+        "color": "#eab308",
+        "position": {
+          "x": 800,
+          "y": 780
+        },
+        "columns": [
+          {
+            "id": "col_9cc2f32d-4091-4185-bb6a-520d83abf7e0",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_9bcfbcda-573d-459d-bdca-694c16cd2029",
+            "logicalName": "프로젝트ID",
+            "physicalName": "projectId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_8b91eb5f-1e85-4b65-b55e-f2469b467d78",
+            "logicalName": "작성자ID",
+            "physicalName": "createdById",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_78b54ba3-b9ff-486d-9f8e-5441ab61d7bb",
+            "logicalName": "스냅샷",
+            "physicalName": "snapshot",
+            "type": "json",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_6b7ec52b-b2e4-42b3-86a6-ced763676559",
+            "logicalName": "라벨",
+            "physicalName": "label",
+            "type": "varchar",
+            "length": "200",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_b2ec420a-f09d-4514-98b8-6a25d765b5a4",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_chat_message",
+        "schemaId": "sch_public",
+        "logicalName": "채팅메시지",
+        "physicalName": "ChatMessage",
+        "color": "#06b6d4",
+        "position": {
+          "x": 1180,
+          "y": 780
+        },
+        "columns": [
+          {
+            "id": "col_7f4f0191-3d00-4385-a12d-12127046c6f0",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_5ce894a1-6104-44d8-877c-c70fa2813455",
+            "logicalName": "프로젝트ID",
+            "physicalName": "projectId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_aba4d0e9-ca8b-426e-9f14-080e7d4b75f6",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_7408e9a6-b3e3-47c0-976d-7fd553656976",
+            "logicalName": "본문",
+            "physicalName": "body",
+            "type": "text",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_bcd03bf7-9a66-45bf-80b4-cf5c1e59a790",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_invitation",
+        "schemaId": "sch_public",
+        "logicalName": "초대",
+        "physicalName": "Invitation",
+        "color": "#ec4899",
+        "position": {
+          "x": 800,
+          "y": 420
+        },
+        "columns": [
+          {
+            "id": "col_00ff5456-69df-440b-9b25-dc2a6949d3c6",
+            "logicalName": "아이디",
+            "physicalName": "id",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": true,
+            "domainId": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56"
+          },
+          {
+            "id": "col_c158f7dd-9080-4a63-a5bb-6bb4a27a68a9",
+            "logicalName": "팀ID",
+            "physicalName": "teamId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_5e03b87e-7c7e-43d7-a336-2b2c621a1f1e",
+            "logicalName": "프로젝트ID",
+            "physicalName": "projectId",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_194fdd53-63e5-4748-a4bf-2477c159a1c4",
+            "logicalName": "초대자ID",
+            "physicalName": "invitedById",
+            "type": "varchar",
+            "length": "30",
+            "pk": false,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_0bd6676d-fc6d-401a-8dff-c4d557aef9d6",
+            "logicalName": "토큰",
+            "physicalName": "token",
+            "type": "varchar",
+            "length": "128",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": true,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_00aaf51f-cc20-4dbe-9b22-19e5eb99a8aa",
+            "logicalName": "이메일",
+            "physicalName": "email",
+            "type": "varchar",
+            "length": "255",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_842fbea3-355a-40ae-9bc2-10e76a42f6a2",
+            "logicalName": "역할",
+            "physicalName": "role",
+            "type": "varchar",
+            "length": "32",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "editor",
+            "domainId": "dom_3d0e0374-34a5-4fd3-a1b6-ef4d3d5184ab"
+          },
+          {
+            "id": "col_67efa8be-738e-40b5-98dc-7d99f828f67e",
+            "logicalName": "종류",
+            "physicalName": "kind",
+            "type": "varchar",
+            "length": "32",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "comment": "team | project"
+          },
+          {
+            "id": "col_0b6ddbc8-c99e-483d-9aa1-97c83615a95d",
+            "logicalName": "만료시각",
+            "physicalName": "expiresAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_0225eb5a-237c-44b5-8a43-942dac292df3",
+            "logicalName": "수락시각",
+            "physicalName": "acceptedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_47d01f9e-98ad-4760-8fe2-b10e12ed6045",
+            "logicalName": "거절시각",
+            "physicalName": "declinedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_51156117-5fbb-4955-832f-1ba9fbebf89e",
+            "logicalName": "초대자확인시각",
+            "physicalName": "inviterReadAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": false,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_ce79766c-de27-4f05-b9de-f617a8f6c5f1",
+            "logicalName": "생성일",
+            "physicalName": "createdAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "CURRENT_TIMESTAMP"
+          }
+        ]
+      },
+      {
+        "id": "tbl_user_activity_day",
+        "schemaId": "sch_public",
+        "logicalName": "일별활동",
+        "physicalName": "UserActivityDay",
+        "comment": "복합 PK (day, userId) — DAU 집계",
+        "color": "#64748b",
+        "position": {
+          "x": 1180,
+          "y": 40
+        },
+        "columns": [
+          {
+            "id": "col_1f54e254-4568-4fdf-9330-cdcf4a715c24",
+            "logicalName": "일자",
+            "physicalName": "day",
+            "type": "varchar",
+            "length": "10",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "comment": "YYYY-MM-DD (Asia/Seoul)"
+          },
+          {
+            "id": "col_d2ce5fbf-8628-46ee-b0bd-9059571e8f27",
+            "logicalName": "사용자ID",
+            "physicalName": "userId",
+            "type": "varchar",
+            "length": "30",
+            "pk": true,
+            "fk": true,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ]
+      },
+      {
+        "id": "tbl_usage_daily",
+        "schemaId": "sch_public",
+        "logicalName": "일별사용량",
+        "physicalName": "UsageDaily",
+        "comment": "관리자 대시보드 집계 캐시",
+        "color": "#78716c",
+        "position": {
+          "x": 1180,
+          "y": 280
+        },
+        "columns": [
+          {
+            "id": "col_af33da8e-24f8-467d-8884-87bf1e6cfef5",
+            "logicalName": "일자",
+            "physicalName": "day",
+            "type": "varchar",
+            "length": "10",
+            "pk": true,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_a8871893-f855-4680-82fb-c17eb988f703",
+            "logicalName": "DAU",
+            "physicalName": "dau",
+            "type": "int",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_b0f57477-aba9-4114-b8ad-14c39dd28131",
+            "logicalName": "WAU",
+            "physicalName": "wau",
+            "type": "int",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_d968d02d-b9a0-4a69-a4de-a91be725fa4f",
+            "logicalName": "MAU",
+            "physicalName": "mau",
+            "type": "int",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          },
+          {
+            "id": "col_f8e81a94-dee8-4249-bb21-3eeccf5f0c13",
+            "logicalName": "탈퇴수",
+            "physicalName": "withdrawn",
+            "type": "int",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false,
+            "defaultValue": "0"
+          },
+          {
+            "id": "col_5e7a8648-f2e7-45ef-b38c-40df53186aa3",
+            "logicalName": "수정일",
+            "physicalName": "updatedAt",
+            "type": "timestamp",
+            "pk": false,
+            "fk": false,
+            "nn": true,
+            "unique": false,
+            "autoIncrement": false
+          }
+        ]
+      }
+    ],
+    "relations": [
+      {
+        "id": "rel_emailver_user",
+        "name": "EmailVerification_user",
+        "sourceTableId": "tbl_email_verification",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_488b042f-75a5-4725-8714-47f80776e203"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_pwreset_user",
+        "name": "PasswordReset_user",
+        "sourceTableId": "tbl_password_reset",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_ef1df6da-b2c4-451a-9078-388c13a9c3a7"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_team_owner",
+        "name": "Team_owner",
+        "sourceTableId": "tbl_team",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_b8b5f4dd-27e0-4337-9240-0a5fa205f046"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_tm_team",
+        "name": "TeamMember_team",
+        "sourceTableId": "tbl_team_member",
+        "targetTableId": "tbl_team",
+        "sourceColumnIds": [
+          "col_775d53c8-7e6d-4123-bd82-fb4f277e49d2"
+        ],
+        "targetColumnIds": [
+          "col_d312ac83-6cc6-4cb0-bf7a-af0a19ab0927"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_tm_user",
+        "name": "TeamMember_user",
+        "sourceTableId": "tbl_team_member",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_970f797c-0a84-41ec-93a0-3a02c232c775"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_proj_owner",
+        "name": "Project_owner",
+        "sourceTableId": "tbl_project",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_7b4823a0-1a0c-4d32-bf83-9d5e546b4080"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_proj_team",
+        "name": "Project_team",
+        "sourceTableId": "tbl_project",
+        "targetTableId": "tbl_team",
+        "sourceColumnIds": [
+          "col_419c7731-6638-4bc1-8c0d-fcbcf0ae2847"
+        ],
+        "targetColumnIds": [
+          "col_d312ac83-6cc6-4cb0-bf7a-af0a19ab0927"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_pm_proj",
+        "name": "ProjectMember_project",
+        "sourceTableId": "tbl_project_member",
+        "targetTableId": "tbl_project",
+        "sourceColumnIds": [
+          "col_336b0460-43aa-48e9-bd20-56867e7e02be"
+        ],
+        "targetColumnIds": [
+          "col_3133e24a-445f-4b9f-8b33-069a020db7e6"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_pm_user",
+        "name": "ProjectMember_user",
+        "sourceTableId": "tbl_project_member",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_b2d2fb78-b899-404b-bd67-49030139a417"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_ver_proj",
+        "name": "ProjectVersion_project",
+        "sourceTableId": "tbl_project_version",
+        "targetTableId": "tbl_project",
+        "sourceColumnIds": [
+          "col_9bcfbcda-573d-459d-bdca-694c16cd2029"
+        ],
+        "targetColumnIds": [
+          "col_3133e24a-445f-4b9f-8b33-069a020db7e6"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_ver_user",
+        "name": "ProjectVersion_createdBy",
+        "sourceTableId": "tbl_project_version",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_8b91eb5f-1e85-4b65-b55e-f2469b467d78"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_chat_proj",
+        "name": "ChatMessage_project",
+        "sourceTableId": "tbl_chat_message",
+        "targetTableId": "tbl_project",
+        "sourceColumnIds": [
+          "col_5ce894a1-6104-44d8-877c-c70fa2813455"
+        ],
+        "targetColumnIds": [
+          "col_3133e24a-445f-4b9f-8b33-069a020db7e6"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_chat_user",
+        "name": "ChatMessage_user",
+        "sourceTableId": "tbl_chat_message",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_aba4d0e9-ca8b-426e-9f14-080e7d4b75f6"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_inv_team",
+        "name": "Invitation_team",
+        "sourceTableId": "tbl_invitation",
+        "targetTableId": "tbl_team",
+        "sourceColumnIds": [
+          "col_c158f7dd-9080-4a63-a5bb-6bb4a27a68a9"
+        ],
+        "targetColumnIds": [
+          "col_d312ac83-6cc6-4cb0-bf7a-af0a19ab0927"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_inv_proj",
+        "name": "Invitation_project",
+        "sourceTableId": "tbl_invitation",
+        "targetTableId": "tbl_project",
+        "sourceColumnIds": [
+          "col_5e03b87e-7c7e-43d7-a336-2b2c621a1f1e"
+        ],
+        "targetColumnIds": [
+          "col_3133e24a-445f-4b9f-8b33-069a020db7e6"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_inv_user",
+        "name": "Invitation_invitedBy",
+        "sourceTableId": "tbl_invitation",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_194fdd53-63e5-4748-a4bf-2477c159a1c4"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      },
+      {
+        "id": "rel_act_user",
+        "name": "UserActivityDay_user",
+        "sourceTableId": "tbl_user_activity_day",
+        "targetTableId": "tbl_user",
+        "sourceColumnIds": [
+          "col_d2ce5fbf-8628-46ee-b0bd-9059571e8f27"
+        ],
+        "targetColumnIds": [
+          "col_bc6a0b2f-2eed-4757-8705-ef6d097a2a37"
+        ],
+        "kind": "non-identifying",
+        "sourceCardinality": "N",
+        "targetCardinality": "1"
+      }
+    ],
+    "notes": [],
+    "domains": [
+      {
+        "id": "dom_c8ecc157-af88-4ca3-a9d0-6cacaf1c3c56",
+        "name": "CUID",
+        "type": "varchar",
+        "length": "30",
+        "nn": true
+      },
+      {
+        "id": "dom_3d0e0374-34a5-4fd3-a1b6-ef4d3d5184ab",
+        "name": "역할",
+        "type": "varchar",
+        "length": "32",
+        "nn": true
+      }
+    ],
+    "settings": {
+      "nameMode": "both",
+      "show": {
+        "tableComment": false,
+        "columnDomain": false,
+        "columnType": true,
+        "columnNotNull": true,
+        "columnDefault": false,
+        "columnComment": false,
+        "columnUnique": true,
+        "columnAutoIncrement": true
+      }
+    }
+  }
+}

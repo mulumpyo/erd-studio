@@ -110,8 +110,8 @@ export const useEditorTools = (opts: {
       return
     }
     opts.selectedId.value = null
-    // Compact layouts keep the panel open; users close it with the sheet control.
-    // Auto-collapse was dropping in-progress attribute edits on canvas clicks.
+    // 좁은 레이아웃에선 패널을 열어 두고, 시트 컨트롤로 닫아요.
+    // 캔버스 클릭마다 자동으로 접히면 속성 편집 중이던 내용이 날아갔어요.
     if (opts.readOnly.value) return
     if (opts.tool.value === 'table') opts.addTable(position)
     if (opts.tool.value === 'note') opts.addNote(position)

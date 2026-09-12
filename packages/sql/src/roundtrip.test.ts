@@ -4,18 +4,18 @@ import { toDatabaseModel, type ErdDocument, type SqlDialect } from '@erd-studio/
 import { generateSql, parseSql } from './index'
 
 /**
- * Unsupported SQL surface (parser/exporter intentionally omit these).
- * Keep this list explicit so regressions cannot silently “accept” them.
+ * 파서·내보내기가 일부러 안 다루는 SQL이에요.
+ * 목록을 명시해 두어, 나중에 조용히 “지원하는 척” 하지 않게 해요.
  *
- * Dialects: mysql | postgres | mssql | oracle (all share this matrix unless noted)
+ * 방언: mysql | postgres | mssql | oracle (따로 적지 않으면 공통)
  * - CREATE/ALTER/DROP VIEW
- * - CREATE/DROP INDEX (standalone; PK/UNIQUE inline may still parse as columns)
- * - CHECK constraints
- * - TRIGGER / PROCEDURE / FUNCTION bodies
- * - PARTITION BY / tablespaces / storage clauses
- * - Inline FOREIGN KEY / CONSTRAINT inside CREATE TABLE (only ALTER TABLE … ADD CONSTRAINT FK)
- * - Composite type / ENUM / DOMAIN DDL beyond plain column types
- * - Comments via COMMENT ON COLUMN (postgres table COMMENT ON TABLE is exported; column comments only on mysql import/export)
+ * - CREATE/DROP INDEX (단독; PK/UNIQUE는 컬럼으로 파싱될 수 있어요)
+ * - CHECK 제약
+ * - TRIGGER / PROCEDURE / FUNCTION 본문
+ * - PARTITION BY / 테이블스페이스 / 스토리지 절
+ * - CREATE TABLE 안쪽의 inline FOREIGN KEY (ALTER TABLE … ADD CONSTRAINT FK만 받아요)
+ * - 복합 타입 / ENUM / DOMAIN DDL (단순 컬럼 타입 제외)
+ * - COMMENT ON COLUMN (postgres 테이블 COMMENT ON TABLE은 내보내요; 컬럼 주석은 mysql 위주)
  */
 export const UNSUPPORTED_SQL_FEATURES = [
   'CREATE VIEW',
@@ -103,7 +103,7 @@ test('parse → generate → parse golden roundtrip for all dialects', () => {
     assert.equal(second.tables.length, first.tables.length)
     assert.equal(second.relations.length, first.relations.length)
     assert.equal(toDatabaseModel(second).foreignKeys.length, 1)
-    // Structural shape survives even when a dialect rewrites idents/types (oracle).
+    // 방언이 식별자·타입을 바꿔도 (oracle) 구조 모양은 남아요.
     assert.deepEqual(
       fingerprint(second).tables.map((t) => ({
         name: t.physicalName.toLowerCase(),
@@ -114,6 +114,42 @@ test('parse → generate → parse golden roundtrip for all dialects', () => {
         columns: t.columns.map((c) => c.physicalName.toLowerCase()).sort(),
       })),
     )
+  }
+})
+
+test('composite PRIMARY KEY roundtrips column order for all dialects', () => {
+  const sql = `
+CREATE TABLE team_member (
+  team_id varchar(36) NOT NULL,
+  user_id varchar(36) NOT NULL,
+  role varchar(32) NOT NULL,
+  PRIMARY KEY (team_id, user_id)
+);
+`
+  for (const dialect of DIALECTS) {
+    const doc = parseSql(sql, dialect)
+    const table = doc.tables[0]
+    assert.ok(table, dialect)
+    const pkCols = table.columns.filter((col) => col.pk).map((c) => c.physicalName)
+    assert.deepEqual(
+      pkCols.map((n) => n.toLowerCase()),
+      ['team_id', 'user_id'],
+      dialect,
+    )
+    const model = toDatabaseModel(doc)
+    assert.deepEqual(
+      model.primaryKeys[0].columnIds.map(
+        (id) => table.columns.find((c) => c.id === id)!.physicalName.toLowerCase(),
+      ),
+      ['team_id', 'user_id'],
+      dialect,
+    )
+    const out = generateSql(doc, dialect)
+    const again = parseSql(out, dialect)
+    const againPk = again.tables[0].columns
+      .filter((col) => col.pk)
+      .map((c) => c.physicalName.toLowerCase())
+    assert.deepEqual(againPk, ['team_id', 'user_id'], `${dialect} re-parse`)
   }
 })
 

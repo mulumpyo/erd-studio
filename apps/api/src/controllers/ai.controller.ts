@@ -3,10 +3,16 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiServiceUnavailableResponse,
   ApiTags,
   ApiTooManyRequestsResponse,
 } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
+import {
+  aiFeaturesEnabled,
+  assertAiEnabled,
+  disabledAiStatus,
+} from '../common/ai-features'
 import { Auth } from '../common/auth/decorators'
 import {
   AiStatusResponseDto,
@@ -17,11 +23,18 @@ import {
   ListAiModelsDto,
   ListAiModelsResponseDto,
 } from '../dto/ai.dto'
+import { ErrorResponseDto } from '../dto/common-response.dto'
 import { AiService } from '../services/ai.service'
 
 @ApiTags('ai')
 @ApiTooManyRequestsResponse({
   description: '요청이 너무 잦아요. 잠시 후 다시 시도해 주세요.',
+  type: ErrorResponseDto,
+})
+@ApiServiceUnavailableResponse({
+  description:
+    '`AI_FEATURES_ENABLED`가 꺼져 있으면 생성·채팅·모델 목록은 503이에요. `GET /ai/status`는 항상 200이며 `available: false`예요.',
+  type: ErrorResponseDto,
 })
 @Controller('ai')
 @Auth()
@@ -36,6 +49,7 @@ export class AiController {
   @ApiOkResponse({ type: AiStatusResponseDto })
   @Get('status')
   status() {
+    if (!aiFeaturesEnabled()) return disabledAiStatus()
     return this.ai.status()
   }
 
@@ -48,6 +62,7 @@ export class AiController {
   @Post('models')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   listModels(@Body() dto: ListAiModelsDto) {
+    assertAiEnabled()
     return this.ai.listModels(dto.provider, dto.apiKey, dto.baseUrl)
   }
 
@@ -61,6 +76,7 @@ export class AiController {
   @Post('generate')
   @Throttle({ default: { limit: 12, ttl: 60_000 } })
   generate(@Body() dto: GenerateErdDto) {
+    assertAiEnabled()
     return this.ai.generate({
       prompt: dto.prompt,
       apiKey: dto.apiKey,
@@ -83,6 +99,7 @@ export class AiController {
   @Post('chat')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   chat(@Body() dto: ChatErdDto) {
+    assertAiEnabled()
     return this.ai.chat({
       message: dto.message,
       apiKey: dto.apiKey,

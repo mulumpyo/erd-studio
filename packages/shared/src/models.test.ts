@@ -196,6 +196,69 @@ test('schema rename keeps the schema id and table membership', () => {
   assert.equal(model.schemas[0].name, 'billing')
 })
 
+test('composite primary keys keep column declaration order', () => {
+  const base = emptyDocument()
+  const schemaId = base.schemas[0]?.id ?? ''
+  const doc = ensureDocumentIds({
+    ...base,
+    tables: [
+      {
+        id: 'tbl_team_member',
+        schemaId,
+        physicalName: 'TeamMember',
+        logicalName: '팀 멤버',
+        color: '#3b82f6',
+        position: { x: 0, y: 0 },
+        columns: [
+          {
+            id: 'col_team',
+            physicalName: 'teamId',
+            logicalName: 'teamId',
+            type: 'text',
+            pk: true,
+            fk: true,
+            nn: true,
+            unique: false,
+            autoIncrement: false,
+          },
+          {
+            id: 'col_role',
+            physicalName: 'role',
+            logicalName: 'role',
+            type: 'text',
+            pk: false,
+            fk: false,
+            nn: true,
+            unique: false,
+            autoIncrement: false,
+          },
+          {
+            id: 'col_user',
+            physicalName: 'userId',
+            logicalName: 'userId',
+            type: 'text',
+            pk: true,
+            fk: true,
+            nn: true,
+            unique: false,
+            autoIncrement: false,
+          },
+        ],
+      },
+    ],
+  })
+  const model = toDatabaseModel(doc)
+  const table = doc.tables[0]
+  assert.equal(model.primaryKeys.length, 1)
+  assert.deepEqual(
+    model.primaryKeys[0].columnIds.map(
+      (id) => table.columns.find((c) => c.id === id)!.physicalName,
+    ),
+    ['teamId', 'userId'],
+  )
+  assert.equal(model.primaryKeys[0].name, 'PK_TeamMember')
+})
+
 test('legacy domain names are remapped onto columns', () => {
   const base = emptyDocument()
   const doc = ensureDocumentIds({

@@ -2,12 +2,25 @@ import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 import { Position } from '@vue-flow/core'
 import { erdToY, patchTable, yToErd } from '@erd-studio/yjs-erd'
-import { buildLaneRoutes, type RoutedEdge } from './erd-edge-route'
+import {
+  buildLaneRoutes,
+  tableBox,
+  type RoutedEdge,
+} from './erd-edge-route'
 import { generateLargeErd } from './erd-large-fixture'
 import { applyErdStructuralPatch } from './erd-session-patch'
 
-/** 60fps frame budget with CI headroom (ms). */
+/** 60fps 한 프레임 예산(ms). */
 export const FRAME_BUDGET_MS = 16
+
+/**
+ * GitHub Actions 공유 러너는 로컬보다 몇 배 느려요.
+ * 회귀만 잡도록 CI에서는 예산을 넉넉히 잡아요.
+ */
+const PERF_SLACK =
+  process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true' ? 3 : 1
+
+const budgetMs = (frames: number) => FRAME_BUDGET_MS * frames * PERF_SLACK
 
 const toRouted = (count: number): RoutedEdge[] =>
   Array.from({ length: count }, (_, i) => {
@@ -42,7 +55,7 @@ describe('large-schema canvas perf', () => {
     const ms = avgMs(30, () => {
       buildLaneRoutes(edges)
     })
-    expect(ms).toBeLessThan(FRAME_BUDGET_MS)
+    expect(ms).toBeLessThan(budgetMs(1))
     expect(buildLaneRoutes(edges).size).toBe(400)
   })
 
@@ -52,7 +65,7 @@ describe('large-schema canvas perf', () => {
     const ms = avgMs(8, () => {
       yToErd(ydoc)
     })
-    expect(ms).toBeLessThan(FRAME_BUDGET_MS * 2)
+    expect(ms).toBeLessThan(budgetMs(2))
   })
 
   it('structural single-table patch on 200 tables stays under one frame', () => {
@@ -73,11 +86,46 @@ describe('large-schema canvas perf', () => {
     const ms = avgMs(20, () => {
       applyErdStructuralPatch(ydoc, prev, events)
     })
-    expect(ms).toBeLessThan(FRAME_BUDGET_MS)
+    expect(ms).toBeLessThan(budgetMs(1))
     const next = applyErdStructuralPatch(ydoc, prev, events)
     expect(next?.tables.find((t) => t.id === targetId)?.logicalName).toBe(
       'perf-rename',
     )
     expect(next?.tables[1]).toBe(prev.tables[1])
+  })
+
+  it('buildLaneRoutes with table obstacles stays under 3 frames for 200×400', () => {
+    const doc = generateLargeErd()
+    const byId = new Map(doc.tables.map((t) => [t.id, t]))
+    const boxes = doc.tables.map((t) => ({ id: t.id, ...tableBox(t) }))
+    const edges: RoutedEdge[] = doc.relations.map((rel) => {
+      const source = byId.get(rel.sourceTableId)!
+      const target = byId.get(rel.targetTableId)!
+      const sb = tableBox(source)
+      const tb = tableBox(target)
+      return {
+        id: rel.id,
+        sourceId: source.id,
+        targetId: target.id,
+        sourceX: sb.x + sb.w,
+        sourceY: sb.y + sb.h / 2,
+        targetX: tb.x,
+        targetY: tb.y + tb.h / 2,
+        sourcePosition: Position.Right,
+        targetPosition: Position.Left,
+      }
+    })
+    const ms = avgMs(8, () => {
+      buildLaneRoutes(edges, boxes)
+    })
+    expect(ms).toBeLessThan(budgetMs(3))
+    const routed = buildLaneRoutes(edges, boxes)
+    expect(routed.size).toBe(edges.length)
+    // 가운데 레인이 시작·끝 테이블 몸통을 뚫지 않게 경로가 잡혀 있어요.
+    let withPath = 0
+    for (const route of routed.values()) {
+      if (route.path) withPath += 1
+    }
+    expect(withPath).toBeGreaterThan(edges.length * 0.5)
   })
 })

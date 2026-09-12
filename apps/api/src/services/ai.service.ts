@@ -47,7 +47,7 @@ type ChatOptions = {
   baseUrl?: string
 }
 
-/** Slim shapes for generate/chat — notes/settings filled server-side. */
+/** generate/chat용 가벼운 모양이에요. notes·settings는 서버에서 채워 줘요. */
 const TABLE_SHAPE = `{
   "id":"tbl_...","logicalName":"한글","physicalName":"snake_case","color":"#3b82f6",
   "position":{"x":80,"y":80},
@@ -137,7 +137,7 @@ const inCidr = (ip: number, base: string, bits: number) => {
   return (ip & mask) === (baseInt & mask)
 }
 
-/** Block localhost / link-local / private / metadata hosts for custom base URLs. */
+/** 커스텀 base URL에서 localhost·링크로컬·사설·메타데이터 호스트는 막아요. */
 export const isBlockedCompatibleHost = (hostname: string) => {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (BLOCKED_HOSTS.has(host)) return true
@@ -145,7 +145,7 @@ export const isBlockedCompatibleHost = (hostname: string) => {
     return true
   }
   if (host.includes(':')) {
-    // Basic IPv6 local/unique-local checks.
+    // IPv6 로컬·unique-local 기본 검사예요.
     if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return true
   }
   if (!isIpv4(host)) return false
@@ -169,8 +169,8 @@ const defaultCompatibleLookup: CompatibleHostLookup = async (hostname) =>
   dnsLookup(hostname, { all: true })
 
 /**
- * Resolve hostname and reject if any address is private/link-local/metadata.
- * Call before outbound `other` provider requests (DNS-rebinding defense).
+ * 호스트를 DNS로 풀고, 사설·링크로컬·메타데이터 IP면 거절해요.
+ * `other` 제공자로 나가기 전에 불러 주세요 (DNS 리바인딩 방어예요).
  */
 export const assertResolvedCompatibleHost = async (
   hostname: string,
@@ -197,7 +197,22 @@ export const assertResolvedCompatibleHost = async (
   return results
 }
 
-/** Fetch an OpenAI-compatible URL after DNS resolve + IP pin (anti-rebinding). */
+/**
+ * LLM·업스트림 대기를 잘라서, nginx(~60s)·Cloudflare(~100s)가 HTML 504를 내기 전에
+ * Nest가 JSON으로 답하게 해요.
+ */
+export const AI_UPSTREAM_TIMEOUT_MS = 90_000
+
+export const aiUpstreamSignal = (parent?: AbortSignal | null): AbortSignal => {
+  const timeout = AbortSignal.timeout(AI_UPSTREAM_TIMEOUT_MS)
+  if (!parent) return timeout
+  if (typeof AbortSignal.any === 'function') {
+    return AbortSignal.any([parent, timeout])
+  }
+  return timeout
+}
+
+/** DNS 해석·IP 고정 뒤 OpenAI 호환 URL을 호출해요 (리바인딩 방지). */
 export const fetchCompatibleUrl = async (
   url: string,
   init?: RequestInit,
@@ -222,8 +237,13 @@ export const fetchCompatibleUrl = async (
       : init?.body != null
         ? String(init.body)
         : undefined
+  const signal = aiUpstreamSignal(init?.signal)
 
   return new Promise<Response>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason ?? new Error('ETIMEDOUT: AI upstream timeout'))
+      return
+    }
     const req = https.request(
       {
         protocol: 'https:',
@@ -258,13 +278,22 @@ export const fetchCompatibleUrl = async (
         })
       },
     )
+    const onAbort = () => {
+      req.destroy()
+      reject(signal.reason ?? new Error('ETIMEDOUT: AI upstream timeout'))
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    req.setTimeout(AI_UPSTREAM_TIMEOUT_MS, () => {
+      req.destroy()
+      reject(new Error('ETIMEDOUT: AI upstream timeout'))
+    })
     req.on('error', reject)
     if (body != null) req.write(body)
     req.end()
   })
 }
 
-/** Normalize OpenAI-compatible base URL (https only). */
+/** OpenAI 호환 base URL을 정리해요 (https만 허용). */
 export const resolveCompatibleBaseUrl = (raw: string): string => {
   const trimmed = raw.trim()
   if (!trimmed) {
@@ -291,7 +320,7 @@ export const resolveCompatibleBaseUrl = (raw: string): string => {
   return `${url.origin}${path}`
 }
 
-/** Build `.../chat/completions` for an allowlisted or custom base. */
+/** 허용 목록 또는 커스텀 base로 `.../chat/completions` 주소를 만들어요. */
 export const resolveChatCompletionsUrl = (
   provider: AiProvider,
   baseUrl?: string,
@@ -348,7 +377,7 @@ const extractUpstreamErrorText = (body: string): string => {
     if (typeof parsed.message === 'string') return parsed.message
     if (typeof parsed.detail === 'string') return parsed.detail
   } catch {
-    /* plain text body */
+    /* 본문이 그냥 텍스트일 때 */
   }
   return raw.slice(0, 240)
 }
@@ -356,7 +385,7 @@ const extractUpstreamErrorText = (body: string): string => {
 const includesAny = (haystack: string, needles: string[]) =>
   needles.some((needle) => haystack.includes(needle))
 
-/** Map upstream provider HTTP failures to short Korean UX copy. */
+/** 업스트림 HTTP 실패를 짧은 한국어 안내로 바꿔 줘요. */
 export const describeAiUpstreamError = (
   status: number,
   body: string,
@@ -488,6 +517,10 @@ export const describeAiUpstreamError = (
       : '채팅 API 주소를 찾지 못했어요. 베이스 URL이 OpenAI 호환(/v1)인지 확인해 주세요.'
   }
 
+  if (status === 502 || status === 504) {
+    return '중간 게이트웨이가 응답을 기다리다 끊었어요. 잠시 후 다시 시도해 주세요.'
+  }
+
   if (status >= 500) {
     return 'AI 제공자 서버에 문제가 있는 것 같아요. 잠시 후 다시 시도해 주세요.'
   }
@@ -515,11 +548,23 @@ export const describeAiNetworkError = (
       : 'AI 서버에 연결하지 못했어요'
   if (
     includesAny(lower, [
+      'etimedout',
+      'timeout',
+      'aborted',
+      'abort',
+      'timed out',
+    ])
+  ) {
+    return kind === 'models'
+      ? '모델 목록 응답이 너무 오래 걸려 중단됐어요. 잠시 후 다시 시도해 주세요.'
+      : 'AI 응답이 너무 오래 걸려 중단됐어요. 잠시 후 다시 시도하거나 요청을 짧게 나눠 주세요.'
+  }
+  if (
+    includesAny(lower, [
       'enotfound',
       'getaddrinfo',
       'econnrefused',
       'econnreset',
-      'etimedout',
       'network',
       'fetch failed',
       'certificate',
@@ -537,7 +582,7 @@ const OPENAI_CHAT_RE =
 const OPENAI_EXCLUDE_RE =
   /embedding|whisper|tts|dall-e|moderation|realtime|transcribe|image|audio|search|computer-use|codex|babbage|davinci|ada|curie/i
 
-/** Keep chat-capable OpenAI model ids only. */
+/** 채팅용 OpenAI 모델 id만 남겨 둬요. */
 export const filterOpenAiChatModels = (ids: string[]): string[] => {
   const seen = new Set<string>()
   const out: string[] = []
@@ -551,7 +596,7 @@ export const filterOpenAiChatModels = (ids: string[]): string[] => {
   return out.sort((a, b) => a.localeCompare(b))
 }
 
-/** Keep Gemini models that support generateContent. */
+/** generateContent를 지원하는 Gemini 모델만 남겨 둬요. */
 export const filterGeminiChatModels = (
   models: Array<{ name?: string; supportedGenerationMethods?: string[] }>,
 ): string[] => {
@@ -572,7 +617,7 @@ export const filterGeminiChatModels = (
   return out.sort((a, b) => a.localeCompare(b))
 }
 
-/** Keep chat-capable ids for OpenAI-compatible catalogs (NVIDIA 등). */
+/** OpenAI 호환 카탈로그(NVIDIA 등)에서 채팅용 id만 남겨 둬요. */
 export const filterCompatibleChatModels = (ids: string[]): string[] => {
   const seen = new Set<string>()
   const out: string[] = []
@@ -592,7 +637,7 @@ const preferDefaultFirst = (ids: string[], preferred: string) => {
   return [preferred, ...ids.filter((id) => id !== preferred)]
 }
 
-/** Hard cap on chat wire document size (related-table context still truncates further). */
+/** 채팅으로 보내는 문서 크기 상한이에요. 관련 테이블 컨텍스트는 더 줄일 수 있어요. */
 const MAX_AI_CHAT_TABLES = 400
 
 const fingerprint = (doc: ErdDocument) =>
@@ -815,6 +860,7 @@ export class AiService {
           })
         : await fetch(url, {
             headers: { Authorization: `Bearer ${key}` },
+            signal: aiUpstreamSignal(),
           })
     } catch (error) {
       if (error instanceof BadRequestException) throw error
@@ -837,7 +883,10 @@ export class AiService {
     try {
       res = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models',
-        { headers: { 'x-goog-api-key': key } },
+        {
+          headers: { 'x-goog-api-key': key },
+          signal: aiUpstreamSignal(),
+        },
       )
     } catch (error) {
       throw new ServiceUnavailableException(
@@ -880,6 +929,7 @@ export class AiService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        signal: aiUpstreamSignal(),
       }
       let res: Response
       try {
@@ -897,7 +947,7 @@ export class AiService {
 
     let useJsonMode = args.jsonMode !== false
     let res = await run(useJsonMode)
-    // Some OpenAI-compatible gateways reject response_format — retry once plain.
+    // response_format을 거절하는 게이트웨이가 있어서, 한 번은 그냥 텍스트로 다시 시도해요.
     if (!res.ok && useJsonMode && (res.status === 400 || res.status === 422)) {
       const errBody = await res.text().catch(() => '')
       if (
@@ -951,7 +1001,7 @@ export class AiService {
   }
 }
 
-/** Extract JSON object/array from model text (fences / leading prose). */
+/** 모델 답에서 JSON 객체·배열을 꺼내요 (코드펜스·앞말 포함). */
 export const parseModelJson = (content: string): unknown | null => {
   const trimmed = content.trim()
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)

@@ -28,6 +28,9 @@ import {
   type RoutedEdge,
 } from '@/lib/erd-edge-route'
 import { ErdLaneRoutesKey } from '@/composables/useErdLaneRoutes'
+import { AI_FEATURES_ENABLED } from '@/lib/feature-flags'
+
+const aiEnabled = AI_FEATURES_ENABLED
 
 const props = withDefaults(
   defineProps<{
@@ -141,9 +144,9 @@ const asTableBox = (node: {
   }
 }
 
-/** One O(E log E) lane build per frame; CrowEdge looks up by id (no peer scan). */
+/** 프레임마다 O(E log E)로 레인을 한 번 만들고, CrowEdge는 id로만 찾아요. */
 const laneRoutes = computed(() => {
-  // Touch node geometry so drag/resize invalidates the shared lane cache.
+  // 드래그·리사이즈 때 공유 레인 캐시가 무효가 되도록 노드 기하를 건드려 줘요.
   const nodes = toValue(getNodes)
   const boxes: NodeBox[] = []
   for (const node of nodes) {
@@ -408,12 +411,14 @@ defineExpose({ focusNode, capture, viewportEl })
     >
       <Background :pattern-color="patternColor" :gap="20" />
       <CanvasControls
+        v-if="!empty"
         v-model:locked="viewLocked"
         v-model:focus="focusMode"
         :read-only="readOnly"
         :nodes-only="compact"
       />
       <MiniMap
+        v-if="!empty"
         pannable
         :width="compact ? 112 : 200"
         :height="compact ? 76 : 150"
@@ -429,17 +434,16 @@ defineExpose({ focusNode, capture, viewportEl })
     </div>
     <div
       v-if="empty && !readOnly"
-      class="pointer-events-none absolute inset-0 z-[4] flex items-center justify-center p-6"
+      class="erd-empty-prompt pointer-events-none absolute z-[4] flex items-center justify-center"
     >
       <div
-        class="pointer-events-auto max-w-sm rounded-3xl bg-card/95 px-6 py-7 text-center shadow-[0_16px_40px_rgb(28_25_23_/_0.14)] ring-1 ring-border/70"
+        class="pointer-events-auto w-full max-w-[min(24rem,100%)] rounded-3xl bg-card/95 px-5 py-6 text-center shadow-[0_16px_40px_rgb(28_25_23_/_0.14)] ring-1 ring-border/70 sm:px-6 sm:py-7"
       >
         <p class="text-[17px] font-bold tracking-[-0.02em]">
           첫 테이블을 만들어 보세요
         </p>
         <p class="mt-2 text-[14px] leading-6 text-muted-foreground">
           버튼을 누르거나, 왼쪽에서 「테이블」을 고른 뒤 빈 곳을 클릭하세요.
-          설명만 적어도 AI가 초안을 그려 줄 수 있어요.
         </p>
         <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
@@ -451,10 +455,18 @@ defineExpose({ focusNode, capture, viewportEl })
           </button>
           <button
             type="button"
-            class="inline-flex h-11 items-center justify-center rounded-2xl bg-secondary px-5 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-secondary px-5 text-[14px] font-semibold text-secondary-foreground hover:bg-secondary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="!aiEnabled"
+            :title="aiEnabled ? undefined : 'AI 기능 준비 중'"
             @click="emit('openAi')"
           >
             AI로 스키마 만들기
+            <span
+              v-if="!aiEnabled"
+              class="inline-flex items-center rounded-full bg-muted-foreground/15 px-2 py-0.5 text-[11px] font-bold leading-none text-muted-foreground"
+            >
+              준비 중
+            </span>
           </button>
         </div>
       </div>

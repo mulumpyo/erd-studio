@@ -149,6 +149,14 @@ describe('describeAiNetworkError', () => {
     const msg = describeAiNetworkError(new Error('fetch failed'), 'chat')
     assert.match(msg, /연결하지 못했어요/)
   })
+
+  it('maps upstream timeouts', () => {
+    const msg = describeAiNetworkError(
+      new Error('ETIMEDOUT: AI upstream timeout'),
+      'chat',
+    )
+    assert.match(msg, /너무 오래 걸려/)
+  })
 })
 
 describe('filterOpenAiChatModels', () => {

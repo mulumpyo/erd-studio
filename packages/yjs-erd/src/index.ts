@@ -68,7 +68,7 @@ const tableToY = (table: ErdTable) => {
   m.set('logicalName', table.logicalName)
   m.set('physicalName', table.physicalName)
   m.set('comment', table.comment ?? '')
-  // Position/color live in layoutsMap only (legacy x/y on table are read fallback).
+  // 위치·색은 layoutsMap에만 둬요 (예전 테이블 x/y는 읽을 때만 보조로 써요).
   const cols = new Y.Array<Y.Map<unknown>>()
   cols.insert(0, orderTableColumns(table.columns).map(columnToY))
   m.set('columns', cols)
@@ -226,7 +226,7 @@ const yToViewSettings = (doc: Y.Doc): ErdViewSettings => {
   })
 }
 
-/** Domains / schemas / view settings only — for incremental session patches. */
+/** 도메인·스키마·뷰 설정만 — 세션 증분 패치용이에요. */
 export const readErdMeta = (doc: Y.Doc) => {
   const domains: ErdDomain[] = []
   const schemas: { id: string; name: string }[] = []

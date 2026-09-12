@@ -73,26 +73,28 @@ const request = async (path: string, init: RequestInit) => {
 
 
 
+const gatewayTimeoutMessage = (status: number) =>
+  status === 504
+    ? '서버 게이트웨이가 응답을 기다리다 끊었어요. 잠시 후 다시 시도하거나 요청을 짧게 나눠 주세요.'
+    : '서버에 잠시 연결하지 못했어요. 배포 중이거나 업스트림이 느릴 수 있어요. 잠시 후 다시 시도해 주세요.'
+
 const readError = async (res: Response) => {
-
   let message = res.statusText
-
   try {
-
     const body = await res.json()
-
     message = body.message || body.error || message
-
     if (Array.isArray(message)) message = message.join(', ')
-
   } catch {
-
-    /* ignore */
-
+    /* ignore — nginx/Cloudflare 504 often returns HTML */
   }
-
+  if (
+    (res.status === 502 || res.status === 504) &&
+    (!message ||
+      /gateway|timeout|bad gateway|html|nginx/i.test(String(message)))
+  ) {
+    message = gatewayTimeoutMessage(res.status)
+  }
   throw new ApiError(res.status, String(message))
-
 }
 
 

@@ -25,8 +25,16 @@ const description = `팀과 함께 ERD를 그리고, SQL로 주고받는 ERD Stu
 바로 붙고, 도메인이 다르면 \`GET /auth/ws-token\`으로 2분짜리 토큰을 받아서 붙여요.
 
 ### 오류 형식
-모든 오류는 \`{ "statusCode": 400, "message": "...", "error": "Bad Request" }\` 모양이에요.
-요청이 너무 잦으면 \`429\`가 오니 잠시 후 다시 시도해 주세요.`
+모든 오류는 \`{ "statusCode": 400, "message": "...", "error": "Bad Request" }\` 모양이에요
+(\`ErrorResponseDto\`). \`message\`는 문자열 또는 검증 오류 배열일 수 있어요.
+
+| 코드 | 예 |
+|------|----|
+| \`400\` | \`{ "statusCode": 400, "message": ["prompt must be longer…"], "error": "Bad Request" }\` |
+| \`401\` | \`{ "statusCode": 401, "message": "Unauthorized", "error": "Unauthorized" }\` |
+| \`404\` | 권한 없는 프로젝트도 존재 감추기를 위해 \`404\` |
+| \`429\` | 요청이 너무 잦을 때 — 잠시 후 재시도 |
+| \`503\` | AI가 \`AI_FEATURES_ENABLED\`로 꺼져 있을 때 (\`GET /ai/status\`는 예외로 200 + \`available: false\`) |`
 
 export const openApiConfig = {
   title: 'ERD Studio',
@@ -55,7 +63,7 @@ export const openApiTags = [
   {
     name: 'ai',
     description:
-      '설명 문장으로 ERD 초안을 만들어요. API 키가 있으면 LLM, 없으면 로컬 휴리스틱을 써요.',
+      '설명 문장으로 ERD 초안·대화를 해요. 사용자 BYOK(ChatGPT/Gemini/OpenAI 호환)이며, `AI_FEATURES_ENABLED=true`일 때만 열려요.',
   },
   { name: 'chat', description: '프로젝트 안에서 팀원과 메시지를 주고받아요.' },
   {

@@ -5,6 +5,28 @@ export class OkResponseDto {
   ok: true
 }
 
+/** OpenAPI·클라이언트용 공통 오류 응답 모양이에요. */
+export class ErrorResponseDto {
+  @ApiProperty({
+    description: 'HTTP 상태 코드예요.',
+    example: 400,
+  })
+  statusCode: number
+
+  @ApiProperty({
+    description:
+      '사람이 읽을 메시지예요. 문자열 하나이거나 검증 오류면 문자열 배열일 수 있어요.',
+    example: 'AI 기능은 준비 중이에요.',
+  })
+  message: string | string[]
+
+  @ApiPropertyOptional({
+    description: '짧은 오류 이름이에요. 운영 환경의 일부 5xx에서는 생략될 수 있어요.',
+    example: 'Bad Request',
+  })
+  error?: string
+}
+
 export class UserBriefDto {
   @ApiProperty({ example: 'clz9k2p4x0005s601ghijklmn' })
   id: string

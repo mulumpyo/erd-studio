@@ -484,7 +484,7 @@ const renameTeam = async (name: string) => {
               v-for="p in projects"
               :key="p.id"
               data-fit-row
-              class="relative flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+              class="relative flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted"
             >
               <RouterLink
                 class="absolute inset-0"
@@ -593,7 +593,7 @@ const renameTeam = async (name: string) => {
                 class="flex w-full items-center gap-3 px-4 py-3 text-left"
                 :class="
                   canManageMember(row.member)
-                    ? 'transition-colors hover:bg-muted/50'
+                    ? 'transition-colors hover:bg-muted'
                     : 'cursor-default'
                 "
                 @click="openMember(row.member)"

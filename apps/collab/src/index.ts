@@ -28,6 +28,7 @@ import {
   type AuthContext,
   type KickPayload,
 } from './auth-capabilities'
+import { collabHealthPayload } from './health'
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -113,6 +114,20 @@ const presentedToken = (
 const server = Server.configure({
   name: process.env.COLLAB_INSTANCE_NAME || `collab-${randomUUID()}`,
   port,
+  async onRequest({ request, response }) {
+    const url = request.url?.split('?')[0] ?? ''
+    if (url !== '/health' && url !== '/health/') return
+    try {
+      const body = await collabHealthPayload(redis, prisma)
+      response.writeHead(200, { 'Content-Type': 'application/json' })
+      response.end(JSON.stringify(body))
+    } catch {
+      response.writeHead(503, { 'Content-Type': 'application/json' })
+      response.end(JSON.stringify({ ok: false }))
+    }
+    // 기본 "OK" 응답을 막아요 (hocuspocus 관례).
+    throw undefined
+  },
   async onAuthenticate({ token, documentName, connection, request }) {
     const origin = request?.headers?.origin
     if (!isAllowedCollabOrigin(typeof origin === 'string' ? origin : undefined)) {
@@ -194,7 +209,7 @@ const server = Server.configure({
   },
   extensions: [
     new RedisExtension({
-      // Multi-instance Yjs sync via the same REDIS_URL used for kicks/deny-list.
+      // kick·deny-list와 같은 REDIS_URL로 여러 collab의 Yjs를 맞춰 줘요.
       createClient: () => new RedisClient(redisUrl),
     }),
     new Database({

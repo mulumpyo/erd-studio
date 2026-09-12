@@ -34,7 +34,7 @@ const reaches = (
   return false
 }
 
-/** True if adding source→target would introduce a directed cycle (incl. self-FK). */
+/** `source→target`을 더하면 방향 순환이 생기는지 봐요 (자기참조 FK 포함). */
 export const wouldCreateCycle = (
   relations: Array<{ sourceTableId: string; targetTableId: string }>,
   sourceTableId: string,
@@ -44,7 +44,7 @@ export const wouldCreateCycle = (
   return reaches(targetTableId, sourceTableId, buildAdj(relations))
 }
 
-/** Relation ids that participate in at least one directed cycle. */
+/** 방향 순환에 한 번이라도 들어가는 관계 id 목록이에요. */
 export const cyclicRelationIds = (relations: CycleEdge[]): Set<string> => {
   const adj = buildAdj(relations)
   const cyclic = new Set<string>()

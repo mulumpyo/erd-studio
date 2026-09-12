@@ -337,6 +337,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     # Nest는 프로덕션에서 /api prefix를 유지하므로 떼지 않아요.
+    # AI chat/generate는 LLM 왕복이 길어질 수 있어요. 기본 60s면 504가 납니다.
     location /api/ {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
@@ -344,6 +345,9 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 180s;
+        proxy_read_timeout 180s;
         include proxy_params;
     }
 
@@ -389,7 +393,8 @@ server {
 설정을 넣은 뒤 활성화해주세요.
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/erd-studio /etc/nginx/sites-enabled/erd-studio
+sudo nano /etc/nginx/sites-available/erd-studio
+sudo ln -sf /etc/nginx/sites-available/erd-studio /etc/nginx/sites-enabled/erd-studio
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -402,8 +407,11 @@ sudo systemctl reload nginx
 cd /home/ubuntu/erd-studio
 docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs api --tail 50
+curl -sS https://erd-studio.com/api/health
+curl -sS http://127.0.0.1:3030/health
 ```
 
+`api`는 `/api/health`, `collab`은 `/health`(Redis·DB)로 healthy를 판정해요.
 Postgres는 한국 날짜 기준으로 하루에 한 번 `backup` 컨테이너가 덤프해요. 최근 14일만 남겨 둬요.
 
 ```bash

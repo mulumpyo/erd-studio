@@ -7,65 +7,90 @@ import LandingErdScene from '@/components/landing/LandingErdScene.vue'
 import { buttonVariants } from '@/components/ui/button'
 import { CONTACT_INSTAGRAM_URL } from '@/lib/site'
 
-/** sm 미만에서는 3D ERD 장면을 마운트하지 않음 */
+/** sm 미만에서는 ERD 장면을 마운트하지 않아요 */
 const showErdScene = ref(false)
+/** 스크롤하면 헤더가 알약형 배경으로 바뀌어요 */
+const navScrolled = ref(false)
 let mq: MediaQueryList | null = null
+
 const syncErdScene = () => {
   showErdScene.value = Boolean(mq?.matches)
+}
+
+const syncNavScroll = () => {
+  navScrolled.value = window.scrollY > 16
 }
 
 onMounted(() => {
   mq = window.matchMedia('(min-width: 640px)')
   syncErdScene()
   mq.addEventListener('change', syncErdScene)
+  syncNavScroll()
+  window.addEventListener('scroll', syncNavScroll, { passive: true })
 })
 
 onUnmounted(() => {
   mq?.removeEventListener('change', syncErdScene)
+  window.removeEventListener('scroll', syncNavScroll)
 })
 </script>
 
 <template>
   <div class="flex min-h-full flex-col overflow-x-clip bg-background">
     <header
-      class="relative z-30 mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6"
+      class="sticky top-0 z-30 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4"
     >
-      <div class="flex min-w-0 items-center gap-2 sm:gap-2.5">
-        <RouterLink
-          to="/"
-          class="flex min-h-12 min-w-0 items-center gap-2 rounded-2xl pr-1 sm:gap-2.5"
-        >
-          <div
-            class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-[15px] font-bold text-primary-foreground"
-            aria-hidden="true"
-          >
-            E
-          </div>
-          <span class="truncate text-[17px] font-bold tracking-[-0.015em]"
-            >ERD Studio</span
-          >
-        </RouterLink>
-        <ThemeToggle />
-      </div>
-      <nav class="flex shrink-0 items-center gap-2" aria-label="계정">
-        <a
-          :href="CONTACT_INSTAGRAM_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          :class="buttonVariants({ variant: 'ghost' })"
-          >문의하기</a
-        >
-        <div class="hidden sm:flex sm:items-center sm:gap-2">
-          <RouterLink :class="buttonVariants({ variant: 'ghost' })" to="/login"
-            >로그인</RouterLink
-          >
+      <div
+        class="landing-nav mx-auto flex w-full max-w-5xl items-center justify-between gap-2 transition-[background-color,box-shadow,backdrop-filter,padding,border-radius] duration-300 ease-out"
+        :class="
+          navScrolled
+            ? 'landing-nav--pill rounded-full bg-card/90 px-3 py-2 shadow-[0_8px_28px_rgb(28_25_23_/_0.12)] ring-1 ring-border/60 backdrop-blur-md dark:bg-card/85'
+            : 'rounded-2xl bg-transparent px-1 py-2 sm:px-2'
+        "
+      >
+        <div class="flex min-w-0 items-center gap-2 sm:gap-2.5">
           <RouterLink
-            :class="[buttonVariants(), 'bg-primary hover:bg-primary-hover']"
-            to="/register"
-            >무료로 시작</RouterLink
+            to="/"
+            class="flex min-h-11 min-w-0 items-center gap-2 rounded-2xl pr-1 sm:min-h-12 sm:gap-2.5"
           >
+            <div
+              class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-[15px] font-bold text-primary-foreground"
+              aria-hidden="true"
+            >
+              E
+            </div>
+            <span class="truncate text-[17px] font-bold tracking-[-0.015em]"
+              >ERD Studio</span
+            >
+          </RouterLink>
+          <ThemeToggle />
         </div>
-      </nav>
+        <nav class="flex shrink-0 items-center gap-2" aria-label="계정">
+          <a
+            :href="CONTACT_INSTAGRAM_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            :class="buttonVariants({ variant: 'ghost' })"
+            >문의하기</a
+          >
+          <div class="hidden sm:flex sm:items-center sm:gap-2">
+            <RouterLink
+              :class="buttonVariants({ variant: 'ghost' })"
+              to="/login"
+              >로그인</RouterLink
+            >
+            <RouterLink
+              :class="[
+                buttonVariants(),
+                'bg-primary transition-[border-radius] duration-300 ease-out hover:bg-primary-hover',
+                navScrolled && '!rounded-full',
+              ]"
+              to="/register"
+              >무료로 시작</RouterLink
+            >
+          </div>
+        </nav>
+      </div>
     </header>
 
     <main class="relative z-10 mx-auto w-full max-w-5xl flex-1 overflow-visible px-6 pb-16">

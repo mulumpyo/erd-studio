@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onClickOutside } from '@vueuse/core'
-import { MoreHorizontal } from 'lucide-vue-next'
+import { ChevronRight, MoreHorizontal } from 'lucide-vue-next'
 import Button from '@/components/ui/button/Button.vue'
 import SegmentedControl from '@/components/ui/segmented-control/SegmentedControl.vue'
 
@@ -34,23 +34,32 @@ const emit = defineEmits<{
 }>()
 
 const open = ref(false)
+const exportOpen = ref(false)
 const root = ref<HTMLElement | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 onClickOutside(root, () => {
   open.value = false
+  exportOpen.value = false
 })
 
 const itemClass =
   'block w-full px-4 py-2.5 text-left text-[14px] font-medium hover:bg-muted'
 
+const subItemClass =
+  'block w-full px-4 py-2.5 pl-8 text-left text-[14px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground'
+
 const close = () => {
   open.value = false
+  exportOpen.value = false
 }
 
-const pick = (
-  kind: 'png' | 'svg' | 'html' | 'csv' | 'xls' | 'json',
-) => {
+const toggleMenu = () => {
+  open.value = !open.value
+  if (!open.value) exportOpen.value = false
+}
+
+const pick = (kind: 'png' | 'svg' | 'html' | 'csv' | 'xls' | 'json') => {
   close()
   if (kind === 'png') emit('png')
   else if (kind === 'svg') emit('svg')
@@ -95,7 +104,7 @@ const run = (
       title="더보기"
       aria-label="더보기"
       :aria-expanded="open"
-      @click="open = !open"
+      @click="toggleMenu"
     >
       <MoreHorizontal />
     </Button>
@@ -108,11 +117,9 @@ const run = (
     />
     <div
       v-if="open"
-      class="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl bg-card py-2 text-card-foreground shadow-[0_12px_32px_rgb(28_25_23_/_0.12)]"
+      class="absolute right-0 z-40 mt-2 w-60 overflow-hidden rounded-2xl bg-card py-2 text-card-foreground shadow-[0_12px_32px_rgb(28_25_23_/_0.12)]"
     >
-      <div
-        class="max-h-[min(28rem,calc(100vh-5.5rem))] overflow-y-auto"
-      >
+      <div class="max-h-[min(28rem,calc(100vh-5.5rem))] overflow-y-auto">
         <div v-if="isOwner" class="px-3 py-2">
           <SegmentedControl
             class="w-full"
@@ -144,26 +151,41 @@ const run = (
           </button>
         </template>
         <div class="my-1 h-px bg-border" />
-        <button type="button" :class="itemClass" @click="pick('json')">
-          ERD JSON 내보내기
+        <button
+          type="button"
+          :class="[itemClass, 'flex items-center justify-between gap-2']"
+          :aria-expanded="exportOpen"
+          @click="exportOpen = !exportOpen"
+        >
+          <span>내보내기</span>
+          <ChevronRight
+            class="size-4 shrink-0 text-muted-foreground transition-transform"
+            :class="exportOpen ? 'rotate-90' : ''"
+            aria-hidden="true"
+          />
         </button>
+        <div v-if="exportOpen" role="group" aria-label="내보내기 형식">
+          <button type="button" :class="subItemClass" @click="pick('json')">
+            ERD JSON
+          </button>
+          <button type="button" :class="subItemClass" @click="pick('png')">
+            PNG
+          </button>
+          <button type="button" :class="subItemClass" @click="pick('svg')">
+            SVG
+          </button>
+          <button type="button" :class="subItemClass" @click="pick('html')">
+            HTML 명세서
+          </button>
+          <button type="button" :class="subItemClass" @click="pick('xls')">
+            Excel
+          </button>
+          <button type="button" :class="subItemClass" @click="pick('csv')">
+            CSV
+          </button>
+        </div>
         <button type="button" :class="itemClass" @click="pickImport">
           ERD JSON 가져오기
-        </button>
-        <button type="button" :class="itemClass" @click="pick('png')">
-          PNG 내보내기
-        </button>
-        <button type="button" :class="itemClass" @click="pick('svg')">
-          SVG 내보내기
-        </button>
-        <button type="button" :class="itemClass" @click="pick('html')">
-          HTML 명세서 내보내기
-        </button>
-        <button type="button" :class="itemClass" @click="pick('xls')">
-          Excel 내보내기
-        </button>
-        <button type="button" :class="itemClass" @click="pick('csv')">
-          CSV 내보내기
         </button>
         <template v-if="!signedIn || canDelete || canLeave">
           <div class="my-1 h-px bg-border" />

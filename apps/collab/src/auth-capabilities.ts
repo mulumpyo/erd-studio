@@ -25,7 +25,7 @@ export const buildAuthCapabilities = (input: {
   token: input.token,
 })
 
-/** Apply cached capabilities to the live connection (no Prisma). */
+/** 캐시해 둔 권한을 살아 있는 연결에 적용해요 (Prisma 없이). */
 export const applyCachedAuth = (
   connection: { readOnly: unknown },
   context: AuthContext,

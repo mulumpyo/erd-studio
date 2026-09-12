@@ -69,7 +69,7 @@ const setTab = (id: WorkspaceTab) => {
                 'flex h-8 items-center gap-2 rounded-[10px] px-2.5 text-left text-[13px] font-medium tracking-[-0.01em] transition-colors',
                 tab === item.id
                   ? 'bg-muted font-semibold text-foreground'
-                  : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )
             "
             @click="setTab(item.id)"
@@ -85,7 +85,7 @@ const setTab = (id: WorkspaceTab) => {
       <button
         v-if="isAdmin"
         type="button"
-        class="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+        class="flex h-8 w-full items-center gap-2 rounded-[10px] px-2.5 text-[13px] font-medium tracking-[-0.01em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         @click="emit('admin')"
       >
         <Shield class="size-4 shrink-0" />

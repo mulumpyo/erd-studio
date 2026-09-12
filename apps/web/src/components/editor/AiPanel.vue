@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { ErdDocument } from '@erd-studio/shared'
 import { api } from '@/api'
+import { AI_FEATURES_ENABLED } from '@/lib/feature-flags'
 import { errorMessage } from '@/lib/format'
 import { toAiRequestDocument } from '@/lib/ai-document'
 import {
@@ -16,7 +17,7 @@ import Select from '@/components/ui/select/Select.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { toast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
-import { ChevronDown, Ellipsis, RefreshCw, SendHorizontal } from 'lucide-vue-next'
+import { ChevronDown, Ellipsis, RefreshCw, SendHorizontal, Sparkles } from 'lucide-vue-next'
 
 type AiProvider = 'openai' | 'gemini' | 'other'
 
@@ -184,7 +185,7 @@ const scrollToEnd = async () => {
 
 const revealComposer = async () => {
   await nextTick()
-  // Prefer scrolling the message list, not the page — scrollIntoView(center)
+  // 메시지 목록만 스크롤하고, 페이지 전체는 움직이지 않게 해요 (scrollIntoView center 대신).
   // fights visualViewport pinning and leaves a blank band above the keyboard.
   if (scroller.value) {
     scroller.value.scrollTop = scroller.value.scrollHeight
@@ -302,6 +303,7 @@ const persistSettings = () => {
 }
 
 onMounted(async () => {
+  if (!AI_FEATURES_ENABLED) return
   loadSettings()
   try {
     const status = await api<{
@@ -502,7 +504,30 @@ const onDraftKeydown = (event: KeyboardEvent) => {
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-3">
+  <div
+    v-if="!AI_FEATURES_ENABLED"
+    class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-10 text-center"
+  >
+    <div
+      class="flex size-12 items-center justify-center rounded-2xl bg-accent text-accent-foreground"
+      aria-hidden="true"
+    >
+      <Sparkles class="size-5" />
+    </div>
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <p class="text-[16px] font-bold tracking-[-0.02em]">AI</p>
+      <span
+        class="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-[12px] font-semibold tracking-[-0.01em] text-muted-foreground"
+      >
+        준비 중
+      </span>
+    </div>
+    <p class="max-w-[16rem] text-[13px] leading-5 text-muted-foreground">
+      지금은 쓸 수 없어요. 곧 설명만으로 스키마 초안을 만들 수 있게 열릴
+      예정이에요.
+    </p>
+  </div>
+  <div v-else class="flex min-h-0 flex-1 flex-col gap-3">
     <div class="shrink-0 space-y-2">
       <button
         type="button"

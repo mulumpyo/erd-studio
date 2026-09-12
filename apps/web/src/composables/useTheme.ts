@@ -50,7 +50,9 @@ export const useTheme = () => {
   }
 
   const cycle = () => {
-    setMode(mode.value === 'light' ? 'dark' : 'light')
+    // 아이콘·상태가 실제 화면과 어긋나지 않게, 지금 DOM의 클래스 기준으로 봐요.
+    const dark = document.documentElement.classList.contains('dark')
+    setMode(dark ? 'light' : 'dark')
   }
 
   return { mode, resolved, setMode, cycle }

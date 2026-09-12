@@ -44,7 +44,7 @@ export const toast = (text: string, opts?: number | ToastOptions) => {
   timers.set(id, timer)
 }
 
-/** @deprecated use items; kept for any leftover single-toast reads */
+/** @deprecated `items`를 쓰세요. 예전 단일 토스트 읽기용으로만 남겨 뒀어요. */
 const message = ref('')
 const kind = ref<ToastKind>('success')
 const visible = ref(false)

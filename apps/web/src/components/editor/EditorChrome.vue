@@ -170,6 +170,7 @@ const statusText = computed(() => {
         >
         <SegmentedControl
           v-if="isOwner"
+          class="shrink-0"
           :model-value="isPublic ? 'public' : 'private'"
           :options="shareOptions"
           @update:model-value="emit('update:public', $event === 'public')"

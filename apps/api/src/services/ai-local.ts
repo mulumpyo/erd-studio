@@ -65,7 +65,7 @@ const toPhysical = (label: string) => {
   const mapped = WORD_MAP[trimmed]
   if (mapped) return mapped
   if (/^[a-zA-Z][\w]*$/.test(trimmed)) return trimmed.toLowerCase()
-  // Hangul syllables must not go through NFKD (jamo fall outside 가-힣).
+  // 한글 음절은 NFKD로 나누면 가-힣 밖 자모가 돼서, 그대로 둬요.
   if (/[가-힣]/.test(trimmed)) {
     return (
       trimmed
@@ -388,7 +388,7 @@ const sanitizeGenerated = (raw: unknown): ErdDocument => {
   return doc
 }
 
-/** Key 없이도 데모 가능한 로컬 초안 생성기 */
+/** API 키 없이도 데모할 수 있는 로컬 초안 생성기예요. */
 export const generateErdLocally = (prompt: string): ErdDocument => {
   const text = prompt.trim()
   const labels = extractLabels(text)
