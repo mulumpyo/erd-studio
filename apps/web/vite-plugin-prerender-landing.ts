@@ -7,14 +7,67 @@ import {
   normalizeSiteUrl,
 } from './src/lib/seo'
 
+/**
+ * 프리렌더된 공개 페이지에서 앱 번들을 언제 불러올지 정해요.
+ * 첫 렌더(LCP)를 막지 않게 load 뒤 브라우저가 한가할 때 부팅하고,
+ * 그 전에 사용자가 누르거나 키를 치면 바로 부팅해요.
+ * 같은 오리진 다른 경로 링크 클릭은 일반 페이지 이동에 맡겨요.
+ */
+export const landingBootScript = (entrySrc: string) => `
+const src = ${JSON.stringify(entrySrc)}
+const isPublic = (p) => p === '/' || p === '/terms' || p === '/privacy'
+if (location.pathname === '/') {
+  fetch('/api/auth/me', { credentials: 'include' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => { if (d && d.user) location.replace('/app') })
+    .catch(() => {})
+}
+if (isPublic(location.pathname)) {
+  const boot = () => {
+    if (window.__erdBoot) return
+    window.__erdBoot = 1
+    import(src)
+  }
+  const onInput = (e) => {
+    const a = e.target && e.target.closest && e.target.closest('a[href]')
+    if (a) {
+      try {
+        const u = new URL(a.href, location.href)
+        if (u.origin === location.origin && u.pathname !== location.pathname && a.target !== '_blank') return
+      } catch {}
+    }
+    boot()
+  }
+  addEventListener('pointerdown', onInput, { once: true, capture: true })
+  addEventListener('keydown', onInput, { once: true, capture: true })
+  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1200))
+  const scheduleIdle = () => idle(boot, { timeout: 2000 })
+  if (document.readyState === 'complete') scheduleIdle()
+  else addEventListener('load', scheduleIdle, { once: true })
+} else {
+  import(src)
+}
+`.trim()
+
 export const prerenderLanding = (): Plugin => {
   let config: ResolvedConfig
+  /** 랜딩 라우트 청크가 쓰는 CSS 파일이에요. 부팅 전에도 스타일이 맞게 인라인해요. */
+  let landingCss: string[] = []
   return {
     name: 'prerender-landing',
     apply: 'build',
     enforce: 'post',
     configResolved(resolved) {
       config = resolved
+    },
+    generateBundle(_, bundle) {
+      const chunk = Object.values(bundle).find(
+        (c) =>
+          c.type === 'chunk' &&
+          c.facadeModuleId?.replace(/\\/g, '/').endsWith('/src/pages/Landing.vue'),
+      )
+      landingCss =
+        chunk?.type === 'chunk' ? [...(chunk.viteMetadata?.importedCss ?? [])] : []
     },
     async closeBundle() {
       if (config.build.ssr) return
@@ -55,6 +108,19 @@ export const prerenderLanding = (): Plugin => {
           const css = await fs.readFile(cssPath, 'utf8')
           html = html.replace(cssLink[0], `<style>${css}</style>`)
         }
+        if (landingCss.length) {
+          const routeCss = await Promise.all(
+            landingCss.map((file) =>
+              fs.readFile(path.resolve(config.root, config.build.outDir, file), 'utf8'),
+            ),
+          )
+          html = html.replace(
+            '</head>',
+            `    <style>${routeCss.join('\n')}</style>\n  </head>`,
+          )
+        } else {
+          config.logger.warn('prerender-landing: Landing route CSS not found')
+        }
         if (!html.includes('rel="canonical"')) {
           html = html.replace(
             '</head>',
@@ -74,7 +140,7 @@ export const prerenderLanding = (): Plugin => {
         if (entry) {
           html = html.replace(
             entry[0],
-            `<script type="module">const s=${JSON.stringify(entry[1])};const m=p=>p==='/'||p==='/terms'||p==='/privacy';if(location.pathname==='/'){const goApp=()=>location.replace('/app');fetch('/api/auth/me',{credentials:'include'}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.user)goApp()}).catch(()=>{})}if(m(location.pathname)){const go=e=>{const a=e.target&&e.target.closest&&e.target.closest('a[href]');if(a){try{const u=new URL(a.href,location.href);if(u.origin===location.origin&&u.pathname!==location.pathname&&a.target!=='_blank')return}catch{}}if(!window.__erdBoot){window.__erdBoot=1;import(s)}};addEventListener('pointerdown',go,{once:true,capture:true});addEventListener('keydown',go,{once:true,capture:true})}else import(s)</script>`,
+            `<script type="module">${landingBootScript(entry[1])}</script>`,
           )
         }
         await fs.writeFile(indexPath, html)

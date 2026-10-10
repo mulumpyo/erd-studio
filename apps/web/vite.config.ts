@@ -10,6 +10,11 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, '')
   const apiTarget = `http://127.0.0.1:${env.API_PORT || 3000}`
   const collabTarget = `http://127.0.0.1:${env.COLLAB_PORT || 3030}`
+  // 개발 서버 Host 허용 목록이에요. VITE_ 접두사 없이 서버 전용으로 읽어요.
+  const allowedHosts = (env.DEV_ALLOWED_HOSTS || '')
+    .split(',')
+    .map((host) => host.trim())
+    .filter(Boolean)
 
   return {
     envDir: root,
@@ -31,6 +36,7 @@ export default defineConfig(({ mode }) => {
     server: {
       host: true,
       port: 5173,
+      ...(allowedHosts.length ? { allowedHosts } : {}),
       fs: { allow: [root] },
       proxy: {
         '/collaboration': {
