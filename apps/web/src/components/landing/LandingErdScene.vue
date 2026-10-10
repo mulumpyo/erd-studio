@@ -757,6 +757,10 @@ const rebuildEdges = () => {
   }
 }
 
+// SSR 프리렌더 HTML에도 첫 포즈와 관계선이 담기게 setup에서 한 번 그려 둬요.
+applyPose(0)
+rebuildEdges()
+
 let frame = 0
 let start = 0
 let reduced = false
@@ -771,15 +775,27 @@ const tick = (now: number) => {
   frame = requestAnimationFrame(tick)
 }
 
+// sm 미만에선 CSS로 숨겨지니 애니메이션 루프도 멈춰 둬요.
+let wide: MediaQueryList | null = null
+
+const syncLoop = () => {
+  cancelAnimationFrame(frame)
+  frame = 0
+  if (wide?.matches) frame = requestAnimationFrame(tick)
+}
+
 onMounted(async () => {
   reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   applyPose(0)
   await nextTick()
   rebuildEdges()
-  frame = requestAnimationFrame(tick)
+  wide = window.matchMedia('(min-width: 640px)')
+  wide.addEventListener('change', syncLoop)
+  syncLoop()
 })
 
 onUnmounted(() => {
+  wide?.removeEventListener('change', syncLoop)
   cancelAnimationFrame(frame)
 })
 </script>

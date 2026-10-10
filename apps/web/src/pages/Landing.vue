@@ -7,30 +7,19 @@ import LandingErdScene from '@/components/landing/LandingErdScene.vue'
 import { buttonVariants } from '@/components/ui/button'
 import { CONTACT_INSTAGRAM_URL } from '@/lib/site'
 
-/** sm 미만에서는 ERD 장면을 마운트하지 않아요 */
-const showErdScene = ref(false)
 /** 스크롤하면 헤더가 알약형 배경으로 바뀌어요 */
 const navScrolled = ref(false)
-let mq: MediaQueryList | null = null
-
-const syncErdScene = () => {
-  showErdScene.value = Boolean(mq?.matches)
-}
 
 const syncNavScroll = () => {
   navScrolled.value = window.scrollY > 16
 }
 
 onMounted(() => {
-  mq = window.matchMedia('(min-width: 640px)')
-  syncErdScene()
-  mq.addEventListener('change', syncErdScene)
   syncNavScroll()
   window.addEventListener('scroll', syncNavScroll, { passive: true })
 })
 
 onUnmounted(() => {
-  mq?.removeEventListener('change', syncErdScene)
   window.removeEventListener('scroll', syncNavScroll)
 })
 </script>
@@ -95,8 +84,8 @@ onUnmounted(() => {
 
     <main class="relative z-10 mx-auto w-full max-w-5xl flex-1 overflow-visible px-6 pb-16">
       <!-- 히어로 섹션 밖에 두어 overflow/isolate에 잘리지 않게 -->
+      <!-- 프리렌더 HTML에 바로 보이도록 v-if 대신 CSS로 sm 미만에서 숨겨요 -->
       <div
-        v-if="showErdScene"
         class="landing-hero-scene pointer-events-none absolute z-[1]"
         aria-hidden="true"
       >
