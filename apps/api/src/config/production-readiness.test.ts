@@ -11,6 +11,7 @@ const read = (rel: string) => readFileSync(resolve(root, rel), 'utf8')
 test('production readiness: compose healthchecks cover api/web/collab', () => {
   const compose = read('docker-compose.prod.yml')
   assert.match(compose, /api:[\s\S]*?healthcheck:[\s\S]*?\/api\/health/)
+  assert.match(compose, /b\.ok===true/)
   assert.match(compose, /web:[\s\S]*?healthcheck:[\s\S]*?wget/)
   assert.match(compose, /collab:[\s\S]*?healthcheck:[\s\S]*?\/health/)
   assert.match(compose, /postgres:[\s\S]*?healthcheck:[\s\S]*?pg_isready/)
@@ -21,6 +22,12 @@ test('production readiness: README documents /api/ 180s proxy timeouts', () => {
   const readme = read('README.md')
   assert.match(readme, /location \/api\/ \{[\s\S]*?proxy_read_timeout 180s/)
   assert.match(readme, /proxy_send_timeout 180s/)
+})
+
+test('production readiness: API trusts only the loopback reverse-proxy hop', () => {
+  const config = read('apps/api/src/config/app.config.ts')
+  assert.match(config, /EXPRESS_TRUST_PROXY = 'loopback'/)
+  assert.match(config, /trust proxy/)
 })
 
 test('production readiness: env example documents AI gate and cookie Secure', () => {
