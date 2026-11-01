@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common'
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { SkipThrottle } from '@nestjs/throttler'
-import { RedisService } from '../services/redis.service'
+import { isRedisPingOk, RedisService } from '../services/redis.service'
 import { isProduction } from '../config/secrets'
 import { HealthResponseDto } from '../dto/misc-response.dto'
 
@@ -18,13 +18,13 @@ export class HealthController {
   })
   @ApiOkResponse({
     description:
-      '운영: `{ ok }`. 비운영: `{ ok: true, service, redis }`. `ok`/`redis`는 Redis ping 결과예요.',
+      '운영: `{ "ok": true }`. 비운영: `{ ok: true, service, redis }`. `ok`/`redis`는 Redis ping이 성공했는지예요.',
     type: HealthResponseDto,
   })
   @Get('health')
   @SkipThrottle()
   async health() {
-    const redis = await this.redis.ping()
+    const redis = isRedisPingOk(await this.redis.ping())
     if (isProduction()) return { ok: redis }
     return { ok: true, service: 'erd-studio-api', redis }
   }

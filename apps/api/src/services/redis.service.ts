@@ -2,6 +2,10 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import Redis from 'ioredis'
 
+/** ioredis ping은 `'PONG'` 문자열을 줘요. 헬스 계약은 boolean이에요. */
+export const isRedisPingOk = (value: unknown) =>
+  value === true || value === 'PONG'
+
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   readonly client: Redis
@@ -13,7 +17,7 @@ export class RedisService implements OnModuleDestroy {
     )
   }
 
-  ping = () => this.client.ping()
+  ping = async () => isRedisPingOk(await this.client.ping())
 
   onModuleDestroy = () => this.client.quit()
 }
