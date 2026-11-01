@@ -11,6 +11,7 @@ import {
 import { AiController } from './ai.controller'
 import { GenerateErdDto } from '../dto/ai.dto'
 import { HealthController } from './health.controller'
+import { isRedisPingOk } from '../services/redis.service'
 
 const withEnv = async (
   key: string,
@@ -102,6 +103,13 @@ test('contract: GenerateErdDto rejects short prompt (400 shape)', async () => {
   assert.ok(fields.includes('prompt') || fields.includes('apiKey'))
 })
 
+test('contract: Redis PONG string is treated as healthy', () => {
+  assert.equal(isRedisPingOk('PONG'), true)
+  assert.equal(isRedisPingOk(true), true)
+  assert.equal(isRedisPingOk('FAIL'), false)
+  assert.equal(isRedisPingOk(false), false)
+})
+
 test('contract: health reports redis via ping', async () => {
   const ctrl = new HealthController({
     ping: async () => true,
@@ -114,4 +122,16 @@ test('contract: health reports redis via ping', async () => {
   } else {
     assert.equal(body.ok, true)
   }
+})
+
+test('contract: production health maps Redis PONG to boolean ok', async () => {
+  await withEnv('NODE_ENV', 'production', async () => {
+    const ctrl = new HealthController({
+      ping: async () => 'PONG',
+    } as never)
+    const body = await ctrl.health()
+    assert.equal(body.ok, true)
+    assert.equal(typeof body.ok, 'boolean')
+    assert.equal('redis' in body, false)
+  })
 })

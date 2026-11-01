@@ -57,6 +57,32 @@ describe('resolveCompatibleBaseUrl', () => {
     assert.equal(isBlockedCompatibleHost('127.0.0.1'), true)
     assert.equal(isBlockedCompatibleHost('api.openai.com'), false)
   })
+
+  it('rejects IPv4-mapped IPv6 loopback and metadata hosts', () => {
+    assert.equal(isBlockedCompatibleHost('::ffff:127.0.0.1'), true)
+    assert.equal(isBlockedCompatibleHost('[::ffff:127.0.0.1]'), true)
+    assert.equal(isBlockedCompatibleHost('::ffff:169.254.169.254'), true)
+    assert.equal(isBlockedCompatibleHost('::ffff:7f00:1'), true)
+    assert.equal(isBlockedCompatibleHost('0:0:0:0:0:ffff:10.0.0.5'), true)
+    assert.throws(
+      () => resolveCompatibleBaseUrl('https://[::ffff:169.254.169.254]/v1'),
+      /호스트/,
+    )
+    assert.throws(
+      () => resolveCompatibleBaseUrl('https://[::ffff:127.0.0.1]/v1'),
+      /호스트/,
+    )
+  })
+
+  it('rejects DNS results that are IPv4-mapped private addresses', async () => {
+    await assert.rejects(
+      () =>
+        assertResolvedCompatibleHost('evil.example', async () => [
+          { address: '::ffff:192.168.0.10', family: 6 },
+        ]),
+      /호스트/,
+    )
+  })
   it('rejects when DNS resolves to a private address', async () => {
     await assert.rejects(
       () =>

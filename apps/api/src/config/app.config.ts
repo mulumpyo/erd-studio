@@ -18,7 +18,12 @@ export const appConfig = {
   },
 }
 
+/** nginx가 같은 호스트 루프백에서만 붙는 전제예요. 공개망 헤더는 믿지 않아요. */
+export const EXPRESS_TRUST_PROXY = 'loopback'
+
 export const applyAppConfig = (app: INestApplication) => {
+  const http = app.getHttpAdapter().getInstance() as { set?: (key: string, value: string) => void }
+  http.set?.('trust proxy', EXPRESS_TRUST_PROXY)
   const prefix = appConfig.prefix()
   if (prefix) app.setGlobalPrefix(prefix)
   app.enableCors({

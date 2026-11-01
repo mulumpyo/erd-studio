@@ -137,18 +137,7 @@ const inCidr = (ip: number, base: string, bits: number) => {
   return (ip & mask) === (baseInt & mask)
 }
 
-/** 커스텀 base URL에서 localhost·링크로컬·사설·메타데이터 호스트는 막아요. */
-export const isBlockedCompatibleHost = (hostname: string) => {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (BLOCKED_HOSTS.has(host)) return true
-  if (host === '::1' || host === '::' || host.endsWith('.localhost') || host.endsWith('.local')) {
-    return true
-  }
-  if (host.includes(':')) {
-    // IPv6 로컬·unique-local 기본 검사예요.
-    if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return true
-  }
-  if (!isIpv4(host)) return false
+const isBlockedIpv4 = (host: string) => {
   const ip = ipv4ToInt(host)
   if (ip == null) return true
   return (
@@ -159,6 +148,57 @@ export const isBlockedCompatibleHost = (hostname: string) => {
     inCidr(ip, '172.16.0.0', 12) ||
     inCidr(ip, '192.168.0.0', 16)
   )
+}
+
+const hexPairToIpv4 = (hi: string, lo: string) => {
+  const a = Number.parseInt(hi, 16)
+  const b = Number.parseInt(lo, 16)
+  if (!Number.isInteger(a) || !Number.isInteger(b) || a > 0xffff || b > 0xffff) {
+    return null
+  }
+  return `${(a >> 8) & 255}.${a & 255}.${(b >> 8) & 255}.${b & 255}`
+}
+
+/** IPv4-mapped IPv6(::ffff:…)을 점 표기 IPv4로 돌려요. */
+const ipv4FromMappedIpv6 = (host: string): string | null => {
+  const dotted =
+    /^(?:(?:0:){5}|::)ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(host)
+  if (dotted) return dotted[1]!
+  const hex =
+    /^(?:(?:0:){5}|::)ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host)
+  if (!hex) return null
+  return hexPairToIpv4(hex[1]!, hex[2]!)
+}
+
+const stripHostBrackets = (value: string) =>
+  value.toLowerCase().replace(/^\[|\]$/g, '')
+
+const canonicalHostname = (hostname: string) => {
+  const raw = stripHostBrackets(hostname)
+  if (!raw.includes(':')) return raw
+  try {
+    // Node는 IPv6 hostname에 대괄호를 남기는 경우가 있어요.
+    return stripHostBrackets(new URL(`http://[${raw}]`).hostname)
+  } catch {
+    return raw
+  }
+}
+
+/** 커스텀 base URL에서 localhost·링크로컬·사설·메타데이터 호스트는 막아요. */
+export const isBlockedCompatibleHost = (hostname: string) => {
+  const host = canonicalHostname(hostname)
+  if (BLOCKED_HOSTS.has(host)) return true
+  if (host === '::1' || host === '::' || host.endsWith('.localhost') || host.endsWith('.local')) {
+    return true
+  }
+  const mapped = ipv4FromMappedIpv6(host)
+  if (mapped) return isBlockedIpv4(mapped)
+  if (host.includes(':')) {
+    // IPv6 로컬·unique-local 기본 검사예요.
+    if (host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) return true
+  }
+  if (!isIpv4(host)) return false
+  return isBlockedIpv4(host)
 }
 
 export type CompatibleHostLookup = (
